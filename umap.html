@@ -1,0 +1,82 @@
+<!DOCTYPE html><html lang="zh-Hant"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>umap — scRNA-seq Tutorial</title><link rel="stylesheet" href="styles.css"></head><body>
+<nav class="top-nav"><div class="top-nav-inner"><a href="index.html" class="top-nav-brand"><span>🧬</span> <span data-zh="scRNA-seq 教學" data-en="scRNA-seq Tutorial">scRNA-seq 教學</span></a><ul class="top-nav-links"><li><a href="qc.html">QC</a></li><li><a href="normalization.html">Norm.</a></li><li><a href="variable-features.html">Features</a></li><li><a href="scaling.html">Scaling</a></li><li><a href="pca.html">PCA</a></li><li><a href="clustering.html">Clustering</a></li><li><a href="umap.html" class=active>UMAP</a></li><li><a href="annotation.html">Annot.</a></li><li><a href="differential-expression.html">DE</a></li><li><a href="integration.html">Integ.</a></li><li><a href="cellchat.html">CellChat</a></li><li><a href="trajectory.html">Traj.</a></li></ul></div></nav><div class="progress-bar-container"><div class="progress-bar" id="progressBar"></div></div>
+<header class="page-hero"><div class="step-badge">STEP 7 / 9</div><h1 data-zh="UMAP 視覺化" data-en="UMAP Visualization">UMAP 視覺化</h1><p class="subtitle" data-lang="zh">將高維資料投影到 2D 空間，便於觀察細胞群間的相對關係——但千萬別過度解讀。</p><p class="subtitle" data-lang="en">Project high-dimensional data to 2D for observing cell population relationships — but don't over-interpret.</p></header><main class="content-wrap">
+<section class="section"><div class="section-label" data-zh="核心概念" data-en="CONCEPT">核心概念</div><h2 data-zh="UMAP 是什麼？" data-en="What is UMAP?">UMAP 是什麼？</h2>
+<div data-lang="zh"><p><strong>UMAP (Uniform Manifold Approximation and Projection)</strong> 是一種非線性降維方法，將 PCA 空間中的細胞關係投影到 2D。它<strong>不是</strong>分析的核心步驟（聚類是在 PCA 空間中完成的），而是一個<strong>視覺化工具</strong>。</p></div>
+<div data-lang="en"><p><strong>UMAP (Uniform Manifold Approximation and Projection)</strong> is a non-linear dimensionality reduction method that projects PCA-space cell relationships to 2D. It is <strong>not</strong> a core analysis step (clustering happens in PCA space) — it's a <strong>visualization tool</strong>.</p></div>
+<div class="callout danger"><span class="callout-icon">🚨</span><div>
+<span data-lang="zh"><strong>常見誤讀警告：</strong><br>① UMAP 圖上群體間的距離<strong>不代表</strong>生物學相似度<br>② 群體的大小<strong>不代表</strong>細胞數量<br>③ 群體的形狀可能因隨機種子而改變<br>這些都是非線性投影的副產品，不應用於生物學推論。</span>
+<span data-lang="en"><strong>Common misinterpretation warning:</strong><br>① Distances between clusters on UMAP do <strong>NOT</strong> represent biological similarity<br>② Cluster sizes do <strong>NOT</strong> represent cell counts<br>③ Cluster shapes may change with different random seeds<br>These are artifacts of non-linear projection — do not use for biological inference.</span>
+</div></div></section>
+
+<section class="section"><div class="section-label" data-zh="方法比較" data-en="COMPARISON">方法比較</div><h2 data-zh="UMAP vs t-SNE" data-en="UMAP vs t-SNE">UMAP vs t-SNE</h2>
+<table class="comp-table"><thead><tr><th></th><th data-zh="UMAP（推薦）" data-en="UMAP (Recommended)">UMAP</th><th>t-SNE</th></tr></thead><tbody>
+<tr><td data-zh="速度" data-en="Speed"><strong>速度</strong></td><td data-zh="較快" data-en="Faster">較快</td><td data-zh="較慢（尤其大數據集）" data-en="Slower (especially large datasets)">較慢</td></tr>
+<tr><td data-zh="全局結構" data-en="Global structure"><strong>全局結構</strong></td><td data-zh="較好地保留群體間相對位置" data-en="Better preserves inter-cluster relationships">較好保留</td><td data-zh="主要保留局部結構" data-en="Mainly preserves local structure">主要保留局部</td></tr>
+<tr><td data-zh="可重複性" data-en="Reproducibility"><strong>可重複性</strong></td><td data-zh="設固定 seed 即可重現" data-en="Reproducible with fixed seed">固定 seed 重現</td><td data-zh="結果較不穩定" data-en="Less stable results">較不穩定</td></tr>
+<tr><td data-zh="目前地位" data-en="Current status"><strong>地位</strong></td><td data-zh="scRNA-seq 的標準選擇" data-en="Standard choice for scRNA-seq">標準選擇</td><td data-zh="仍有使用但逐漸被取代" data-en="Still used but gradually replaced">逐漸被取代</td></tr>
+</tbody></table></section>
+
+<section class="section"><div class="section-label" data-zh="互動模擬" data-en="INTERACTIVE">互動模擬</div><h2 data-zh="UMAP 參數的影響" data-en="Effect of UMAP Parameters">UMAP 參數的影響</h2>
+<div data-lang="zh"><p><code>n_neighbors</code> 控制在保留局部 vs 全局結構之間的平衡；<code>min_dist</code> 控制點之間的最小距離。嘗試拖動兩個滑桿觀察效果。</p></div><div data-lang="en"><p><code>n_neighbors</code> balances local vs. global structure preservation; <code>min_dist</code> controls minimum point spacing. Try both sliders.</p></div>
+<div class="interactive-panel"><div class="slider-group"><label>n_neighbors <span id="valNN">15</span></label><input type="range" id="sliderNN" min="5" max="50" value="15" step="5"></div>
+<div class="slider-group"><label>min_dist <span id="valMD">0.3</span></label><input type="range" id="sliderMD" min="1" max="10" value="3" step="1"></div>
+<div id="mdDesc" style="font-size:.88rem;color:var(--c-ink-light);margin-bottom:8px;"></div><div class="chart-container" style="height:340px;"><canvas id="umChart"></canvas></div></div></section>
+
+<section class="section"><div class="section-label" data-zh="程式碼" data-en="CODE">程式碼</div><h2 data-zh="實作範例" data-en="Code Examples">實作範例</h2>
+<div class="code-tabs"><div class="code-tab-btns"><button class="code-tab-btn active" onclick="switchTab(this,'r1')">R / Seurat</button><button class="code-tab-btn" onclick="switchTab(this,'py1')">Python / Scanpy</button></div>
+<div class="code-tab-content active" id="r1"><pre>pbmc &lt;- <span class="func">RunUMAP</span>(pbmc, dims = <span class="num">1</span>:<span class="num">15</span>)
+<span class="func">DimPlot</span>(pbmc, reduction = <span class="str">"umap"</span>, label = <span class="kw">TRUE</span>)
+<span class="comment"># 視覺化特定基因表達</span>
+<span class="func">FeaturePlot</span>(pbmc, features = <span class="func">c</span>(<span class="str">"CD3D"</span>, <span class="str">"MS4A1"</span>, <span class="str">"CD14"</span>, <span class="str">"GNLY"</span>))
+<span class="comment"># 調整 min.dist</span>
+pbmc &lt;- <span class="func">RunUMAP</span>(pbmc, dims = <span class="num">1</span>:<span class="num">15</span>, min.dist = <span class="num">0.5</span>)</pre></div>
+<div class="code-tab-content" id="py1"><pre>sc.tl.umap(adata)
+sc.pl.umap(adata, color=[<span class="str">"leiden"</span>])
+sc.pl.umap(adata, color=[<span class="str">"CD3D"</span>, <span class="str">"MS4A1"</span>, <span class="str">"CD14"</span>])
+<span class="comment"># 調整 min_dist</span>
+sc.tl.umap(adata, min_dist=<span class="num">0.5</span>)</pre></div></div></section>
+
+<section class="quiz-section"><h3>📝 <span data-zh="自我檢測" data-en="Self-Check">自我檢測</span></h3>
+<div class="quiz-q" data-answer="2"><p data-lang="zh">UMAP 上兩個 cluster 距離很近，代表？</p><p data-lang="en">Two clusters close together on UMAP means?</p><div class="quiz-options">
+<div class="quiz-opt" data-idx="0"><span data-lang="zh">A. 生物學上非常相似</span><span data-lang="en">A. Biologically very similar</span></div>
+<div class="quiz-opt" data-idx="1"><span data-lang="zh">B. 共享大量 marker 基因</span><span data-lang="en">B. Share many marker genes</span></div>
+<div class="quiz-opt" data-idx="2"><span data-lang="zh">C. 不一定——UMAP 距離不能直接解讀為相似度</span><span data-lang="en">C. Not necessarily — UMAP distances shouldn't be interpreted as similarity</span></div>
+<div class="quiz-opt" data-idx="3"><span data-lang="zh">D. 應該合併為同一群</span><span data-lang="en">D. Should be merged</span></div></div><div class="quiz-feedback" id="fb1"></div></div></section>
+<nav class="page-nav"><a href="clustering.html"><span class="nav-dir" data-zh="← 上一步" data-en="← Previous">← 上一步</span><span class="nav-title" data-zh="Step 6：聚類" data-en="Step 6: Clustering">Step 6：聚類</span></a><a href="annotation.html"><span class="nav-dir" data-zh="下一步 →" data-en="Next →">下一步 →</span><span class="nav-title" data-zh="Step 8：Annotation" data-en="Step 8: Annotation">Step 8：Annotation</span></a></nav></main>
+<footer class="site-footer">© Charlene — scRNA-seq Interactive Tutorial</footer>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script><script src="i18n.js"></script><script>
+window.addEventListener("scroll",()=>{const h=document.documentElement;document.getElementById("progressBar").style.width=(h.scrollTop/(h.scrollHeight-h.clientHeight))*100+"%";});
+function switchTab(b,id){const p=b.closest(".code-tabs");p.querySelectorAll(".code-tab-btn").forEach(x=>x.classList.remove("active"));p.querySelectorAll(".code-tab-content").forEach(x=>x.classList.remove("active"));b.classList.add("active");document.getElementById(id).classList.add("active");}
+
+const uctr=[{x:-5,y:3},{x:-3,y:-4},{x:4,y:2},{x:5,y:-3},{x:0,y:6}];const ucols=['#1a6b5a','#c0392b','#2980b9','#d4a03c','#8e44ad'];
+// Store offsets from center (not absolute positions)
+const ubp=[];uctr.forEach((c,ci)=>{for(let j=0;j<100;j++){const a=Math.random()*Math.PI*2;const r=Math.sqrt(Math.random())*1.0;ubp.push({dx:Math.cos(a)*r,dy:Math.sin(a)*r,ci});}});
+const uds=uctr.map((_,i)=>({label:'Cluster '+i,data:[],backgroundColor:ucols[i]+'77',pointRadius:3}));
+const umChart=new Chart(document.getElementById('umChart'),{type:'scatter',data:{datasets:uds},options:{responsive:true,maintainAspectRatio:false,animation:false,scales:{x:{min:-12,max:12,title:{display:true,text:'UMAP 1'}},y:{min:-12,max:12,title:{display:true,text:'UMAP 2'}}},plugins:{legend:{position:'right'}}}});
+function upUM(){
+  const md=+document.getElementById('sliderMD').value/10;
+  const nn=+document.getElementById('sliderNN').value;
+  document.getElementById('valMD').textContent=md.toFixed(1);
+  document.getElementById('valNN').textContent=nn;
+  const L=I18n.get();
+  // n_neighbors: low=more fragmented(spread clusters wider apart), high=more connected(clusters closer)
+  const sepScale=1.2-nn/80; // 5->1.14, 15->1.01, 50->0.575
+  // min_dist: low=tight clusters, high=diffuse clusters
+  const jitter=0.8+md*3.5; // 0.1->1.15, 0.3->1.85, 1.0->4.3
+  const descParts=[];
+  if(L==='zh'){descParts.push(nn<=10?'<strong>低 n_neighbors：</strong>局部結構突出，群體分離度高。':nn<=25?'<strong>中 n_neighbors：</strong>局部與全局的平衡。':'<strong>高 n_neighbors：</strong>全局結構更連續。');descParts.push(md<=0.2?'<strong>低 min_dist：</strong>群體緊密。':md<=0.5?'<strong>中 min_dist：</strong>適中。':'<strong>高 min_dist：</strong>群體擴散。');}
+  else{descParts.push(nn<=10?'<strong>Low n_neighbors:</strong> Local structure emphasized, clusters well-separated.':nn<=25?'<strong>Mid n_neighbors:</strong> Balance local/global.':'<strong>High n_neighbors:</strong> More continuous global structure.');descParts.push(md<=0.2?'<strong>Low min_dist:</strong> Tight clusters.':md<=0.5?'<strong>Mid min_dist:</strong> Moderate.':'<strong>High min_dist:</strong> Diffuse clusters.');}
+  document.getElementById('mdDesc').innerHTML=descParts.join(' ');
+  // Position = center * sepScale + offset * jitter
+  const bk=uctr.map(()=>[]);
+  ubp.forEach(p=>{const c=uctr[p.ci];bk[p.ci].push({x:c.x*sepScale+p.dx*jitter, y:c.y*sepScale+p.dy*jitter});});
+  bk.forEach((b,i)=>{umChart.data.datasets[i].data=b;});
+  umChart.update('none');
+}
+document.getElementById('sliderMD').addEventListener('input',upUM);
+document.getElementById('sliderNN').addEventListener('input',upUM);
+document.addEventListener('langchange',upUM);upUM();
+window._QF={zh:{q1_y:'UMAP 是非線性投影，距離可能因投影方式扭曲，不能直接解讀為生物學相似度。',q1_n:'答案是 C。UMAP 距離不等於生物學距離。'},en:{q1_y:'UMAP is non-linear — distances may be distorted by projection and cannot be directly interpreted as biological similarity.',q1_n:'Answer is C. UMAP distance ≠ biological distance.'}};
+const QF=window._QF||{};document.querySelectorAll(".quiz-q").forEach((q,qi)=>{const ans=+q.dataset.answer;q.querySelectorAll(".quiz-opt").forEach(o=>{o.addEventListener("click",()=>{if(q.classList.contains("answered"))return;q.classList.add("answered");const fb=document.getElementById("fb"+(qi+1));const ok=+o.dataset.idx===ans;o.classList.add(ok?"correct":"wrong");if(!ok)q.querySelectorAll(".quiz-opt")[ans].classList.add("correct");const L=I18n.get();fb.className="quiz-feedback show "+(ok?"correct-fb":"wrong-fb");fb.textContent=(ok?"✅ ":"❌ ")+(QF[L]&&QF[L]["q"+(qi+1)+"_"+(ok?"y":"n")]||"");});});});
+</script></body></html>
