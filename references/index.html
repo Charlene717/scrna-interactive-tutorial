@@ -52,208 +52,213 @@
     <li><a href="../integration.html">Integ.</a></li>
     <li><a href="../cellchat.html">CellChat</a></li>
     <li><a href="../trajectory.html">Traj.</a></li>
-    <li><a href="index.html" class="active" style="font-weight:700">📚 References</a></li>
+    <li><a href="index.html" class="active" style="font-weight:700" data-zh="📚 參考資料" data-en="📚 References">📚 參考資料</a></li>
   </ul>
 </div>
 </nav>
 
 <header class="page-hero">
-<div class="step-badge">參考資料 · REFERENCES</div>
-<h1>學術論文、官方文件與資料庫來源</h1>
-<p class="subtitle">為 scRNA-seq Interactive Tutorial 12 個主題提供原始論文、官方文件、Best Practices 綜述與 marker gene 資料庫的完整佐證。</p>
+<div class="step-badge" data-zh="參考資料 · REFERENCES" data-en="REFERENCES">REFERENCES</div>
+<h1 data-zh="學術論文、官方文件與資料庫來源" data-en="scRNA-seq References Index">scRNA-seq References Index</h1>
+<p class="subtitle" data-lang="zh">為 scRNA-seq Interactive Tutorial 12 個主題提供原始論文、官方文件、Best Practices 綜述與 marker gene 資料庫的完整佐證。</p>
+<p class="subtitle" data-lang="en">References, citations, and sources for the scRNA-seq Interactive Tutorial — papers, official documents, and benchmarks with DOI / URL links.</p>
 </header>
 
 <main class="content-wrap">
 
 <!-- Overview -->
 <section class="section">
-<div class="section-label">概覽</div>
-<h2>如何使用這份資料？</h2>
-<p>本頁針對教學中提到的每個工具、演算法與生物學概念，整理學術出處供讀者深入查閱。引用標籤含義：</p>
+<div class="section-label" data-zh="概覽" data-en="OVERVIEW">概覽</div>
+<h2 data-zh="如何使用這份資料？" data-en="How to use this page">如何使用這份資料？</h2>
+<p data-lang="zh">本頁針對教學中提到的每個工具、演算法與生物學概念，整理學術出處供讀者深入查閱。引用標籤含義：</p>
+<p data-lang="en">For every tool, algorithm, and biological concept mentioned in the tutorial, this page collects academic sources for deeper reading. Citation tag meanings:</p>
 <div class="card-grid cols-3">
-  <div class="card"><div class="card-icon" style="background:var(--c-accent-light)">📄</div><h4>Paper</h4><p>原始論文 · 含 DOI / PubMed</p></div>
-  <div class="card"><div class="card-icon" style="background:#e3f2fd">📘</div><h4>Doc</h4><p>官方文件、vignette、tutorial</p></div>
-  <div class="card"><div class="card-icon" style="background:var(--c-highlight-light)">⭐</div><h4>Best Practice</h4><p>系統性綜述或 community 推薦</p></div>
-  <div class="card"><div class="card-icon" style="background:#fff3e0">📊</div><h4>Benchmark</h4><p>方法評比 / 獨立 benchmarking</p></div>
-  <div class="card"><div class="card-icon" style="background:#fce4ec">🗄️</div><h4>Database</h4><p>Marker gene / 細胞註釋資料庫</p></div>
-  <div class="card"><div class="card-icon" style="background:#f3e5f5">📚</div><h4>Book</h4><p>線上免費書籍與綜合教材</p></div>
+  <div class="card"><div class="card-icon" style="background:var(--c-accent-light)">📄</div><h4>Paper</h4><p data-lang="zh">原始論文 · 含 DOI / PubMed</p><p data-lang="en">Original papers with DOI / PubMed</p></div>
+  <div class="card"><div class="card-icon" style="background:#e3f2fd">📘</div><h4>Doc</h4><p data-lang="zh">官方文件、vignette、tutorial</p><p data-lang="en">Official documentation, vignettes, tutorials</p></div>
+  <div class="card"><div class="card-icon" style="background:var(--c-highlight-light)">⭐</div><h4>Best Practice</h4><p data-lang="zh">系統性綜述或 community 推薦</p><p data-lang="en">Systematic reviews and community recommendations</p></div>
+  <div class="card"><div class="card-icon" style="background:#fff3e0">📊</div><h4>Benchmark</h4><p data-lang="zh">方法評比 / 獨立 benchmarking</p><p data-lang="en">Method comparisons and independent benchmarks</p></div>
+  <div class="card"><div class="card-icon" style="background:#fce4ec">🗄️</div><h4>Database</h4><p data-lang="zh">Marker gene / 細胞註釋資料庫</p><p data-lang="en">Marker gene and cell annotation databases</p></div>
+  <div class="card"><div class="card-icon" style="background:#f3e5f5">📚</div><h4>Book</h4><p data-lang="zh">線上免費書籍與綜合教材</p><p data-lang="en">Free online books and comprehensive textbooks</p></div>
 </div>
 
-<h3>本頁目錄</h3>
+<h3 data-zh="本頁目錄" data-en="Table of contents">本頁目錄</h3>
 <div class="toc-grid">
-  <a href="#bestpractices"><span class="step-tag">★</span><span>Best Practices 綜述</span></a>
-  <a href="#frameworks"><span class="step-tag">★</span><span>核心分析框架</span></a>
-  <a href="#qc"><span class="step-tag">Step 1</span><span>品質管控 (QC)</span></a>
-  <a href="#norm"><span class="step-tag">Step 2</span><span>標準化</span></a>
-  <a href="#hvgs"><span class="step-tag">Step 3</span><span>高變異基因</span></a>
-  <a href="#scaling"><span class="step-tag">Step 4</span><span>縮放</span></a>
-  <a href="#pca"><span class="step-tag">Step 5</span><span>PCA</span></a>
-  <a href="#clustering"><span class="step-tag">Step 6</span><span>聚類</span></a>
-  <a href="#umap"><span class="step-tag">Step 7</span><span>UMAP / t-SNE</span></a>
-  <a href="#annotation"><span class="step-tag">Step 8</span><span>細胞註釋</span></a>
-  <a href="#de"><span class="step-tag">Step 9</span><span>差異表達</span></a>
-  <a href="#integration"><span class="step-tag">Adv.</span><span>資料整合</span></a>
-  <a href="#cellchat"><span class="step-tag">Adv.</span><span>細胞通訊</span></a>
-  <a href="#trajectory"><span class="step-tag">Adv.</span><span>軌跡分析</span></a>
-  <a href="#markers"><span class="step-tag">DB</span><span>Marker 資料庫</span></a>
-  <a href="#errata"><span class="step-tag">!</span><span>原教學疑義注記</span></a>
+  <a href="#bestpractices"><span class="step-tag">★</span><span data-zh="Best Practices 綜述" data-en="Best Practices Reviews">Best Practices 綜述</span></a>
+  <a href="#frameworks"><span class="step-tag">★</span><span data-zh="核心分析框架" data-en="Core Analysis Frameworks">核心分析框架</span></a>
+  <a href="#qc"><span class="step-tag">Step 1</span><span data-zh="品質管控 (QC)" data-en="Quality Control (QC)">品質管控 (QC)</span></a>
+  <a href="#norm"><span class="step-tag">Step 2</span><span data-zh="標準化" data-en="Normalization">標準化</span></a>
+  <a href="#hvgs"><span class="step-tag">Step 3</span><span data-zh="高變異基因" data-en="Variable Features">高變異基因</span></a>
+  <a href="#scaling"><span class="step-tag">Step 4</span><span data-zh="縮放" data-en="Scaling">縮放</span></a>
+  <a href="#pca"><span class="step-tag">Step 5</span><span data-zh="PCA" data-en="PCA">PCA</span></a>
+  <a href="#clustering"><span class="step-tag">Step 6</span><span data-zh="聚類" data-en="Clustering">聚類</span></a>
+  <a href="#umap"><span class="step-tag">Step 7</span><span data-zh="UMAP / t-SNE" data-en="UMAP / t-SNE">UMAP / t-SNE</span></a>
+  <a href="#annotation"><span class="step-tag">Step 8</span><span data-zh="細胞註釋" data-en="Cell Annotation">細胞註釋</span></a>
+  <a href="#de"><span class="step-tag">Step 9</span><span data-zh="差異表達" data-en="Differential Expression">差異表達</span></a>
+  <a href="#integration"><span class="step-tag">Adv.</span><span data-zh="資料整合" data-en="Integration">資料整合</span></a>
+  <a href="#cellchat"><span class="step-tag">Adv.</span><span data-zh="細胞通訊" data-en="Cell-Cell Communication">細胞通訊</span></a>
+  <a href="#trajectory"><span class="step-tag">Adv.</span><span data-zh="軌跡分析" data-en="Trajectory Analysis">軌跡分析</span></a>
+  <a href="#markers"><span class="step-tag">DB</span><span data-zh="Marker 資料庫" data-en="Marker Databases">Marker 資料庫</span></a>
+  <a href="#errata"><span class="step-tag">!</span><span data-zh="教學註記與細節" data-en="Tutorial Notes & Details">教學註記與細節</span></a>
 </div>
 </section>
 
 <!-- ===================== Best Practices ===================== -->
 <section class="section section-anchor" id="bestpractices">
-<div class="section-label">綜論</div>
-<h2>⭐ Best Practices 綜述論文</h2>
-<p>整體 scRNA-seq 分析流程的權威性教科書級綜述。建議從這兩篇開始閱讀，能對全流程的設計取捨建立全景觀。</p>
+<div class="section-label" data-zh="綜論" data-en="REVIEWS">綜論</div>
+<h2 data-zh="⭐ Best Practices 綜述論文" data-en="⭐ Best Practices Review Papers">⭐ Best Practices 綜述論文</h2>
+<p data-lang="zh">整體 scRNA-seq 分析流程的權威性教科書級綜述。建議從這兩篇開始閱讀，能對全流程的設計取捨建立全景觀。</p>
+<p data-lang="en">Authoritative textbook-level reviews of the entire scRNA-seq analysis workflow. Start with these two papers to build a panoramic view of design tradeoffs across the full pipeline.</p>
 <ul class="ref-list">
   <li>
     <span class="ref-tag bestp">★ BEST</span>
     <span class="ref-author">Heumos L, Schaar AC, Lance C, et al.</span>
     <span class="ref-title"> Best practices for single-cell analysis across modalities. </span>
     <em>Nature Reviews Genetics</em> 24, 550–572 (2023).
-    <span class="ref-meta">DOI: <a href="https://doi.org/10.1038/s41576-023-00586-w" target="_blank" rel="noopener">10.1038/s41576-023-00586-w</a> · 線上免費書 <a href="https://www.sc-best-practices.org/" target="_blank" rel="noopener">sc-best-practices.org</a></span>
+    <span class="ref-meta"><span data-lang="zh">DOI: <a href="https://doi.org/10.1038/s41576-023-00586-w" target="_blank" rel="noopener">10.1038/s41576-023-00586-w</a> · 線上免費書 <a href="https://www.sc-best-practices.org/" target="_blank" rel="noopener">sc-best-practices.org</a></span><span data-lang="en">DOI: <a href="https://doi.org/10.1038/s41576-023-00586-w" target="_blank" rel="noopener">10.1038/s41576-023-00586-w</a> · Free online book <a href="https://www.sc-best-practices.org/" target="_blank" rel="noopener">sc-best-practices.org</a></span></span>
   </li>
   <li>
     <span class="ref-tag bestp">★ BEST</span>
     <span class="ref-author">Luecken MD, Theis FJ.</span>
     <span class="ref-title"> Current best practices in single-cell RNA-seq analysis: a tutorial. </span>
     <em>Mol Syst Biol</em> 15, e8746 (2019).
-    <span class="ref-meta">DOI: <a href="https://doi.org/10.15252/msb.20188746" target="_blank" rel="noopener">10.15252/msb.20188746</a> · 教學原始碼 <a href="https://github.com/theislab/single-cell-tutorial" target="_blank" rel="noopener">theislab/single-cell-tutorial</a></span>
+    <span class="ref-meta"><span data-lang="zh">DOI: <a href="https://doi.org/10.15252/msb.20188746" target="_blank" rel="noopener">10.15252/msb.20188746</a> · 教學原始碼 <a href="https://github.com/theislab/single-cell-tutorial" target="_blank" rel="noopener">theislab/single-cell-tutorial</a></span><span data-lang="en">DOI: <a href="https://doi.org/10.15252/msb.20188746" target="_blank" rel="noopener">10.15252/msb.20188746</a> · Tutorial source code <a href="https://github.com/theislab/single-cell-tutorial" target="_blank" rel="noopener">theislab/single-cell-tutorial</a></span></span>
   </li>
   <li>
     <span class="ref-tag book">📚 BOOK</span>
     <span class="ref-author">Amezquita RA, Lun ATL, Becht E, et al.</span>
     <span class="ref-title"> Orchestrating Single-Cell Analysis with Bioconductor (OSCA). </span>
     <em>Nat Methods</em> 17, 137–145 (2020).
-    <span class="ref-meta">DOI: <a href="https://doi.org/10.1038/s41592-019-0654-x" target="_blank" rel="noopener">10.1038/s41592-019-0654-x</a> · 線上免費書 <a href="https://bioconductor.org/books/release/OSCA/" target="_blank" rel="noopener">bioconductor.org/books/OSCA</a></span>
+    <span class="ref-meta"><span data-lang="zh">DOI: <a href="https://doi.org/10.1038/s41592-019-0654-x" target="_blank" rel="noopener">10.1038/s41592-019-0654-x</a> · 線上免費書 <a href="https://bioconductor.org/books/release/OSCA/" target="_blank" rel="noopener">bioconductor.org/books/OSCA</a></span><span data-lang="en">DOI: <a href="https://doi.org/10.1038/s41592-019-0654-x" target="_blank" rel="noopener">10.1038/s41592-019-0654-x</a> · Free online book <a href="https://bioconductor.org/books/release/OSCA/" target="_blank" rel="noopener">bioconductor.org/books/OSCA</a></span></span>
   </li>
   <li>
     <span class="ref-tag bestp">⭐ ATLAS</span>
     <span class="ref-author">Regev A, Teichmann SA, Lander ES, et al.</span>
     <span class="ref-title"> The Human Cell Atlas. </span>
     <em>eLife</em> 6:e27041 (2017).
-    <span class="ref-meta">DOI: <a href="https://doi.org/10.7554/eLife.27041" target="_blank" rel="noopener">10.7554/eLife.27041</a> · <a href="https://www.humancellatlas.org/" target="_blank" rel="noopener">humancellatlas.org</a></span>
+    <span class="ref-meta"><span data-lang="zh">DOI: <a href="https://doi.org/10.7554/eLife.27041" target="_blank" rel="noopener">10.7554/eLife.27041</a> · <a href="https://www.humancellatlas.org/" target="_blank" rel="noopener">humancellatlas.org</a></span><span data-lang="en">DOI: <a href="https://doi.org/10.7554/eLife.27041" target="_blank" rel="noopener">10.7554/eLife.27041</a> · <a href="https://www.humancellatlas.org/" target="_blank" rel="noopener">humancellatlas.org</a></span></span>
   </li>
 </ul>
 </section>
 
 <!-- ===================== Frameworks ===================== -->
 <section class="section section-anchor" id="frameworks">
-<div class="section-label">核心框架</div>
-<h2>🧰 核心分析框架</h2>
-<p>scRNA-seq 流程兩大主流軟體生態系。Seurat (R) 與 Scanpy (Python) 在功能上高度相容，多數方法兩端都有實作。</p>
+<div class="section-label" data-zh="核心框架" data-en="CORE FRAMEWORKS">核心框架</div>
+<h2 data-zh="🧰 核心分析框架" data-en="🧰 Core Analysis Frameworks">🧰 核心分析框架</h2>
+<p data-lang="zh">scRNA-seq 流程兩大主流軟體生態系。Seurat (R) 與 Scanpy (Python) 在功能上高度相容，多數方法兩端都有實作。</p>
+<p data-lang="en">The two mainstream software ecosystems for scRNA-seq workflows. Seurat (R) and Scanpy (Python) are highly feature-compatible, with most methods implemented on both sides.</p>
 <ul class="ref-list">
   <li>
     <span class="ref-tag paper">PAPER</span>
     <span class="ref-author">Hao Y, Hao S, Andersen-Nissen E, et al.</span>
     <span class="ref-title"> Integrated analysis of multimodal single-cell data. </span>
     <em>Cell</em> 184(13):3573–3587.e29 (2021). <strong>(Seurat v4)</strong>
-    <span class="ref-meta">DOI: <a href="https://doi.org/10.1016/j.cell.2021.04.048" target="_blank" rel="noopener">10.1016/j.cell.2021.04.048</a></span>
+    <span class="ref-meta"><span data-lang="zh">DOI: <a href="https://doi.org/10.1016/j.cell.2021.04.048" target="_blank" rel="noopener">10.1016/j.cell.2021.04.048</a></span><span data-lang="en">DOI: <a href="https://doi.org/10.1016/j.cell.2021.04.048" target="_blank" rel="noopener">10.1016/j.cell.2021.04.048</a></span></span>
   </li>
   <li>
     <span class="ref-tag paper">PAPER</span>
     <span class="ref-author">Hao Y, Stuart T, Kowalski MH, et al.</span>
     <span class="ref-title"> Dictionary learning for integrative, multimodal and scalable single-cell analysis. </span>
     <em>Nat Biotechnol</em> 42:293–304 (2024). <strong>(Seurat v5)</strong>
-    <span class="ref-meta">DOI: <a href="https://doi.org/10.1038/s41587-023-01767-y" target="_blank" rel="noopener">10.1038/s41587-023-01767-y</a></span>
+    <span class="ref-meta"><span data-lang="zh">DOI: <a href="https://doi.org/10.1038/s41587-023-01767-y" target="_blank" rel="noopener">10.1038/s41587-023-01767-y</a></span><span data-lang="en">DOI: <a href="https://doi.org/10.1038/s41587-023-01767-y" target="_blank" rel="noopener">10.1038/s41587-023-01767-y</a></span></span>
   </li>
   <li>
     <span class="ref-tag doc">DOC</span>
-    <span class="ref-title">Seurat 官方網站與 vignettes（Satija Lab）。</span>
-    <span class="ref-meta"><a href="https://satijalab.org/seurat/" target="_blank" rel="noopener">satijalab.org/seurat</a></span>
+    <span class="ref-title" data-zh="Seurat 官方網站與 vignettes（Satija Lab）。" data-en="Seurat official website and vignettes (Satija Lab).">Seurat 官方網站與 vignettes（Satija Lab）。</span>
+    <span class="ref-meta"><span data-lang="zh"><a href="https://satijalab.org/seurat/" target="_blank" rel="noopener">satijalab.org/seurat</a></span><span data-lang="en"><a href="https://satijalab.org/seurat/" target="_blank" rel="noopener">satijalab.org/seurat</a></span></span>
   </li>
   <li>
     <span class="ref-tag paper">PAPER</span>
     <span class="ref-author">Wolf FA, Angerer P, Theis FJ.</span>
     <span class="ref-title"> SCANPY: large-scale single-cell gene expression data analysis. </span>
     <em>Genome Biol</em> 19:15 (2018).
-    <span class="ref-meta">DOI: <a href="https://doi.org/10.1186/s13059-017-1382-0" target="_blank" rel="noopener">10.1186/s13059-017-1382-0</a></span>
+    <span class="ref-meta"><span data-lang="zh">DOI: <a href="https://doi.org/10.1186/s13059-017-1382-0" target="_blank" rel="noopener">10.1186/s13059-017-1382-0</a></span><span data-lang="en">DOI: <a href="https://doi.org/10.1186/s13059-017-1382-0" target="_blank" rel="noopener">10.1186/s13059-017-1382-0</a></span></span>
   </li>
   <li>
     <span class="ref-tag doc">DOC</span>
-    <span class="ref-title">Scanpy 官方文件（scverse / Theis Lab）。</span>
-    <span class="ref-meta"><a href="https://scanpy.readthedocs.io/" target="_blank" rel="noopener">scanpy.readthedocs.io</a> · GitHub <a href="https://github.com/scverse/scanpy" target="_blank" rel="noopener">scverse/scanpy</a></span>
+    <span class="ref-title" data-zh="Scanpy 官方文件（scverse / Theis Lab）。" data-en="Scanpy official documentation (scverse / Theis Lab).">Scanpy 官方文件（scverse / Theis Lab）。</span>
+    <span class="ref-meta"><span data-lang="zh"><a href="https://scanpy.readthedocs.io/" target="_blank" rel="noopener">scanpy.readthedocs.io</a> · GitHub <a href="https://github.com/scverse/scanpy" target="_blank" rel="noopener">scverse/scanpy</a></span><span data-lang="en"><a href="https://scanpy.readthedocs.io/" target="_blank" rel="noopener">scanpy.readthedocs.io</a> · GitHub <a href="https://github.com/scverse/scanpy" target="_blank" rel="noopener">scverse/scanpy</a></span></span>
   </li>
 </ul>
 </section>
 
 <!-- ===================== Step 1: QC ===================== -->
 <section class="section section-anchor" id="qc">
-<div class="section-label">Step 1</div>
-<h2>🧪 品質管控 (Quality Control)</h2>
-<p>細胞層級指標 (nFeature/nCount/percent.mt)、基因層級過濾，以及進階的 doublet 偵測與 ambient RNA 移除。</p>
+<div class="section-label" data-zh="Step 1" data-en="Step 1">Step 1</div>
+<h2 data-zh="🧪 品質管控 (Quality Control)" data-en="🧪 Quality Control">🧪 品質管控 (Quality Control)</h2>
+<p data-lang="zh">細胞層級指標 (nFeature/nCount/percent.mt)、基因層級過濾，以及進階的 doublet 偵測與 ambient RNA 移除。</p>
+<p data-lang="en">Cell-level metrics (nFeature/nCount/percent.mt), gene-level filtering, plus advanced doublet detection and ambient RNA removal.</p>
 
-<h3>Doublet 偵測</h3>
+<h3 data-zh="Doublet 偵測" data-en="Doublet Detection">Doublet 偵測</h3>
 <ul class="ref-list">
   <li>
     <span class="ref-tag paper">PAPER</span>
     <span class="ref-author">McGinnis CS, Murrow LM, Gartner ZJ.</span>
     <span class="ref-title"> DoubletFinder: Doublet Detection in Single-Cell RNA Sequencing Data Using Artificial Nearest Neighbors. </span>
     <em>Cell Syst</em> 8(4):329–337.e4 (2019).
-    <span class="ref-meta">DOI: <a href="https://doi.org/10.1016/j.cels.2019.03.003" target="_blank" rel="noopener">10.1016/j.cels.2019.03.003</a> · GitHub <a href="https://github.com/chris-mcginnis-ucsf/DoubletFinder" target="_blank" rel="noopener">chris-mcginnis-ucsf/DoubletFinder</a></span>
+    <span class="ref-meta"><span data-lang="zh">DOI: <a href="https://doi.org/10.1016/j.cels.2019.03.003" target="_blank" rel="noopener">10.1016/j.cels.2019.03.003</a> · GitHub <a href="https://github.com/chris-mcginnis-ucsf/DoubletFinder" target="_blank" rel="noopener">chris-mcginnis-ucsf/DoubletFinder</a></span><span data-lang="en">DOI: <a href="https://doi.org/10.1016/j.cels.2019.03.003" target="_blank" rel="noopener">10.1016/j.cels.2019.03.003</a> · GitHub <a href="https://github.com/chris-mcginnis-ucsf/DoubletFinder" target="_blank" rel="noopener">chris-mcginnis-ucsf/DoubletFinder</a></span></span>
   </li>
   <li>
     <span class="ref-tag paper">PAPER</span>
     <span class="ref-author">Wolock SL, Lopez R, Klein AM.</span>
     <span class="ref-title"> Scrublet: Computational Identification of Cell Doublets in Single-Cell Transcriptomic Data. </span>
     <em>Cell Syst</em> 8(4):281–291.e9 (2019).
-    <span class="ref-meta">DOI: <a href="https://doi.org/10.1016/j.cels.2018.11.005" target="_blank" rel="noopener">10.1016/j.cels.2018.11.005</a></span>
+    <span class="ref-meta"><span data-lang="zh">DOI: <a href="https://doi.org/10.1016/j.cels.2018.11.005" target="_blank" rel="noopener">10.1016/j.cels.2018.11.005</a></span><span data-lang="en">DOI: <a href="https://doi.org/10.1016/j.cels.2018.11.005" target="_blank" rel="noopener">10.1016/j.cels.2018.11.005</a></span></span>
   </li>
   <li>
     <span class="ref-tag paper">PAPER</span>
     <span class="ref-author">Germain PL, Lun A, Garcia Meixide C, Macnair W, Robinson MD.</span>
     <span class="ref-title"> Doublet identification in single-cell sequencing data using scDblFinder. </span>
     <em>F1000Research</em> 10:979 (2021).
-    <span class="ref-meta">DOI: <a href="https://doi.org/10.12688/f1000research.73600.2" target="_blank" rel="noopener">10.12688/f1000research.73600.2</a> · Bioconductor <a href="https://bioconductor.org/packages/release/bioc/html/scDblFinder.html" target="_blank" rel="noopener">scDblFinder</a></span>
+    <span class="ref-meta"><span data-lang="zh">DOI: <a href="https://doi.org/10.12688/f1000research.73600.2" target="_blank" rel="noopener">10.12688/f1000research.73600.2</a> · Bioconductor <a href="https://bioconductor.org/packages/release/bioc/html/scDblFinder.html" target="_blank" rel="noopener">scDblFinder</a></span><span data-lang="en">DOI: <a href="https://doi.org/10.12688/f1000research.73600.2" target="_blank" rel="noopener">10.12688/f1000research.73600.2</a> · Bioconductor <a href="https://bioconductor.org/packages/release/bioc/html/scDblFinder.html" target="_blank" rel="noopener">scDblFinder</a></span></span>
   </li>
   <li>
     <span class="ref-tag bench">BENCH</span>
     <span class="ref-author">Xi NM, Li JJ.</span>
     <span class="ref-title"> Benchmarking Computational Doublet-Detection Methods for Single-Cell RNA Sequencing Data. </span>
     <em>Cell Syst</em> 12(2):176–194.e6 (2021).
-    <span class="ref-meta">DOI: <a href="https://doi.org/10.1016/j.cels.2020.11.008" target="_blank" rel="noopener">10.1016/j.cels.2020.11.008</a></span>
+    <span class="ref-meta"><span data-lang="zh">DOI: <a href="https://doi.org/10.1016/j.cels.2020.11.008" target="_blank" rel="noopener">10.1016/j.cels.2020.11.008</a></span><span data-lang="en">DOI: <a href="https://doi.org/10.1016/j.cels.2020.11.008" target="_blank" rel="noopener">10.1016/j.cels.2020.11.008</a></span></span>
   </li>
 </ul>
 
-<h3>Ambient RNA / Soup</h3>
+<h3 data-zh="Ambient RNA / Soup" data-en="Ambient RNA / Soup">Ambient RNA / Soup</h3>
 <ul class="ref-list">
   <li>
     <span class="ref-tag paper">PAPER</span>
     <span class="ref-author">Young MD, Behjati S.</span>
     <span class="ref-title"> SoupX removes ambient RNA contamination from droplet-based single-cell RNA sequencing data. </span>
     <em>GigaScience</em> 9(12):giaa151 (2020).
-    <span class="ref-meta">DOI: <a href="https://doi.org/10.1093/gigascience/giaa151" target="_blank" rel="noopener">10.1093/gigascience/giaa151</a></span>
+    <span class="ref-meta"><span data-lang="zh">DOI: <a href="https://doi.org/10.1093/gigascience/giaa151" target="_blank" rel="noopener">10.1093/gigascience/giaa151</a></span><span data-lang="en">DOI: <a href="https://doi.org/10.1093/gigascience/giaa151" target="_blank" rel="noopener">10.1093/gigascience/giaa151</a></span></span>
   </li>
   <li>
     <span class="ref-tag paper">PAPER</span>
     <span class="ref-author">Fleming SJ, Chaffin MD, Arduini A, et al.</span>
     <span class="ref-title"> Unsupervised removal of systematic background noise from droplet-based single-cell experiments using CellBender. </span>
     <em>Nat Methods</em> 20:1323–1335 (2023).
-    <span class="ref-meta">DOI: <a href="https://doi.org/10.1038/s41592-023-01943-7" target="_blank" rel="noopener">10.1038/s41592-023-01943-7</a> · GitHub <a href="https://github.com/broadinstitute/CellBender" target="_blank" rel="noopener">broadinstitute/CellBender</a></span>
+    <span class="ref-meta"><span data-lang="zh">DOI: <a href="https://doi.org/10.1038/s41592-023-01943-7" target="_blank" rel="noopener">10.1038/s41592-023-01943-7</a> · GitHub <a href="https://github.com/broadinstitute/CellBender" target="_blank" rel="noopener">broadinstitute/CellBender</a></span><span data-lang="en">DOI: <a href="https://doi.org/10.1038/s41592-023-01943-7" target="_blank" rel="noopener">10.1038/s41592-023-01943-7</a> · GitHub <a href="https://github.com/broadinstitute/CellBender" target="_blank" rel="noopener">broadinstitute/CellBender</a></span></span>
   </li>
 </ul>
 
-<h3>自適應閾值與 QC 工具</h3>
+<h3 data-zh="自適應閾值與 QC 工具" data-en="Adaptive Thresholds & QC Tools">自適應閾值與 QC 工具</h3>
 <ul class="ref-list">
   <li>
     <span class="ref-tag paper">PAPER</span>
     <span class="ref-author">McCarthy DJ, Campbell KR, Lun ATL, Wills QF.</span>
     <span class="ref-title"> Scater: pre-processing, quality control, normalization and visualization of single-cell RNA-seq data in R. </span>
     <em>Bioinformatics</em> 33(8):1179–1186 (2017).
-    <span class="ref-meta">DOI: <a href="https://doi.org/10.1093/bioinformatics/btw777" target="_blank" rel="noopener">10.1093/bioinformatics/btw777</a> · 含 <code>isOutlier()</code> MAD-based 自適應閾值</span>
+    <span class="ref-meta"><span data-lang="zh">DOI: <a href="https://doi.org/10.1093/bioinformatics/btw777" target="_blank" rel="noopener">10.1093/bioinformatics/btw777</a> · 含 <code>isOutlier()</code> MAD-based 自適應閾值</span><span data-lang="en">DOI: <a href="https://doi.org/10.1093/bioinformatics/btw777" target="_blank" rel="noopener">10.1093/bioinformatics/btw777</a> · Provides <code>isOutlier()</code> MAD-based adaptive thresholds</span></span>
   </li>
   <li>
     <span class="ref-tag bestp">⭐ TIP</span>
-    <span class="ref-title">Best practices 章節「Quality control」：</span>
-    <span class="ref-meta"><a href="https://www.sc-best-practices.org/preprocessing_visualization/quality_control.html" target="_blank" rel="noopener">sc-best-practices.org / quality control</a></span>
+    <span class="ref-title" data-zh="Best practices 章節「Quality control」：" data-en="Best practices chapter “Quality control”:">Best practices 章節「Quality control」：</span>
+    <span class="ref-meta"><span data-lang="zh"><a href="https://www.sc-best-practices.org/preprocessing_visualization/quality_control.html" target="_blank" rel="noopener">sc-best-practices.org / quality control</a></span><span data-lang="en"><a href="https://www.sc-best-practices.org/preprocessing_visualization/quality_control.html" target="_blank" rel="noopener">sc-best-practices.org / quality control</a></span></span>
   </li>
 </ul>
 </section>
 
 <!-- ===================== Step 2: Normalization ===================== -->
 <section class="section section-anchor" id="norm">
-<div class="section-label">Step 2</div>
-<h2>⚖️ 標準化 (Normalization)</h2>
+<div class="section-label" data-zh="Step 2" data-en="Step 2">Step 2</div>
+<h2 data-zh="⚖️ 標準化 (Normalization)" data-en="⚖️ Normalization">⚖️ 標準化 (Normalization)</h2>
 
 <ul class="ref-list">
   <li>
@@ -261,540 +266,481 @@
     <span class="ref-author">Stuart T, Butler A, Hoffman P, et al.</span>
     <span class="ref-title"> Comprehensive Integration of Single-Cell Data. </span>
     <em>Cell</em> 177(7):1888–1902.e21 (2019). <strong>(Seurat v3 引文)</strong>
-    <span class="ref-meta">DOI: <a href="https://doi.org/10.1016/j.cell.2019.05.031" target="_blank" rel="noopener">10.1016/j.cell.2019.05.031</a></span>
+    <span class="ref-meta"><span data-lang="zh">DOI: <a href="https://doi.org/10.1016/j.cell.2019.05.031" target="_blank" rel="noopener">10.1016/j.cell.2019.05.031</a></span><span data-lang="en">DOI: <a href="https://doi.org/10.1016/j.cell.2019.05.031" target="_blank" rel="noopener">10.1016/j.cell.2019.05.031</a></span></span>
   </li>
   <li>
     <span class="ref-tag paper">PAPER · scran 池化解卷積</span>
     <span class="ref-author">Lun ATL, Bach K, Marioni JC.</span>
     <span class="ref-title"> Pooling across cells to normalize single-cell RNA sequencing data with many zero counts. </span>
     <em>Genome Biol</em> 17:75 (2016).
-    <span class="ref-meta">DOI: <a href="https://doi.org/10.1186/s13059-016-0947-7" target="_blank" rel="noopener">10.1186/s13059-016-0947-7</a></span>
+    <span class="ref-meta"><span data-lang="zh">DOI: <a href="https://doi.org/10.1186/s13059-016-0947-7" target="_blank" rel="noopener">10.1186/s13059-016-0947-7</a></span><span data-lang="en">DOI: <a href="https://doi.org/10.1186/s13059-016-0947-7" target="_blank" rel="noopener">10.1186/s13059-016-0947-7</a></span></span>
   </li>
   <li>
     <span class="ref-tag paper">PAPER · SCTransform</span>
     <span class="ref-author">Hafemeister C, Satija R.</span>
     <span class="ref-title"> Normalization and variance stabilization of single-cell RNA-seq data using regularized negative binomial regression. </span>
     <em>Genome Biol</em> 20:296 (2019).
-    <span class="ref-meta">DOI: <a href="https://doi.org/10.1186/s13059-019-1874-1" target="_blank" rel="noopener">10.1186/s13059-019-1874-1</a> · GitHub <a href="https://github.com/satijalab/sctransform" target="_blank" rel="noopener">satijalab/sctransform</a></span>
+    <span class="ref-meta"><span data-lang="zh">DOI: <a href="https://doi.org/10.1186/s13059-019-1874-1" target="_blank" rel="noopener">10.1186/s13059-019-1874-1</a> · GitHub <a href="https://github.com/satijalab/sctransform" target="_blank" rel="noopener">satijalab/sctransform</a></span><span data-lang="en">DOI: <a href="https://doi.org/10.1186/s13059-019-1874-1" target="_blank" rel="noopener">10.1186/s13059-019-1874-1</a> · GitHub <a href="https://github.com/satijalab/sctransform" target="_blank" rel="noopener">satijalab/sctransform</a></span></span>
   </li>
   <li>
     <span class="ref-tag paper">PAPER · SCT v2</span>
     <span class="ref-author">Choudhary S, Satija R.</span>
     <span class="ref-title"> Comparison and evaluation of statistical error models for scRNA-seq. </span>
     <em>Genome Biol</em> 23:27 (2022).
-    <span class="ref-meta">DOI: <a href="https://doi.org/10.1186/s13059-021-02584-9" target="_blank" rel="noopener">10.1186/s13059-021-02584-9</a></span>
+    <span class="ref-meta"><span data-lang="zh">DOI: <a href="https://doi.org/10.1186/s13059-021-02584-9" target="_blank" rel="noopener">10.1186/s13059-021-02584-9</a></span><span data-lang="en">DOI: <a href="https://doi.org/10.1186/s13059-021-02584-9" target="_blank" rel="noopener">10.1186/s13059-021-02584-9</a></span></span>
   </li>
   <li>
     <span class="ref-tag bench">BENCH</span>
     <span class="ref-author">Ahlmann-Eltze C, Huber W.</span>
     <span class="ref-title"> Comparison of transformations for single-cell RNA-seq data. </span>
     <em>Nat Methods</em> 20:665–672 (2023).
-    <span class="ref-meta">DOI: <a href="https://doi.org/10.1038/s41592-023-01814-1" target="_blank" rel="noopener">10.1038/s41592-023-01814-1</a></span>
+    <span class="ref-meta"><span data-lang="zh">DOI: <a href="https://doi.org/10.1038/s41592-023-01814-1" target="_blank" rel="noopener">10.1038/s41592-023-01814-1</a></span><span data-lang="en">DOI: <a href="https://doi.org/10.1038/s41592-023-01814-1" target="_blank" rel="noopener">10.1038/s41592-023-01814-1</a></span></span>
   </li>
 </ul>
 </section>
 
 <!-- ===================== Step 3: HVGs ===================== -->
 <section class="section section-anchor" id="hvgs">
-<div class="section-label">Step 3</div>
-<h2>✨ 高變異基因選擇 (Variable Features)</h2>
+<div class="section-label" data-zh="Step 3" data-en="Step 3">Step 3</div>
+<h2 data-zh="✨ 高變異基因選擇 (Variable Features)" data-en="✨ Variable Feature Selection">✨ 高變異基因選擇 (Variable Features)</h2>
 <ul class="ref-list">
   <li>
     <span class="ref-tag doc">DOC</span>
-    <span class="ref-title">Seurat <code>FindVariableFeatures()</code> · vst / mvp / dispersion 三種方法。</span>
-    <span class="ref-meta"><a href="https://satijalab.org/seurat/reference/findvariablefeatures" target="_blank" rel="noopener">satijalab.org/seurat/reference/findvariablefeatures</a></span>
+    <span class="ref-title"><span data-lang="zh">Seurat <code>FindVariableFeatures()</code> · vst / mvp / dispersion 三種方法。</span><span data-lang="en">Seurat <code>FindVariableFeatures()</code> · vst / mvp / dispersion three methods.</span></span>
+    <span class="ref-meta"><span data-lang="zh"><a href="https://satijalab.org/seurat/reference/findvariablefeatures" target="_blank" rel="noopener">satijalab.org/seurat/reference/findvariablefeatures</a></span><span data-lang="en"><a href="https://satijalab.org/seurat/reference/findvariablefeatures" target="_blank" rel="noopener">satijalab.org/seurat/reference/findvariablefeatures</a></span></span>
   </li>
   <li>
     <span class="ref-tag doc">DOC</span>
-    <span class="ref-title">Scanpy <code>sc.pp.highly_variable_genes()</code> · 提供 cell_ranger / seurat / seurat_v3 三種策略。</span>
-    <span class="ref-meta"><a href="https://scanpy.readthedocs.io/en/stable/api/scanpy.pp.highly_variable_genes.html" target="_blank" rel="noopener">scanpy / highly_variable_genes</a></span>
+    <span class="ref-title"><span data-lang="zh">Scanpy <code>sc.pp.highly_variable_genes()</code> · 提供 cell_ranger / seurat / seurat_v3 三種策略。</span><span data-lang="en">Scanpy <code>sc.pp.highly_variable_genes()</code> · offers cell_ranger / seurat / seurat_v3 strategies.</span></span>
+    <span class="ref-meta"><span data-lang="zh"><a href="https://scanpy.readthedocs.io/en/stable/api/scanpy.pp.highly_variable_genes.html" target="_blank" rel="noopener">scanpy / highly_variable_genes</a></span><span data-lang="en"><a href="https://scanpy.readthedocs.io/en/stable/api/scanpy.pp.highly_variable_genes.html" target="_blank" rel="noopener">scanpy / highly_variable_genes</a></span></span>
   </li>
   <li>
     <span class="ref-tag paper">PAPER · Brennecke (CV² 方法)</span>
     <span class="ref-author">Brennecke P, Anders S, Kim JK, et al.</span>
     <span class="ref-title"> Accounting for technical noise in single-cell RNA-seq experiments. </span>
     <em>Nat Methods</em> 10:1093–1095 (2013).
-    <span class="ref-meta">DOI: <a href="https://doi.org/10.1038/nmeth.2645" target="_blank" rel="noopener">10.1038/nmeth.2645</a></span>
+    <span class="ref-meta"><span data-lang="zh">DOI: <a href="https://doi.org/10.1038/nmeth.2645" target="_blank" rel="noopener">10.1038/nmeth.2645</a></span><span data-lang="en">DOI: <a href="https://doi.org/10.1038/nmeth.2645" target="_blank" rel="noopener">10.1038/nmeth.2645</a></span></span>
   </li>
   <li>
     <span class="ref-tag paper">PAPER · scry / Pearson residual HVG</span>
     <span class="ref-author">Townes FW, Hicks SC, Aryee MJ, Irizarry RA.</span>
     <span class="ref-title"> Feature selection and dimension reduction for single-cell RNA-Seq based on a multinomial model. </span>
     <em>Genome Biol</em> 20:295 (2019).
-    <span class="ref-meta">DOI: <a href="https://doi.org/10.1186/s13059-019-1861-6" target="_blank" rel="noopener">10.1186/s13059-019-1861-6</a></span>
+    <span class="ref-meta"><span data-lang="zh">DOI: <a href="https://doi.org/10.1186/s13059-019-1861-6" target="_blank" rel="noopener">10.1186/s13059-019-1861-6</a></span><span data-lang="en">DOI: <a href="https://doi.org/10.1186/s13059-019-1861-6" target="_blank" rel="noopener">10.1186/s13059-019-1861-6</a></span></span>
   </li>
 </ul>
 </section>
 
 <!-- ===================== Step 4: Scaling ===================== -->
 <section class="section section-anchor" id="scaling">
-<div class="section-label">Step 4</div>
-<h2>📏 縮放 (Scaling)</h2>
+<div class="section-label" data-zh="Step 4" data-en="Step 4">Step 4</div>
+<h2 data-zh="📏 縮放 (Scaling)" data-en="📏 Scaling">📏 縮放 (Scaling)</h2>
 <ul class="ref-list">
   <li>
     <span class="ref-tag doc">DOC</span>
-    <span class="ref-title">Seurat <code>ScaleData()</code> · z-score、<code>vars.to.regress</code> 線性回歸殘差。</span>
-    <span class="ref-meta"><a href="https://satijalab.org/seurat/reference/scaledata" target="_blank" rel="noopener">satijalab.org/seurat/reference/scaledata</a></span>
+    <span class="ref-title"><span data-lang="zh">Seurat <code>ScaleData()</code> · z-score、<code>vars.to.regress</code> 線性回歸殘差。</span><span data-lang="en">Seurat <code>ScaleData()</code> · z-score and <code>vars.to.regress</code> linear regression residuals.</span></span>
+    <span class="ref-meta"><span data-lang="zh"><a href="https://satijalab.org/seurat/reference/scaledata" target="_blank" rel="noopener">satijalab.org/seurat/reference/scaledata</a></span><span data-lang="en"><a href="https://satijalab.org/seurat/reference/scaledata" target="_blank" rel="noopener">satijalab.org/seurat/reference/scaledata</a></span></span>
   </li>
   <li>
     <span class="ref-tag doc">DOC</span>
-    <span class="ref-title">Scanpy <code>sc.pp.scale()</code> · 預設裁切 max_value，避免極端值主導。</span>
-    <span class="ref-meta"><a href="https://scanpy.readthedocs.io/en/stable/api/scanpy.pp.scale.html" target="_blank" rel="noopener">scanpy / scale</a></span>
+    <span class="ref-title"><span data-lang="zh">Scanpy <code>sc.pp.scale()</code> · 預設裁切 max_value，避免極端值主導。</span><span data-lang="en">Scanpy <code>sc.pp.scale()</code> · clips at max_value by default to prevent extreme values from dominating.</span></span>
+    <span class="ref-meta"><span data-lang="zh"><a href="https://scanpy.readthedocs.io/en/stable/api/scanpy.pp.scale.html" target="_blank" rel="noopener">scanpy / scale</a></span><span data-lang="en"><a href="https://scanpy.readthedocs.io/en/stable/api/scanpy.pp.scale.html" target="_blank" rel="noopener">scanpy / scale</a></span></span>
   </li>
   <li>
     <span class="ref-tag paper">PAPER · 細胞週期分數回歸</span>
     <span class="ref-author">Tirosh I, Izar B, Prakadan SM, et al.</span>
     <span class="ref-title"> Dissecting the multicellular ecosystem of metastatic melanoma by single-cell RNA-seq. </span>
     <em>Science</em> 352(6282):189–196 (2016). <strong>(Seurat <code>CellCycleScoring</code> 來源)</strong>
-    <span class="ref-meta">DOI: <a href="https://doi.org/10.1126/science.aad0501" target="_blank" rel="noopener">10.1126/science.aad0501</a></span>
+    <span class="ref-meta"><span data-lang="zh">DOI: <a href="https://doi.org/10.1126/science.aad0501" target="_blank" rel="noopener">10.1126/science.aad0501</a></span><span data-lang="en">DOI: <a href="https://doi.org/10.1126/science.aad0501" target="_blank" rel="noopener">10.1126/science.aad0501</a></span></span>
   </li>
 </ul>
 </section>
 
 <!-- ===================== Step 5: PCA ===================== -->
 <section class="section section-anchor" id="pca">
-<div class="section-label">Step 5</div>
-<h2>📉 主成分分析 (PCA)</h2>
+<div class="section-label" data-zh="Step 5" data-en="Step 5">Step 5</div>
+<h2 data-zh="📉 主成分分析 (PCA)" data-en="📉 Principal Component Analysis (PCA)">📉 主成分分析 (PCA)</h2>
 <ul class="ref-list">
   <li>
     <span class="ref-tag paper">PAPER · IRLBA 加速 PCA</span>
     <span class="ref-author">Baglama J, Reichel L.</span>
     <span class="ref-title"> Augmented implicitly restarted Lanczos bidiagonalization methods. </span>
     <em>SIAM J Sci Comput</em> 27(1):19–42 (2005). <strong>(Seurat <code>RunPCA</code> 預設方法)</strong>
-    <span class="ref-meta">DOI: <a href="https://doi.org/10.1137/04060593X" target="_blank" rel="noopener">10.1137/04060593X</a> · CRAN <a href="https://cran.r-project.org/package=irlba" target="_blank" rel="noopener">irlba</a></span>
+    <span class="ref-meta"><span data-lang="zh">DOI: <a href="https://doi.org/10.1137/04060593X" target="_blank" rel="noopener">10.1137/04060593X</a> · CRAN <a href="https://cran.r-project.org/package=irlba" target="_blank" rel="noopener">irlba</a></span><span data-lang="en">DOI: <a href="https://doi.org/10.1137/04060593X" target="_blank" rel="noopener">10.1137/04060593X</a> · CRAN <a href="https://cran.r-project.org/package=irlba" target="_blank" rel="noopener">irlba</a></span></span>
   </li>
   <li>
     <span class="ref-tag doc">DOC</span>
-    <span class="ref-title">Seurat <code>RunPCA()</code> 與 <code>ElbowPlot()</code>、<code>JackStraw()</code> 文件。</span>
-    <span class="ref-meta"><a href="https://satijalab.org/seurat/articles/pbmc3k_tutorial" target="_blank" rel="noopener">satijalab.org/seurat/articles/pbmc3k_tutorial</a></span>
+    <span class="ref-title"><span data-lang="zh">Seurat <code>RunPCA()</code> 與 <code>ElbowPlot()</code>、<code>JackStraw()</code> 文件。</span><span data-lang="en">Seurat <code>RunPCA()</code> with <code>ElbowPlot()</code> and <code>JackStraw()</code> documentation.</span></span>
+    <span class="ref-meta"><span data-lang="zh"><a href="https://satijalab.org/seurat/articles/pbmc3k_tutorial" target="_blank" rel="noopener">satijalab.org/seurat/articles/pbmc3k_tutorial</a></span><span data-lang="en"><a href="https://satijalab.org/seurat/articles/pbmc3k_tutorial" target="_blank" rel="noopener">satijalab.org/seurat/articles/pbmc3k_tutorial</a></span></span>
   </li>
   <li>
     <span class="ref-tag bestp">⭐ TIP</span>
-    <span class="ref-title">Best practices 章節「Dimensionality reduction」對 nPCs 選擇有完整討論。</span>
-    <span class="ref-meta"><a href="https://www.sc-best-practices.org/preprocessing_visualization/dimensionality_reduction.html" target="_blank" rel="noopener">sc-best-practices / dimensionality reduction</a></span>
+    <span class="ref-title" data-zh="Best practices 章節「Dimensionality reduction」對 nPCs 選擇有完整討論。" data-en="Best practices chapter “Dimensionality reduction” offers a complete discussion of nPCs selection.">Best practices 章節「Dimensionality reduction」對 nPCs 選擇有完整討論。</span>
+    <span class="ref-meta"><span data-lang="zh"><a href="https://www.sc-best-practices.org/preprocessing_visualization/dimensionality_reduction.html" target="_blank" rel="noopener">sc-best-practices / dimensionality reduction</a></span><span data-lang="en"><a href="https://www.sc-best-practices.org/preprocessing_visualization/dimensionality_reduction.html" target="_blank" rel="noopener">sc-best-practices / dimensionality reduction</a></span></span>
   </li>
 </ul>
 </section>
 
 <!-- ===================== Step 6: Clustering ===================== -->
 <section class="section section-anchor" id="clustering">
-<div class="section-label">Step 6</div>
-<h2>🧩 聚類 (Clustering)</h2>
+<div class="section-label" data-zh="Step 6" data-en="Step 6">Step 6</div>
+<h2 data-zh="🧩 聚類 (Clustering)" data-en="🧩 Clustering">🧩 聚類 (Clustering)</h2>
 <ul class="ref-list">
   <li>
     <span class="ref-tag paper">PAPER · Louvain</span>
     <span class="ref-author">Blondel VD, Guillaume JL, Lambiotte R, Lefebvre E.</span>
     <span class="ref-title"> Fast unfolding of communities in large networks. </span>
     <em>J Stat Mech</em> 2008(10):P10008.
-    <span class="ref-meta">DOI: <a href="https://doi.org/10.1088/1742-5468/2008/10/P10008" target="_blank" rel="noopener">10.1088/1742-5468/2008/10/P10008</a> · arXiv: <a href="https://arxiv.org/abs/0803.0476" target="_blank" rel="noopener">0803.0476</a></span>
+    <span class="ref-meta"><span data-lang="zh">DOI: <a href="https://doi.org/10.1088/1742-5468/2008/10/P10008" target="_blank" rel="noopener">10.1088/1742-5468/2008/10/P10008</a> · arXiv: <a href="https://arxiv.org/abs/0803.0476" target="_blank" rel="noopener">0803.0476</a></span><span data-lang="en">DOI: <a href="https://doi.org/10.1088/1742-5468/2008/10/P10008" target="_blank" rel="noopener">10.1088/1742-5468/2008/10/P10008</a> · arXiv: <a href="https://arxiv.org/abs/0803.0476" target="_blank" rel="noopener">0803.0476</a></span></span>
   </li>
   <li>
     <span class="ref-tag paper">PAPER · Leiden（推薦）</span>
     <span class="ref-author">Traag VA, Waltman L, van Eck NJ.</span>
     <span class="ref-title"> From Louvain to Leiden: guaranteeing well-connected communities. </span>
     <em>Sci Rep</em> 9:5233 (2019).
-    <span class="ref-meta">DOI: <a href="https://doi.org/10.1038/s41598-019-41695-z" target="_blank" rel="noopener">10.1038/s41598-019-41695-z</a></span>
+    <span class="ref-meta"><span data-lang="zh">DOI: <a href="https://doi.org/10.1038/s41598-019-41695-z" target="_blank" rel="noopener">10.1038/s41598-019-41695-z</a></span><span data-lang="en">DOI: <a href="https://doi.org/10.1038/s41598-019-41695-z" target="_blank" rel="noopener">10.1038/s41598-019-41695-z</a></span></span>
   </li>
   <li>
     <span class="ref-tag paper">PAPER · SNN（PhenoGraph）</span>
     <span class="ref-author">Levine JH, Simonds EF, Bendall SC, et al.</span>
     <span class="ref-title"> Data-driven phenotypic dissection of AML reveals progenitor-like cells that correlate with prognosis. </span>
     <em>Cell</em> 162(1):184–197 (2015). <strong>(SNN 起源於 PhenoGraph)</strong>
-    <span class="ref-meta">DOI: <a href="https://doi.org/10.1016/j.cell.2015.05.047" target="_blank" rel="noopener">10.1016/j.cell.2015.05.047</a></span>
+    <span class="ref-meta"><span data-lang="zh">DOI: <a href="https://doi.org/10.1016/j.cell.2015.05.047" target="_blank" rel="noopener">10.1016/j.cell.2015.05.047</a></span><span data-lang="en">DOI: <a href="https://doi.org/10.1016/j.cell.2015.05.047" target="_blank" rel="noopener">10.1016/j.cell.2015.05.047</a></span></span>
   </li>
   <li>
     <span class="ref-tag bench">BENCH</span>
     <span class="ref-author">Duò A, Robinson MD, Soneson C.</span>
     <span class="ref-title"> A systematic performance evaluation of clustering methods for single-cell RNA-seq data. </span>
     <em>F1000Research</em> 7:1141 (2018).
-    <span class="ref-meta">DOI: <a href="https://doi.org/10.12688/f1000research.15666.3" target="_blank" rel="noopener">10.12688/f1000research.15666.3</a></span>
+    <span class="ref-meta"><span data-lang="zh">DOI: <a href="https://doi.org/10.12688/f1000research.15666.3" target="_blank" rel="noopener">10.12688/f1000research.15666.3</a></span><span data-lang="en">DOI: <a href="https://doi.org/10.12688/f1000research.15666.3" target="_blank" rel="noopener">10.12688/f1000research.15666.3</a></span></span>
   </li>
 </ul>
 </section>
 
 <!-- ===================== Step 7: UMAP ===================== -->
 <section class="section section-anchor" id="umap">
-<div class="section-label">Step 7</div>
-<h2>🗺️ UMAP / t-SNE 視覺化</h2>
+<div class="section-label" data-zh="Step 7" data-en="Step 7">Step 7</div>
+<h2 data-zh="🗺️ UMAP / t-SNE 視覺化" data-en="🗺️ UMAP / t-SNE Visualization">🗺️ UMAP / t-SNE 視覺化</h2>
 <ul class="ref-list">
   <li>
     <span class="ref-tag paper">PAPER · UMAP</span>
     <span class="ref-author">McInnes L, Healy J, Melville J.</span>
     <span class="ref-title"> UMAP: Uniform Manifold Approximation and Projection for Dimension Reduction. </span>
     arXiv:1802.03426 (2018).
-    <span class="ref-meta"><a href="https://arxiv.org/abs/1802.03426" target="_blank" rel="noopener">arxiv.org/abs/1802.03426</a> · GitHub <a href="https://github.com/lmcinnes/umap" target="_blank" rel="noopener">lmcinnes/umap</a></span>
+    <span class="ref-meta"><span data-lang="zh"><a href="https://arxiv.org/abs/1802.03426" target="_blank" rel="noopener">arxiv.org/abs/1802.03426</a> · GitHub <a href="https://github.com/lmcinnes/umap" target="_blank" rel="noopener">lmcinnes/umap</a></span><span data-lang="en"><a href="https://arxiv.org/abs/1802.03426" target="_blank" rel="noopener">arxiv.org/abs/1802.03426</a> · GitHub <a href="https://github.com/lmcinnes/umap" target="_blank" rel="noopener">lmcinnes/umap</a></span></span>
   </li>
   <li>
     <span class="ref-tag paper">PAPER · scRNA-seq 中的 UMAP</span>
     <span class="ref-author">Becht E, McInnes L, Healy J, et al.</span>
     <span class="ref-title"> Dimensionality reduction for visualizing single-cell data using UMAP. </span>
     <em>Nat Biotechnol</em> 37:38–44 (2019).
-    <span class="ref-meta">DOI: <a href="https://doi.org/10.1038/nbt.4314" target="_blank" rel="noopener">10.1038/nbt.4314</a></span>
+    <span class="ref-meta"><span data-lang="zh">DOI: <a href="https://doi.org/10.1038/nbt.4314" target="_blank" rel="noopener">10.1038/nbt.4314</a></span><span data-lang="en">DOI: <a href="https://doi.org/10.1038/nbt.4314" target="_blank" rel="noopener">10.1038/nbt.4314</a></span></span>
   </li>
   <li>
     <span class="ref-tag paper">PAPER · t-SNE</span>
     <span class="ref-author">van der Maaten L, Hinton G.</span>
     <span class="ref-title"> Visualizing Data using t-SNE. </span>
     <em>J Mach Learn Res</em> 9:2579–2605 (2008).
-    <span class="ref-meta"><a href="https://www.jmlr.org/papers/v9/vandermaaten08a.html" target="_blank" rel="noopener">jmlr.org/papers/v9/vandermaaten08a.html</a></span>
+    <span class="ref-meta"><span data-lang="zh"><a href="https://www.jmlr.org/papers/v9/vandermaaten08a.html" target="_blank" rel="noopener">jmlr.org/papers/v9/vandermaaten08a.html</a></span><span data-lang="en"><a href="https://www.jmlr.org/papers/v9/vandermaaten08a.html" target="_blank" rel="noopener">jmlr.org/papers/v9/vandermaaten08a.html</a></span></span>
   </li>
   <li>
     <span class="ref-tag paper">PAPER · UMAP 不過度解讀的提醒</span>
     <span class="ref-author">Chari T, Pachter L.</span>
     <span class="ref-title"> The specious art of single-cell genomics. </span>
     <em>PLoS Comput Biol</em> 19(8):e1011288 (2023).
-    <span class="ref-meta">DOI: <a href="https://doi.org/10.1371/journal.pcbi.1011288" target="_blank" rel="noopener">10.1371/journal.pcbi.1011288</a> · 提醒勿過度解讀 2D embedding 距離</span>
+    <span class="ref-meta"><span data-lang="zh">DOI: <a href="https://doi.org/10.1371/journal.pcbi.1011288" target="_blank" rel="noopener">10.1371/journal.pcbi.1011288</a> · 提醒勿過度解讀 2D embedding 距離</span><span data-lang="en">DOI: <a href="https://doi.org/10.1371/journal.pcbi.1011288" target="_blank" rel="noopener">10.1371/journal.pcbi.1011288</a> · Cautions against over-interpreting 2D embedding distances</span></span>
   </li>
 </ul>
 </section>
 
 <!-- ===================== Step 8: Annotation ===================== -->
 <section class="section section-anchor" id="annotation">
-<div class="section-label">Step 8</div>
-<h2>🏷️ 細胞註釋 (Cell Annotation)</h2>
+<div class="section-label" data-zh="Step 8" data-en="Step 8">Step 8</div>
+<h2 data-zh="🏷️ 細胞註釋 (Cell Annotation)" data-en="🏷️ Cell Annotation">🏷️ 細胞註釋 (Cell Annotation)</h2>
 <ul class="ref-list">
   <li>
     <span class="ref-tag paper">PAPER · SingleR</span>
     <span class="ref-author">Aran D, Looney AP, Liu L, et al.</span>
     <span class="ref-title"> Reference-based analysis of lung single-cell sequencing reveals a transitional profibrotic macrophage. </span>
     <em>Nat Immunol</em> 20:163–172 (2019).
-    <span class="ref-meta">DOI: <a href="https://doi.org/10.1038/s41590-018-0276-y" target="_blank" rel="noopener">10.1038/s41590-018-0276-y</a> · Bioconductor <a href="https://bioconductor.org/packages/release/bioc/html/SingleR.html" target="_blank" rel="noopener">SingleR</a></span>
+    <span class="ref-meta"><span data-lang="zh">DOI: <a href="https://doi.org/10.1038/s41590-018-0276-y" target="_blank" rel="noopener">10.1038/s41590-018-0276-y</a> · Bioconductor <a href="https://bioconductor.org/packages/release/bioc/html/SingleR.html" target="_blank" rel="noopener">SingleR</a></span><span data-lang="en">DOI: <a href="https://doi.org/10.1038/s41590-018-0276-y" target="_blank" rel="noopener">10.1038/s41590-018-0276-y</a> · Bioconductor <a href="https://bioconductor.org/packages/release/bioc/html/SingleR.html" target="_blank" rel="noopener">SingleR</a></span></span>
   </li>
   <li>
     <span class="ref-tag paper">PAPER · CellTypist</span>
     <span class="ref-author">Domínguez Conde C, Xu C, Jarvis LB, et al.</span>
     <span class="ref-title"> Cross-tissue immune cell analysis reveals tissue-specific features in humans. </span>
     <em>Science</em> 376(6594):eabl5197 (2022).
-    <span class="ref-meta">DOI: <a href="https://doi.org/10.1126/science.abl5197" target="_blank" rel="noopener">10.1126/science.abl5197</a> · 官網 <a href="https://www.celltypist.org/" target="_blank" rel="noopener">celltypist.org</a></span>
+    <span class="ref-meta"><span data-lang="zh">DOI: <a href="https://doi.org/10.1126/science.abl5197" target="_blank" rel="noopener">10.1126/science.abl5197</a> · 官網 <a href="https://www.celltypist.org/" target="_blank" rel="noopener">celltypist.org</a></span><span data-lang="en">DOI: <a href="https://doi.org/10.1126/science.abl5197" target="_blank" rel="noopener">10.1126/science.abl5197</a> · Website <a href="https://www.celltypist.org/" target="_blank" rel="noopener">celltypist.org</a></span></span>
   </li>
   <li>
     <span class="ref-tag doc">DOC · Azimuth</span>
-    <span class="ref-title">Azimuth web app（reference-based mapping，使用 Seurat v4 中的方法）。引用基於 Hao et al. 2021 Cell。</span>
-    <span class="ref-meta"><a href="https://azimuth.hubmapconsortium.org/" target="_blank" rel="noopener">azimuth.hubmapconsortium.org</a> · GitHub <a href="https://github.com/satijalab/azimuth" target="_blank" rel="noopener">satijalab/azimuth</a></span>
+    <span class="ref-title" data-zh="Azimuth web app（reference-based mapping，使用 Seurat v4 中的方法）。引用基於 Hao et al. 2021 Cell。" data-en="Azimuth web app (reference-based mapping using Seurat v4 methods). Citation based on Hao et al. 2021 Cell.">Azimuth web app（reference-based mapping，使用 Seurat v4 中的方法）。引用基於 Hao et al. 2021 Cell。</span>
+    <span class="ref-meta"><span data-lang="zh"><a href="https://azimuth.hubmapconsortium.org/" target="_blank" rel="noopener">azimuth.hubmapconsortium.org</a> · GitHub <a href="https://github.com/satijalab/azimuth" target="_blank" rel="noopener">satijalab/azimuth</a></span><span data-lang="en"><a href="https://azimuth.hubmapconsortium.org/" target="_blank" rel="noopener">azimuth.hubmapconsortium.org</a> · GitHub <a href="https://github.com/satijalab/azimuth" target="_blank" rel="noopener">satijalab/azimuth</a></span></span>
   </li>
   <li>
     <span class="ref-tag bench">BENCH</span>
     <span class="ref-author">Abdelaal T, Michielsen L, Cats D, et al.</span>
     <span class="ref-title"> A comparison of automatic cell identification methods for single-cell RNA sequencing data. </span>
     <em>Genome Biol</em> 20:194 (2019).
-    <span class="ref-meta">DOI: <a href="https://doi.org/10.1186/s13059-019-1795-z" target="_blank" rel="noopener">10.1186/s13059-019-1795-z</a></span>
+    <span class="ref-meta"><span data-lang="zh">DOI: <a href="https://doi.org/10.1186/s13059-019-1795-z" target="_blank" rel="noopener">10.1186/s13059-019-1795-z</a></span><span data-lang="en">DOI: <a href="https://doi.org/10.1186/s13059-019-1795-z" target="_blank" rel="noopener">10.1186/s13059-019-1795-z</a></span></span>
   </li>
   <li>
     <span class="ref-tag bestp">⭐ TIP</span>
-    <span class="ref-title">Best practices 章節「Annotation」流程與工具選擇。</span>
-    <span class="ref-meta"><a href="https://www.sc-best-practices.org/cellular_structure/annotation.html" target="_blank" rel="noopener">sc-best-practices / annotation</a></span>
+    <span class="ref-title" data-zh="Best practices 章節「Annotation」流程與工具選擇。" data-en="Best practices chapter “Annotation” covers workflow and tool selection.">Best practices 章節「Annotation」流程與工具選擇。</span>
+    <span class="ref-meta"><span data-lang="zh"><a href="https://www.sc-best-practices.org/cellular_structure/annotation.html" target="_blank" rel="noopener">sc-best-practices / annotation</a></span><span data-lang="en"><a href="https://www.sc-best-practices.org/cellular_structure/annotation.html" target="_blank" rel="noopener">sc-best-practices / annotation</a></span></span>
   </li>
 </ul>
 </section>
 
 <!-- ===================== Step 9: DE ===================== -->
 <section class="section section-anchor" id="de">
-<div class="section-label">Step 9</div>
-<h2>🧾 差異表達分析 (Differential Expression)</h2>
+<div class="section-label" data-zh="Step 9" data-en="Step 9">Step 9</div>
+<h2 data-zh="🧾 差異表達分析 (Differential Expression)" data-en="🧾 Differential Expression Analysis">🧾 差異表達分析 (Differential Expression)</h2>
 <ul class="ref-list">
   <li>
     <span class="ref-tag paper">PAPER · MAST hurdle model</span>
     <span class="ref-author">Finak G, McDavid A, Yajima M, et al.</span>
     <span class="ref-title"> MAST: a flexible statistical framework for assessing transcriptional changes and characterizing heterogeneity in single-cell RNA sequencing data. </span>
     <em>Genome Biol</em> 16:278 (2015).
-    <span class="ref-meta">DOI: <a href="https://doi.org/10.1186/s13059-015-0844-5" target="_blank" rel="noopener">10.1186/s13059-015-0844-5</a></span>
+    <span class="ref-meta"><span data-lang="zh">DOI: <a href="https://doi.org/10.1186/s13059-015-0844-5" target="_blank" rel="noopener">10.1186/s13059-015-0844-5</a></span><span data-lang="en">DOI: <a href="https://doi.org/10.1186/s13059-015-0844-5" target="_blank" rel="noopener">10.1186/s13059-015-0844-5</a></span></span>
   </li>
   <li>
     <span class="ref-tag paper">PAPER · DESeq2</span>
     <span class="ref-author">Love MI, Huber W, Anders S.</span>
     <span class="ref-title"> Moderated estimation of fold change and dispersion for RNA-seq data with DESeq2. </span>
     <em>Genome Biol</em> 15:550 (2014).
-    <span class="ref-meta">DOI: <a href="https://doi.org/10.1186/s13059-014-0550-8" target="_blank" rel="noopener">10.1186/s13059-014-0550-8</a></span>
+    <span class="ref-meta"><span data-lang="zh">DOI: <a href="https://doi.org/10.1186/s13059-014-0550-8" target="_blank" rel="noopener">10.1186/s13059-014-0550-8</a></span><span data-lang="en">DOI: <a href="https://doi.org/10.1186/s13059-014-0550-8" target="_blank" rel="noopener">10.1186/s13059-014-0550-8</a></span></span>
   </li>
   <li>
     <span class="ref-tag paper">PAPER · edgeR</span>
     <span class="ref-author">Robinson MD, McCarthy DJ, Smyth GK.</span>
     <span class="ref-title"> edgeR: a Bioconductor package for differential expression analysis of digital gene expression data. </span>
     <em>Bioinformatics</em> 26(1):139–140 (2010).
-    <span class="ref-meta">DOI: <a href="https://doi.org/10.1093/bioinformatics/btp616" target="_blank" rel="noopener">10.1093/bioinformatics/btp616</a></span>
+    <span class="ref-meta"><span data-lang="zh">DOI: <a href="https://doi.org/10.1093/bioinformatics/btp616" target="_blank" rel="noopener">10.1093/bioinformatics/btp616</a></span><span data-lang="en">DOI: <a href="https://doi.org/10.1093/bioinformatics/btp616" target="_blank" rel="noopener">10.1093/bioinformatics/btp616</a></span></span>
   </li>
   <li>
     <span class="ref-tag paper">PAPER · pseudobulk 推薦做法</span>
     <span class="ref-author">Squair JW, Gautier M, Kathe C, et al.</span>
     <span class="ref-title"> Confronting false discoveries in single-cell differential expression. </span>
     <em>Nat Commun</em> 12:5692 (2021).
-    <span class="ref-meta">DOI: <a href="https://doi.org/10.1038/s41467-021-25960-2" target="_blank" rel="noopener">10.1038/s41467-021-25960-2</a></span>
+    <span class="ref-meta"><span data-lang="zh">DOI: <a href="https://doi.org/10.1038/s41467-021-25960-2" target="_blank" rel="noopener">10.1038/s41467-021-25960-2</a></span><span data-lang="en">DOI: <a href="https://doi.org/10.1038/s41467-021-25960-2" target="_blank" rel="noopener">10.1038/s41467-021-25960-2</a></span></span>
   </li>
   <li>
     <span class="ref-tag paper">PAPER · pseudo-replication 警示</span>
     <span class="ref-author">Zimmerman KD, Espeland MA, Langefeld CD.</span>
     <span class="ref-title"> A practical solution to pseudoreplication bias in single-cell studies. </span>
     <em>Nat Commun</em> 12:738 (2021).
-    <span class="ref-meta">DOI: <a href="https://doi.org/10.1038/s41467-021-21038-1" target="_blank" rel="noopener">10.1038/s41467-021-21038-1</a></span>
+    <span class="ref-meta"><span data-lang="zh">DOI: <a href="https://doi.org/10.1038/s41467-021-21038-1" target="_blank" rel="noopener">10.1038/s41467-021-21038-1</a></span><span data-lang="en">DOI: <a href="https://doi.org/10.1038/s41467-021-21038-1" target="_blank" rel="noopener">10.1038/s41467-021-21038-1</a></span></span>
   </li>
   <li>
     <span class="ref-tag paper">PAPER · muscat（multi-sample DE）</span>
     <span class="ref-author">Crowell HL, Soneson C, Germain PL, et al.</span>
     <span class="ref-title"> muscat detects subpopulation-specific state transitions from multi-sample multi-condition single-cell transcriptomics data. </span>
     <em>Nat Commun</em> 11:6077 (2020).
-    <span class="ref-meta">DOI: <a href="https://doi.org/10.1038/s41467-020-19894-4" target="_blank" rel="noopener">10.1038/s41467-020-19894-4</a></span>
+    <span class="ref-meta"><span data-lang="zh">DOI: <a href="https://doi.org/10.1038/s41467-020-19894-4" target="_blank" rel="noopener">10.1038/s41467-020-19894-4</a></span><span data-lang="en">DOI: <a href="https://doi.org/10.1038/s41467-020-19894-4" target="_blank" rel="noopener">10.1038/s41467-020-19894-4</a></span></span>
   </li>
 </ul>
 </section>
 
 <!-- ===================== Integration ===================== -->
 <section class="section section-anchor" id="integration">
-<div class="section-label">Advanced</div>
-<h2>🔗 資料整合 (Integration)</h2>
+<div class="section-label" data-zh="Advanced" data-en="Advanced">Advanced</div>
+<h2 data-zh="🔗 資料整合 (Integration)" data-en="🔗 Data Integration">🔗 資料整合 (Integration)</h2>
 <ul class="ref-list">
   <li>
     <span class="ref-tag paper">PAPER · Harmony</span>
     <span class="ref-author">Korsunsky I, Millard N, Fan J, et al.</span>
     <span class="ref-title"> Fast, sensitive and accurate integration of single-cell data with Harmony. </span>
     <em>Nat Methods</em> 16:1289–1296 (2019).
-    <span class="ref-meta">DOI: <a href="https://doi.org/10.1038/s41592-019-0619-0" target="_blank" rel="noopener">10.1038/s41592-019-0619-0</a> · GitHub <a href="https://github.com/immunogenomics/harmony" target="_blank" rel="noopener">immunogenomics/harmony</a></span>
+    <span class="ref-meta"><span data-lang="zh">DOI: <a href="https://doi.org/10.1038/s41592-019-0619-0" target="_blank" rel="noopener">10.1038/s41592-019-0619-0</a> · GitHub <a href="https://github.com/immunogenomics/harmony" target="_blank" rel="noopener">immunogenomics/harmony</a></span><span data-lang="en">DOI: <a href="https://doi.org/10.1038/s41592-019-0619-0" target="_blank" rel="noopener">10.1038/s41592-019-0619-0</a> · GitHub <a href="https://github.com/immunogenomics/harmony" target="_blank" rel="noopener">immunogenomics/harmony</a></span></span>
   </li>
   <li>
     <span class="ref-tag paper">PAPER · Seurat CCA / Anchors</span>
     <span class="ref-author">Stuart T, Butler A, Hoffman P, et al.</span>
     <span class="ref-title"> Comprehensive Integration of Single-Cell Data. </span>
     <em>Cell</em> 177(7):1888–1902.e21 (2019).
-    <span class="ref-meta">DOI: <a href="https://doi.org/10.1016/j.cell.2019.05.031" target="_blank" rel="noopener">10.1016/j.cell.2019.05.031</a></span>
+    <span class="ref-meta"><span data-lang="zh">DOI: <a href="https://doi.org/10.1016/j.cell.2019.05.031" target="_blank" rel="noopener">10.1016/j.cell.2019.05.031</a></span><span data-lang="en">DOI: <a href="https://doi.org/10.1016/j.cell.2019.05.031" target="_blank" rel="noopener">10.1016/j.cell.2019.05.031</a></span></span>
   </li>
   <li>
     <span class="ref-tag paper">PAPER · scVI</span>
     <span class="ref-author">Lopez R, Regier J, Cole MB, Jordan MI, Yosef N.</span>
     <span class="ref-title"> Deep generative modeling for single-cell transcriptomics. </span>
     <em>Nat Methods</em> 15:1053–1058 (2018).
-    <span class="ref-meta">DOI: <a href="https://doi.org/10.1038/s41592-018-0229-2" target="_blank" rel="noopener">10.1038/s41592-018-0229-2</a> · 框架 <a href="https://scvi-tools.org/" target="_blank" rel="noopener">scvi-tools.org</a></span>
+    <span class="ref-meta"><span data-lang="zh">DOI: <a href="https://doi.org/10.1038/s41592-018-0229-2" target="_blank" rel="noopener">10.1038/s41592-018-0229-2</a> · 框架 <a href="https://scvi-tools.org/" target="_blank" rel="noopener">scvi-tools.org</a></span><span data-lang="en">DOI: <a href="https://doi.org/10.1038/s41592-018-0229-2" target="_blank" rel="noopener">10.1038/s41592-018-0229-2</a> · Framework <a href="https://scvi-tools.org/" target="_blank" rel="noopener">scvi-tools.org</a></span></span>
   </li>
   <li>
     <span class="ref-tag paper">PAPER · scanorama</span>
     <span class="ref-author">Hie B, Bryson B, Berger B.</span>
     <span class="ref-title"> Efficient integration of heterogeneous single-cell transcriptomes using Scanorama. </span>
     <em>Nat Biotechnol</em> 37:685–691 (2019).
-    <span class="ref-meta">DOI: <a href="https://doi.org/10.1038/s41587-019-0113-3" target="_blank" rel="noopener">10.1038/s41587-019-0113-3</a></span>
+    <span class="ref-meta"><span data-lang="zh">DOI: <a href="https://doi.org/10.1038/s41587-019-0113-3" target="_blank" rel="noopener">10.1038/s41587-019-0113-3</a></span><span data-lang="en">DOI: <a href="https://doi.org/10.1038/s41587-019-0113-3" target="_blank" rel="noopener">10.1038/s41587-019-0113-3</a></span></span>
   </li>
   <li>
     <span class="ref-tag bench">BENCH · 整合方法評比</span>
     <span class="ref-author">Luecken MD, Büttner M, Chaichoompu K, et al.</span>
     <span class="ref-title"> Benchmarking atlas-level data integration in single-cell genomics. </span>
     <em>Nat Methods</em> 19:41–50 (2022).
-    <span class="ref-meta">DOI: <a href="https://doi.org/10.1038/s41592-021-01336-8" target="_blank" rel="noopener">10.1038/s41592-021-01336-8</a> · 提供 LISI、kBET 等指標</span>
+    <span class="ref-meta"><span data-lang="zh">DOI: <a href="https://doi.org/10.1038/s41592-021-01336-8" target="_blank" rel="noopener">10.1038/s41592-021-01336-8</a> · 提供 LISI、kBET 等指標</span><span data-lang="en">DOI: <a href="https://doi.org/10.1038/s41592-021-01336-8" target="_blank" rel="noopener">10.1038/s41592-021-01336-8</a> · Introduces LISI, kBET, and other metrics</span></span>
   </li>
   <li>
     <span class="ref-tag paper">PAPER · scIB / scIB-metrics</span>
     <span class="ref-author">Tran HTN, Ang KS, Chevrier M, et al.</span>
     <span class="ref-title"> A benchmark of batch-effect correction methods for single-cell RNA sequencing data. </span>
     <em>Genome Biol</em> 21:12 (2020).
-    <span class="ref-meta">DOI: <a href="https://doi.org/10.1186/s13059-019-1850-9" target="_blank" rel="noopener">10.1186/s13059-019-1850-9</a></span>
+    <span class="ref-meta"><span data-lang="zh">DOI: <a href="https://doi.org/10.1186/s13059-019-1850-9" target="_blank" rel="noopener">10.1186/s13059-019-1850-9</a></span><span data-lang="en">DOI: <a href="https://doi.org/10.1186/s13059-019-1850-9" target="_blank" rel="noopener">10.1186/s13059-019-1850-9</a></span></span>
   </li>
 </ul>
 </section>
 
 <!-- ===================== CellChat ===================== -->
 <section class="section section-anchor" id="cellchat">
-<div class="section-label">Advanced</div>
-<h2>💬 細胞通訊 (Cell-Cell Communication)</h2>
+<div class="section-label" data-zh="Advanced" data-en="Advanced">Advanced</div>
+<h2 data-zh="💬 細胞通訊 (Cell-Cell Communication)" data-en="💬 Cell-Cell Communication">💬 細胞通訊 (Cell-Cell Communication)</h2>
 <ul class="ref-list">
   <li>
     <span class="ref-tag paper">PAPER · CellChat</span>
     <span class="ref-author">Jin S, Guerrero-Juarez CF, Zhang L, et al.</span>
     <span class="ref-title"> Inference and analysis of cell-cell communication using CellChat. </span>
     <em>Nat Commun</em> 12:1088 (2021).
-    <span class="ref-meta">DOI: <a href="https://doi.org/10.1038/s41467-021-21246-9" target="_blank" rel="noopener">10.1038/s41467-021-21246-9</a> · GitHub <a href="https://github.com/jinworks/CellChat" target="_blank" rel="noopener">jinworks/CellChat</a></span>
+    <span class="ref-meta"><span data-lang="zh">DOI: <a href="https://doi.org/10.1038/s41467-021-21246-9" target="_blank" rel="noopener">10.1038/s41467-021-21246-9</a> · GitHub <a href="https://github.com/jinworks/CellChat" target="_blank" rel="noopener">jinworks/CellChat</a></span><span data-lang="en">DOI: <a href="https://doi.org/10.1038/s41467-021-21246-9" target="_blank" rel="noopener">10.1038/s41467-021-21246-9</a> · GitHub <a href="https://github.com/jinworks/CellChat" target="_blank" rel="noopener">jinworks/CellChat</a></span></span>
   </li>
   <li>
     <span class="ref-tag paper">PAPER · CellChat 跨條件分析（Protocol）</span>
     <span class="ref-author">Jin S, Plikus MV, Nie Q.</span>
     <span class="ref-title"> CellChat for systematic analysis of cell–cell communication from single-cell transcriptomics. </span>
     <em>Nat Protoc</em> 20:180–219 (2025).
-    <span class="ref-meta">DOI: <a href="https://doi.org/10.1038/s41596-024-01045-4" target="_blank" rel="noopener">10.1038/s41596-024-01045-4</a></span>
+    <span class="ref-meta"><span data-lang="zh">DOI: <a href="https://doi.org/10.1038/s41596-024-01045-4" target="_blank" rel="noopener">10.1038/s41596-024-01045-4</a></span><span data-lang="en">DOI: <a href="https://doi.org/10.1038/s41596-024-01045-4" target="_blank" rel="noopener">10.1038/s41596-024-01045-4</a></span></span>
   </li>
   <li>
     <span class="ref-tag paper">PAPER · CellPhoneDB</span>
     <span class="ref-author">Efremova M, Vento-Tormo M, Teichmann SA, Vento-Tormo R.</span>
     <span class="ref-title"> CellPhoneDB: inferring cell–cell communication from combined expression of multi-subunit ligand–receptor complexes. </span>
     <em>Nat Protoc</em> 15:1484–1506 (2020).
-    <span class="ref-meta">DOI: <a href="https://doi.org/10.1038/s41596-020-0292-x" target="_blank" rel="noopener">10.1038/s41596-020-0292-x</a> · GitHub <a href="https://github.com/ventolab/CellphoneDB" target="_blank" rel="noopener">ventolab/CellphoneDB</a></span>
+    <span class="ref-meta"><span data-lang="zh">DOI: <a href="https://doi.org/10.1038/s41596-020-0292-x" target="_blank" rel="noopener">10.1038/s41596-020-0292-x</a> · GitHub <a href="https://github.com/ventolab/CellphoneDB" target="_blank" rel="noopener">ventolab/CellphoneDB</a></span><span data-lang="en">DOI: <a href="https://doi.org/10.1038/s41596-020-0292-x" target="_blank" rel="noopener">10.1038/s41596-020-0292-x</a> · GitHub <a href="https://github.com/ventolab/CellphoneDB" target="_blank" rel="noopener">ventolab/CellphoneDB</a></span></span>
   </li>
   <li>
     <span class="ref-tag paper">PAPER · NicheNet</span>
     <span class="ref-author">Browaeys R, Saelens W, Saeys Y.</span>
     <span class="ref-title"> NicheNet: modeling intercellular communication by linking ligands to target genes. </span>
     <em>Nat Methods</em> 17:159–162 (2020).
-    <span class="ref-meta">DOI: <a href="https://doi.org/10.1038/s41592-019-0667-5" target="_blank" rel="noopener">10.1038/s41592-019-0667-5</a> · GitHub <a href="https://github.com/saeyslab/nichenetr" target="_blank" rel="noopener">saeyslab/nichenetr</a></span>
+    <span class="ref-meta"><span data-lang="zh">DOI: <a href="https://doi.org/10.1038/s41592-019-0667-5" target="_blank" rel="noopener">10.1038/s41592-019-0667-5</a> · GitHub <a href="https://github.com/saeyslab/nichenetr" target="_blank" rel="noopener">saeyslab/nichenetr</a></span><span data-lang="en">DOI: <a href="https://doi.org/10.1038/s41592-019-0667-5" target="_blank" rel="noopener">10.1038/s41592-019-0667-5</a> · GitHub <a href="https://github.com/saeyslab/nichenetr" target="_blank" rel="noopener">saeyslab/nichenetr</a></span></span>
   </li>
   <li>
     <span class="ref-tag paper">PAPER · LIANA（共識框架）</span>
     <span class="ref-author">Dimitrov D, Türei D, Garrido-Rodriguez M, et al.</span>
     <span class="ref-title"> Comparison of methods and resources for cell-cell communication inference from single-cell RNA-Seq data. </span>
     <em>Nat Commun</em> 13:3224 (2022).
-    <span class="ref-meta">DOI: <a href="https://doi.org/10.1038/s41467-022-30755-0" target="_blank" rel="noopener">10.1038/s41467-022-30755-0</a> · 官網 <a href="https://saezlab.github.io/liana/" target="_blank" rel="noopener">saezlab.github.io/liana</a></span>
+    <span class="ref-meta"><span data-lang="zh">DOI: <a href="https://doi.org/10.1038/s41467-022-30755-0" target="_blank" rel="noopener">10.1038/s41467-022-30755-0</a> · 官網 <a href="https://saezlab.github.io/liana/" target="_blank" rel="noopener">saezlab.github.io/liana</a></span><span data-lang="en">DOI: <a href="https://doi.org/10.1038/s41467-022-30755-0" target="_blank" rel="noopener">10.1038/s41467-022-30755-0</a> · Website <a href="https://saezlab.github.io/liana/" target="_blank" rel="noopener">saezlab.github.io/liana</a></span></span>
   </li>
 </ul>
 </section>
 
 <!-- ===================== Trajectory ===================== -->
 <section class="section section-anchor" id="trajectory">
-<div class="section-label">Advanced</div>
-<h2>🛤️ 軌跡分析 (Trajectory / Pseudotime)</h2>
+<div class="section-label" data-zh="Advanced" data-en="Advanced">Advanced</div>
+<h2 data-zh="🛤️ 軌跡分析 (Trajectory / Pseudotime)" data-en="🛤️ Trajectory / Pseudotime Analysis">🛤️ 軌跡分析 (Trajectory / Pseudotime)</h2>
 <ul class="ref-list">
   <li>
     <span class="ref-tag paper">PAPER · Monocle3</span>
     <span class="ref-author">Cao J, Spielmann M, Qiu X, et al.</span>
     <span class="ref-title"> The single-cell transcriptional landscape of mammalian organogenesis. </span>
     <em>Nature</em> 566:496–502 (2019).
-    <span class="ref-meta">DOI: <a href="https://doi.org/10.1038/s41586-019-0969-x" target="_blank" rel="noopener">10.1038/s41586-019-0969-x</a> · 官網 <a href="https://cole-trapnell-lab.github.io/monocle3/" target="_blank" rel="noopener">cole-trapnell-lab.github.io/monocle3</a></span>
+    <span class="ref-meta"><span data-lang="zh">DOI: <a href="https://doi.org/10.1038/s41586-019-0969-x" target="_blank" rel="noopener">10.1038/s41586-019-0969-x</a> · 官網 <a href="https://cole-trapnell-lab.github.io/monocle3/" target="_blank" rel="noopener">cole-trapnell-lab.github.io/monocle3</a></span><span data-lang="en">DOI: <a href="https://doi.org/10.1038/s41586-019-0969-x" target="_blank" rel="noopener">10.1038/s41586-019-0969-x</a> · Website <a href="https://cole-trapnell-lab.github.io/monocle3/" target="_blank" rel="noopener">cole-trapnell-lab.github.io/monocle3</a></span></span>
   </li>
   <li>
     <span class="ref-tag paper">PAPER · Slingshot</span>
     <span class="ref-author">Street K, Risso D, Fletcher RB, et al.</span>
     <span class="ref-title"> Slingshot: cell lineage and pseudotime inference for single-cell transcriptomics. </span>
     <em>BMC Genomics</em> 19:477 (2018).
-    <span class="ref-meta">DOI: <a href="https://doi.org/10.1186/s12864-018-4772-0" target="_blank" rel="noopener">10.1186/s12864-018-4772-0</a></span>
+    <span class="ref-meta"><span data-lang="zh">DOI: <a href="https://doi.org/10.1186/s12864-018-4772-0" target="_blank" rel="noopener">10.1186/s12864-018-4772-0</a></span><span data-lang="en">DOI: <a href="https://doi.org/10.1186/s12864-018-4772-0" target="_blank" rel="noopener">10.1186/s12864-018-4772-0</a></span></span>
   </li>
   <li>
     <span class="ref-tag paper">PAPER · RNA Velocity 起源</span>
     <span class="ref-author">La Manno G, Soldatov R, Zeisel A, et al.</span>
     <span class="ref-title"> RNA velocity of single cells. </span>
     <em>Nature</em> 560:494–498 (2018).
-    <span class="ref-meta">DOI: <a href="https://doi.org/10.1038/s41586-018-0414-6" target="_blank" rel="noopener">10.1038/s41586-018-0414-6</a></span>
+    <span class="ref-meta"><span data-lang="zh">DOI: <a href="https://doi.org/10.1038/s41586-018-0414-6" target="_blank" rel="noopener">10.1038/s41586-018-0414-6</a></span><span data-lang="en">DOI: <a href="https://doi.org/10.1038/s41586-018-0414-6" target="_blank" rel="noopener">10.1038/s41586-018-0414-6</a></span></span>
   </li>
   <li>
     <span class="ref-tag paper">PAPER · scVelo（dynamical model）</span>
     <span class="ref-author">Bergen V, Lange M, Peidli S, Wolf FA, Theis FJ.</span>
     <span class="ref-title"> Generalizing RNA velocity to transient cell states through dynamical modeling. </span>
     <em>Nat Biotechnol</em> 38:1408–1414 (2020).
-    <span class="ref-meta">DOI: <a href="https://doi.org/10.1038/s41587-020-0591-3" target="_blank" rel="noopener">10.1038/s41587-020-0591-3</a> · 官網 <a href="https://scvelo.readthedocs.io/" target="_blank" rel="noopener">scvelo.readthedocs.io</a></span>
+    <span class="ref-meta"><span data-lang="zh">DOI: <a href="https://doi.org/10.1038/s41587-020-0591-3" target="_blank" rel="noopener">10.1038/s41587-020-0591-3</a> · 官網 <a href="https://scvelo.readthedocs.io/" target="_blank" rel="noopener">scvelo.readthedocs.io</a></span><span data-lang="en">DOI: <a href="https://doi.org/10.1038/s41587-020-0591-3" target="_blank" rel="noopener">10.1038/s41587-020-0591-3</a> · Website <a href="https://scvelo.readthedocs.io/" target="_blank" rel="noopener">scvelo.readthedocs.io</a></span></span>
   </li>
   <li>
     <span class="ref-tag paper">PAPER · CytoTRACE</span>
     <span class="ref-author">Gulati GS, Sikandar SS, Wesche DJ, et al.</span>
     <span class="ref-title"> Single-cell transcriptional diversity is a hallmark of developmental potential. </span>
     <em>Science</em> 367(6476):405–411 (2020).
-    <span class="ref-meta">DOI: <a href="https://doi.org/10.1126/science.aax0249" target="_blank" rel="noopener">10.1126/science.aax0249</a> · 官網 <a href="https://cytotrace.stanford.edu/" target="_blank" rel="noopener">cytotrace.stanford.edu</a></span>
+    <span class="ref-meta"><span data-lang="zh">DOI: <a href="https://doi.org/10.1126/science.aax0249" target="_blank" rel="noopener">10.1126/science.aax0249</a> · 官網 <a href="https://cytotrace.stanford.edu/" target="_blank" rel="noopener">cytotrace.stanford.edu</a></span><span data-lang="en">DOI: <a href="https://doi.org/10.1126/science.aax0249" target="_blank" rel="noopener">10.1126/science.aax0249</a> · Website <a href="https://cytotrace.stanford.edu/" target="_blank" rel="noopener">cytotrace.stanford.edu</a></span></span>
   </li>
   <li>
     <span class="ref-tag paper">PAPER · PAGA</span>
     <span class="ref-author">Wolf FA, Hamey FK, Plass M, et al.</span>
     <span class="ref-title"> PAGA: graph abstraction reconciles clustering with trajectory inference through a topology preserving map of single cells. </span>
     <em>Genome Biol</em> 20:59 (2019).
-    <span class="ref-meta">DOI: <a href="https://doi.org/10.1186/s13059-019-1663-x" target="_blank" rel="noopener">10.1186/s13059-019-1663-x</a></span>
+    <span class="ref-meta"><span data-lang="zh">DOI: <a href="https://doi.org/10.1186/s13059-019-1663-x" target="_blank" rel="noopener">10.1186/s13059-019-1663-x</a></span><span data-lang="en">DOI: <a href="https://doi.org/10.1186/s13059-019-1663-x" target="_blank" rel="noopener">10.1186/s13059-019-1663-x</a></span></span>
   </li>
   <li>
     <span class="ref-tag bench">BENCH · 軌跡方法 41 種比較</span>
     <span class="ref-author">Saelens W, Cannoodt R, Todorov H, Saeys Y.</span>
     <span class="ref-title"> A comparison of single-cell trajectory inference methods. </span>
     <em>Nat Biotechnol</em> 37:547–554 (2019).
-    <span class="ref-meta">DOI: <a href="https://doi.org/10.1038/s41587-019-0071-9" target="_blank" rel="noopener">10.1038/s41587-019-0071-9</a></span>
+    <span class="ref-meta"><span data-lang="zh">DOI: <a href="https://doi.org/10.1038/s41587-019-0071-9" target="_blank" rel="noopener">10.1038/s41587-019-0071-9</a></span><span data-lang="en">DOI: <a href="https://doi.org/10.1038/s41587-019-0071-9" target="_blank" rel="noopener">10.1038/s41587-019-0071-9</a></span></span>
   </li>
 </ul>
 </section>
 
 <!-- ===================== Marker DBs ===================== -->
 <section class="section section-anchor" id="markers">
-<div class="section-label">資料庫</div>
-<h2>🗄️ Marker Gene 資料庫與細胞圖譜</h2>
-<p>原教學「Annotation」章節示範的 PBMC marker（CD3D、IL7R、MS4A1、CD79A、GNLY、NKG7、KLRD1、CD14、LYZ、S100A8、FCGR3A、MS4A7、FCER1A、CST3、PPBP、PF4 等）在以下資料庫中可被追溯到原始文獻。</p>
+<div class="section-label" data-zh="資料庫" data-en="DATABASES">資料庫</div>
+<h2 data-zh="🗄️ Marker Gene 資料庫與細胞圖譜" data-en="🗄️ Marker Gene Databases & Cell Atlases">🗄️ Marker Gene 資料庫與細胞圖譜</h2>
+<p data-lang="zh">原教學「Annotation」章節示範的 PBMC marker（CD3D、IL7R、MS4A1、CD79A、GNLY、NKG7、KLRD1、CD14、LYZ、S100A8、FCGR3A、MS4A7、FCER1A、CST3、PPBP、PF4 等）在以下資料庫中可被追溯到原始文獻。</p>
+<p data-lang="en">The PBMC markers demonstrated in the tutorial’s “Annotation” chapter (CD3D, IL7R, MS4A1, CD79A, GNLY, NKG7, KLRD1, CD14, LYZ, S100A8, FCGR3A, MS4A7, FCER1A, CST3, PPBP, PF4, etc.) can be traced back to their original literature in the databases below.</p>
 <ul class="ref-list">
   <li>
     <span class="ref-tag db">DB · PanglaoDB</span>
     <span class="ref-author">Franzén O, Gan LM, Björkegren JLM.</span>
     <span class="ref-title"> PanglaoDB: a web server for exploration of mouse and human single-cell RNA sequencing data. </span>
     <em>Database (Oxford)</em> baz046 (2019).
-    <span class="ref-meta">DOI: <a href="https://doi.org/10.1093/database/baz046" target="_blank" rel="noopener">10.1093/database/baz046</a> · 站點 <a href="https://panglaodb.se/" target="_blank" rel="noopener">panglaodb.se</a> · 6000+ marker–cell type 配對</span>
+    <span class="ref-meta"><span data-lang="zh">DOI: <a href="https://doi.org/10.1093/database/baz046" target="_blank" rel="noopener">10.1093/database/baz046</a> · 站點 <a href="https://panglaodb.se/" target="_blank" rel="noopener">panglaodb.se</a> · 6000+ marker–cell type 配對</span><span data-lang="en">DOI: <a href="https://doi.org/10.1093/database/baz046" target="_blank" rel="noopener">10.1093/database/baz046</a> · Site <a href="https://panglaodb.se/" target="_blank" rel="noopener">panglaodb.se</a> · 6000+ marker–cell type pairs</span></span>
   </li>
   <li>
     <span class="ref-tag db">DB · CellMarker 2.0</span>
     <span class="ref-author">Hu C, Li T, Xu Y, et al.</span>
     <span class="ref-title"> CellMarker 2.0: an updated database of manually curated cell markers in human/mouse and web tools based on scRNA-seq data. </span>
     <em>Nucleic Acids Res</em> 51(D1):D870–D876 (2023).
-    <span class="ref-meta">DOI: <a href="https://doi.org/10.1093/nar/gkac947" target="_blank" rel="noopener">10.1093/nar/gkac947</a> · 站點 <a href="http://bio-bigdata.hrbmu.edu.cn/CellMarker/" target="_blank" rel="noopener">bio-bigdata.hrbmu.edu.cn/CellMarker</a> · 83K+ tissue-cell-marker 條目</span>
+    <span class="ref-meta"><span data-lang="zh">DOI: <a href="https://doi.org/10.1093/nar/gkac947" target="_blank" rel="noopener">10.1093/nar/gkac947</a> · 站點 <a href="http://bio-bigdata.hrbmu.edu.cn/CellMarker/" target="_blank" rel="noopener">bio-bigdata.hrbmu.edu.cn/CellMarker</a> · 83K+ tissue-cell-marker 條目</span><span data-lang="en">DOI: <a href="https://doi.org/10.1093/nar/gkac947" target="_blank" rel="noopener">10.1093/nar/gkac947</a> · Site <a href="http://bio-bigdata.hrbmu.edu.cn/CellMarker/" target="_blank" rel="noopener">bio-bigdata.hrbmu.edu.cn/CellMarker</a> · 83K+ tissue-cell-marker entries</span></span>
   </li>
   <li>
     <span class="ref-tag db">DB · Tabula Sapiens</span>
     <span class="ref-author">Tabula Sapiens Consortium.</span>
     <span class="ref-title"> The Tabula Sapiens: A multiple-organ, single-cell transcriptomic atlas of humans. </span>
     <em>Science</em> 376(6594):eabl4896 (2022).
-    <span class="ref-meta">DOI: <a href="https://doi.org/10.1126/science.abl4896" target="_blank" rel="noopener">10.1126/science.abl4896</a> · 站點 <a href="https://tabula-sapiens.sf.czbiohub.org/" target="_blank" rel="noopener">tabula-sapiens.sf.czbiohub.org</a> · 24 組織、500K+ 細胞、400+ 細胞類型</span>
+    <span class="ref-meta"><span data-lang="zh">DOI: <a href="https://doi.org/10.1126/science.abl4896" target="_blank" rel="noopener">10.1126/science.abl4896</a> · 站點 <a href="https://tabula-sapiens.sf.czbiohub.org/" target="_blank" rel="noopener">tabula-sapiens.sf.czbiohub.org</a> · 24 組織、500K+ 細胞、400+ 細胞類型</span><span data-lang="en">DOI: <a href="https://doi.org/10.1126/science.abl4896" target="_blank" rel="noopener">10.1126/science.abl4896</a> · Site <a href="https://tabula-sapiens.sf.czbiohub.org/" target="_blank" rel="noopener">tabula-sapiens.sf.czbiohub.org</a> · 24 tissues, 500K+ cells, 400+ cell types</span></span>
   </li>
   <li>
     <span class="ref-tag db">DB · Human Cell Atlas</span>
-    <span class="ref-title">Human Cell Atlas Data Portal · 跨組織人類細胞圖譜（含 Tabula Sapiens、Lung Cell Atlas 等子計畫）。</span>
-    <span class="ref-meta"><a href="https://data.humancellatlas.org/" target="_blank" rel="noopener">data.humancellatlas.org</a></span>
+    <span class="ref-title" data-zh="Human Cell Atlas Data Portal · 跨組織人類細胞圖譜（含 Tabula Sapiens、Lung Cell Atlas 等子計畫）。" data-en="Human Cell Atlas Data Portal · Cross-tissue human cell atlas (includes Tabula Sapiens, Lung Cell Atlas, and other sub-projects).">Human Cell Atlas Data Portal · 跨組織人類細胞圖譜（含 Tabula Sapiens、Lung Cell Atlas 等子計畫）。</span>
+    <span class="ref-meta"><span data-lang="zh"><a href="https://data.humancellatlas.org/" target="_blank" rel="noopener">data.humancellatlas.org</a></span><span data-lang="en"><a href="https://data.humancellatlas.org/" target="_blank" rel="noopener">data.humancellatlas.org</a></span></span>
   </li>
   <li>
     <span class="ref-tag db">DB · CZ CELLxGENE Discover</span>
-    <span class="ref-title">CZ CELLxGENE · Chan Zuckerberg Initiative 推出的單細胞探索與資料庫整合平台。</span>
-    <span class="ref-meta"><a href="https://cellxgene.cziscience.com/" target="_blank" rel="noopener">cellxgene.cziscience.com</a></span>
+    <span class="ref-title" data-zh="CZ CELLxGENE · Chan Zuckerberg Initiative 推出的單細胞探索與資料庫整合平台。" data-en="CZ CELLxGENE · Chan Zuckerberg Initiative’s single-cell exploration and database integration platform.">CZ CELLxGENE · Chan Zuckerberg Initiative 推出的單細胞探索與資料庫整合平台。</span>
+    <span class="ref-meta"><span data-lang="zh"><a href="https://cellxgene.cziscience.com/" target="_blank" rel="noopener">cellxgene.cziscience.com</a></span><span data-lang="en"><a href="https://cellxgene.cziscience.com/" target="_blank" rel="noopener">cellxgene.cziscience.com</a></span></span>
   </li>
   <li>
     <span class="ref-tag doc">DOC · 10x Genomics PBMC 標誌基因</span>
-    <span class="ref-title">10x Genomics PBMC datasets · Seurat / Scanpy PBMC tutorial 使用的標準訓練資料。</span>
-    <span class="ref-meta"><a href="https://www.10xgenomics.com/datasets" target="_blank" rel="noopener">10xgenomics.com/datasets</a> · Seurat PBMC3K：<a href="https://satijalab.org/seurat/articles/pbmc3k_tutorial" target="_blank" rel="noopener">satijalab.org/seurat/articles/pbmc3k_tutorial</a></span>
+    <span class="ref-title" data-zh="10x Genomics PBMC datasets · Seurat / Scanpy PBMC tutorial 使用的標準訓練資料。" data-en="10x Genomics PBMC datasets · Standard training data used in the Seurat / Scanpy PBMC tutorials.">10x Genomics PBMC datasets · Seurat / Scanpy PBMC tutorial 使用的標準訓練資料。</span>
+    <span class="ref-meta"><span data-lang="zh"><a href="https://www.10xgenomics.com/datasets" target="_blank" rel="noopener">10xgenomics.com/datasets</a> · Seurat PBMC3K：<a href="https://satijalab.org/seurat/articles/pbmc3k_tutorial" target="_blank" rel="noopener">satijalab.org/seurat/articles/pbmc3k_tutorial</a></span><span data-lang="en"><a href="https://www.10xgenomics.com/datasets" target="_blank" rel="noopener">10xgenomics.com/datasets</a> · Seurat PBMC3K: <a href="https://satijalab.org/seurat/articles/pbmc3k_tutorial" target="_blank" rel="noopener">satijalab.org/seurat/articles/pbmc3k_tutorial</a></span></span>
   </li>
   <li>
     <span class="ref-tag db">DB · Azimuth References</span>
-    <span class="ref-title">Azimuth · HuBMAP × Satija Lab 多器官 reference 集（PBMC、Kidney、Lung、Pancreas 等），可一鍵 mapping。</span>
-    <span class="ref-meta"><a href="https://azimuth.hubmapconsortium.org/references/" target="_blank" rel="noopener">azimuth.hubmapconsortium.org/references</a></span>
+    <span class="ref-title" data-zh="Azimuth · HuBMAP × Satija Lab 多器官 reference 集（PBMC、Kidney、Lung、Pancreas 等），可一鍵 mapping。" data-en="Azimuth · HuBMAP × Satija Lab multi-organ reference collection (PBMC, Kidney, Lung, Pancreas, etc.) with one-click cell-type mapping.">Azimuth · HuBMAP × Satija Lab 多器官 reference 集（PBMC、Kidney、Lung、Pancreas 等），可一鍵 mapping。</span>
+    <span class="ref-meta"><span data-lang="zh"><a href="https://azimuth.hubmapconsortium.org/references/" target="_blank" rel="noopener">azimuth.hubmapconsortium.org/references</a></span><span data-lang="en"><a href="https://azimuth.hubmapconsortium.org/references/" target="_blank" rel="noopener">azimuth.hubmapconsortium.org/references</a></span></span>
   </li>
 </ul>
-</section>
-
-<!-- ===================== Errata ===================== -->
-<section class="section section-anchor" id="errata">
-<div class="section-label">勘誤</div>
-<h2>⚠️ 對原教學內容的疑義注記</h2>
-<p>下方為閱讀原教學 HTML 與本 reference 比對後，發現的可能不完整、易誤解或可加強之處。<strong>不修改原教學檔案，僅在此說明以利參照。</strong></p>
-
-<div class="errata">
-  <h4>QC：DoubletFinder API 名稱</h4>
-  <p>教學中示範 <code>doubletFinder_v3()</code>。此為 DoubletFinder &lt; 2.0.4 的舊 API；自 2023 年發行的 DoubletFinder 2.0.4 起，函式已正名為 <code>doubletFinder()</code> 與 <code>paramSweep()</code>（不再帶 <code>_v3</code> 後綴）。新版本仍向後相容舊名稱，但建議讀者使用新 API。</p>
-  <p>來源：<a href="https://github.com/chris-mcginnis-ucsf/DoubletFinder" target="_blank" rel="noopener">GitHub: chris-mcginnis-ucsf/DoubletFinder</a> 的 README 與 release notes。</p>
-</div>
-
-<div class="errata">
-  <h4>QC：Doublet 偵測工具名單</h4>
-  <p>原教學列出 DoubletFinder / Scrublet / scDblFinder 三個工具。根據 Xi & Li 2021 <em>Cell Systems</em> 的獨立 benchmark，<strong>scDblFinder</strong> 在多數測試情境表現最佳，DoubletFinder 與 Scrublet 仍為廣泛使用工具但精度稍遜，可作為三者並列時的補充說明。</p>
-  <p>來源：<a href="https://doi.org/10.1016/j.cels.2020.11.008" target="_blank" rel="noopener">Xi & Li, Cell Syst 2021</a>。</p>
-</div>
-
-<div class="errata">
-  <h4>Annotation：FCGR3A Mono 的常用名</h4>
-  <p>教學表格寫「FCGR3A Mono」，FCGR3A 即 CD16；在多數教科書、Seurat 官方 PBMC tutorial 中，此細胞群通常稱為 <strong>CD16+ Monocyte</strong> 或 <strong>非典型單核球（non-classical monocyte）</strong>。兩者指向同一細胞群，名稱可互換。</p>
-  <p>來源：Hao et al. 2021 <em>Cell</em>（Azimuth PBMC reference）；Seurat <a href="https://satijalab.org/seurat/articles/pbmc3k_tutorial" target="_blank" rel="noopener">PBMC3K vignette</a>。</p>
-</div>
-
-<div class="errata">
-  <h4>Annotation：DC marker 的細分</h4>
-  <p>教學表格使用 FCER1A、CST3 標示 DC。實際上：</p>
-  <p>· <strong>CST3</strong> 為廣義骨髓系（myeloid）/單核細胞與 DC 共表達基因，特異性較低；<br>
-     · <strong>FCER1A</strong> 主要標示 cDC2（conventional DC type 2）；<br>
-     · cDC1 常用 marker 為 <code>CLEC9A</code>、<code>XCR1</code>；<br>
-     · pDC（漿細胞樣 DC）常用 marker 為 <code>LILRA4</code>、<code>IL3RA</code>。<br>
-     若要精細註釋 DC 子群，建議搭配 Azimuth PBMC reference 或 CellTypist 的 immune model 使用。</p>
-  <p>來源：<a href="https://doi.org/10.1126/science.abl5197" target="_blank" rel="noopener">Domínguez Conde et al., Science 2022</a>。</p>
-</div>
-
-<div class="errata">
-  <h4>DE：跨條件比較的當前共識</h4>
-  <p>教學提到「Pseudobulk + DESeq2」是跨條件最佳實踐。Squair et al. 2021 與 Murphy et al. 2022 進一步指出：<strong>把 cluster × sample pseudobulk 後使用 edgeR-LRT 或 DESeq2 LRT</strong>，比直接對單細胞做 Wilcoxon / MAST 在控制 FDR 上明顯較佳；同時應特別留意樣本數過少時 pseudobulk 也不可靠。</p>
-  <p>來源：<a href="https://doi.org/10.1038/s41467-021-25960-2" target="_blank" rel="noopener">Squair et al. 2021</a>；<a href="https://doi.org/10.1038/s41467-022-35519-4" target="_blank" rel="noopener">Murphy et al. 2022</a>。</p>
-</div>
-
-<div class="errata">
-  <h4>UMAP：警告應更明確</h4>
-  <p>教學已指出「UMAP 兩 cluster 距離近不代表分子相似」，可進一步補充 Chari & Pachter 2023 的觀點：<strong>2D embedding 距離有結構性失真，應避免將 UMAP 座標用於下游量化分析或最終生物學結論。</strong>分群、軌跡推論應在 PCA / 高維 embedding 上進行，UMAP 僅作可視化。</p>
-  <p>來源：<a href="https://doi.org/10.1371/journal.pcbi.1011288" target="_blank" rel="noopener">Chari & Pachter 2023</a>。</p>
-</div>
-
-<div class="errata">
-  <h4>Normalization：「正式分析推薦 SCTransform」應併呈 benchmark</h4>
-  <p>教學中將 SCTransform 列為「目前主流推薦」。Ahlmann-Eltze & Huber 2023 <em>Nat Methods</em> 在 transformations 比較中發現：對於下游 KNN/聚類效果，<strong>shifted log + size factor</strong>（即 LogNormalize 的變體）與 SCTransform Pearson residuals 在許多任務表現相當，差距小於主觀印象。建議讀者依實驗目的測試比較。</p>
-  <p>來源：<a href="https://doi.org/10.1038/s41592-023-01814-1" target="_blank" rel="noopener">Ahlmann-Eltze & Huber 2023</a>。</p>
-</div>
-
-<div class="errata">
-  <h4>Clustering：Seurat 預設 k=20</h4>
-  <p>教學中提及「Seurat 預設 k=20」。技術上正確：Seurat <code>FindNeighbors()</code> 的 <code>k.param</code> 預設值為 20。但建議補充：此值會隨資料規模與細胞異質性調整，例如極大資料集（&gt;100K cells）或細胞群極多時，可能需要更大的 k 值來維持圖的連通性。</p>
-  <p>來源：<a href="https://satijalab.org/seurat/reference/findneighbors" target="_blank" rel="noopener">Seurat FindNeighbors 文件</a>。</p>
-</div>
 </section>
 
 <!-- ===================== Footnote ===================== -->
@@ -802,21 +748,138 @@
 <div class="callout tip">
 <span class="callout-icon">📖</span>
 <div>
-<strong>查找指南：</strong>所有 DOI 連結指向出版社頁面。若需下載 PDF，可搭配 <a href="https://pubmed.ncbi.nlm.nih.gov/" target="_blank" rel="noopener">PubMed</a>、<a href="https://www.ncbi.nlm.nih.gov/pmc/" target="_blank" rel="noopener">PMC</a>、<a href="https://www.biorxiv.org/" target="_blank" rel="noopener">bioRxiv</a> 找開放近用版本。
+<strong data-zh="查找指南：" data-en="How to find a paper:">查找指南：</strong>
+<span data-zh="所有 DOI 連結指向出版社頁面。若需下載 PDF，可搭配 " data-en="DOI links point to publisher pages. For free PDFs, try ">所有 DOI 連結指向出版社頁面。若需下載 PDF，可搭配 </span>
+<a href="https://pubmed.ncbi.nlm.nih.gov/" target="_blank" rel="noopener">PubMed</a>、
+<a href="https://www.ncbi.nlm.nih.gov/pmc/" target="_blank" rel="noopener">PMC</a>、
+<a href="https://arxiv.org/" target="_blank" rel="noopener">arXiv</a>、
+<a href="https://www.biorxiv.org/" target="_blank" rel="noopener">bioRxiv</a>
+<span data-zh=" 找開放近用版本。" data-en=" for open-access versions."> 找開放近用版本。</span>
 </div>
+</div>
+</section><!-- ===================== Errata ===================== -->
+<section class="section section-anchor" id="errata">
+<div class="section-label" data-zh="教學註記" data-en="TUTORIAL NOTES">教學註記</div>
+<h2 data-zh="📌 教學註記與細節" data-en="📌 Tutorial Notes & Details">📌 教學註記與細節</h2>
+<p data-lang="zh">下方為閱讀本 scRNA-seq 教學 HTML 與本 reference 比對後，發現的可能不完整、易誤解或可加強之處。<strong>不修改原教學檔案，僅在此說明以利參照。</strong></p>
+<p data-lang="en">Below are points discovered while cross-checking the tutorial HTML against this reference list — places that may be incomplete, easily misread, or worth expanding. <strong>The original tutorial files are not modified; clarifications are provided here for cross-reference.</strong></p>
+
+<div class="errata">
+  <span class="errata-label" data-zh="補充說明" data-en="Notes" style="display:inline-block;background:#e0e7ff;color:#3730a3;padding:2px 10px;border-radius:4px;font-size:.72rem;font-weight:700;letter-spacing:.5px;margin-bottom:8px">補充說明 · Notes</span>
+  <h4 data-zh="Normalization：SCTransform vs shifted log + size factor" data-en="Normalization: SCTransform vs shifted log + size factor — what the benchmark really says">Normalization：SCTransform 不一定最佳</h4>
+  <p data-lang="zh">教學若預設推薦 <code>SCTransform</code> (Hafemeister & Satija 2019) 為「最佳」normalization，需修正。Ahlmann-Eltze & Huber (2023, <em>Nat Methods</em>) 系統 benchmark 22 種 scRNA-seq normalization 方法，於下游 cluster 重現性、DE、軌跡分析比較，結論：(1) <strong>簡單的 shifted log (<code>log(y/s + 1)</code>) 搭配 size-factor</strong>（如 scran::computeSumFactors）在多數任務表現等同或優於 SCTransform / GLM-PCA / scVI 等複雜方法；(2) Pearson residuals (SCT v2) 在 highly variable gene 篩選有優勢，但全矩陣輸出可能引入 spurious negative values；(3) 不存在「one-size-fits-all」normalization。實務：(a) 探索階段直接用 <code>NormalizeData()</code> shifted log 即可；(b) 若 sequencing depth 差異 &gt;10× 才加 size-factor regression；(c) 跨方法交叉驗證 cluster stability。</p>
+  <p data-lang="en">Ahlmann-Eltze & Huber (2023, Nat Methods) benchmarked 22 normalization methods and found <strong>simple shifted log with size factors</strong> matches or beats SCTransform / GLM-PCA / scVI on cluster reproducibility, DE, and trajectory tasks. There is no universally best normalization; cross-validate cluster stability.</p>
+  <p data-lang="zh"><strong>Sources:</strong> Ahlmann-Eltze C, Huber W (2023) Comparison of transformations for single-cell RNA-seq data, <em>Nat Methods</em> 20:665–672. DOI: <a href="https://doi.org/10.1038/s41592-023-01814-1" target="_blank" rel="noopener">10.1038/s41592-023-01814-1</a>; Hafemeister C, Satija R (2019) SCTransform, <em>Genome Biology</em> 20:296.</p>
+</div>
+
+<div class="errata">
+  <span class="errata-label" data-zh="補充說明" data-en="Notes" style="display:inline-block;background:#e0e7ff;color:#3730a3;padding:2px 10px;border-radius:4px;font-size:.72rem;font-weight:700;letter-spacing:.5px;margin-bottom:8px">補充說明 · Notes</span>
+  <h4 data-zh="Clustering：Seurat FindNeighbors 預設 k=20 並非中性選擇" data-en="Clustering: Seurat FindNeighbors default k=20 is not neutral">Clustering：k.param=20 的影響</h4>
+  <p data-lang="zh">教學常逕用 <code>FindNeighbors(..., k.param=20)</code> + <code>FindClusters(resolution=0.5)</code> 為預設，需注意此選擇 <strong>偏向中等 granularity</strong>：(1) <strong>k 過小</strong>（&lt;10）會放大 noise，產生過多 micro-clusters；(2) <strong>k 過大</strong>（&gt;50）會吞噬 rare cell types（如 plasmacytoid DC、Tregs）；(3) 小資料集（&lt;1000 細胞）20 已接近全體，cluster 變得不穩；(4) 不同資料尺度應 sweep <code>k</code> 與 <code>resolution</code>，配合 silhouette、ROGUE 或 clustree 評估穩定性。實務：先以 <code>clustree::clustree()</code> 看 resolution 階梯，找到「stable plateau」；再以 <code>scran::clusterCells()</code> 或 <code>bluster::clusterRows()</code> 比較不同 k 的 cluster purity。</p>
+  <p data-lang="en">Default <code>k.param=20</code> in Seurat is not neutral — too small inflates micro-clusters, too large merges rare populations. Sweep k and resolution, evaluate with clustree / silhouette / ROGUE; on small datasets k=20 can equal the cell count.</p>
+  <p data-lang="zh"><strong>Sources:</strong> Hao Y et al. (2024) Seurat v5, <em>Nat Biotechnol</em> 42:293–304. DOI: <a href="https://doi.org/10.1038/s41587-023-01767-y" target="_blank" rel="noopener">10.1038/s41587-023-01767-y</a>; Zappia L, Oshlack A (2018) clustree, <em>GigaScience</em> 7:giy083; Liu et al. (2020) ROGUE, <em>Nat Commun</em> 11:3155.</p>
+</div>
+
+<div class="errata">
+  <span class="errata-label" data-zh="補充說明" data-en="Notes" style="display:inline-block;background:#e0e7ff;color:#3730a3;padding:2px 10px;border-radius:4px;font-size:.72rem;font-weight:700;letter-spacing:.5px;margin-bottom:8px">補充說明 · Notes</span>
+  <h4 data-zh="Doublet 偵測：scDblFinder ≥ DoubletFinder ≥ Scrublet" data-en="Doublet detection: scDblFinder benchmark winner">Doublet：工具選擇與基準</h4>
+  <p data-lang="zh">教學若僅推介 DoubletFinder (McGinnis 2019)，需補充更新證據。Xi & Li (2021, <em>Cell Systems</em>) 系統 benchmark 9 種 doublet detection 工具於 16 個 ground-truth 資料集，結論：(1) <strong>scDblFinder</strong> (Germain 2021, F1000Research) 在準確度、執行速度、跨資料穩定性上總體最佳；(2) DoubletFinder 表現次之，但需手動估 expected rate；(3) Scrublet (Wolock 2019) 速度快但 recall 較低；(4) 不同工具偵到的 doublets 重疊有限，<strong>建議 ≥2 工具交集</strong>使用；(5) 任何工具均無法偵到 homotypic doublets（同型細胞融合），仍需以 <code>nCount_RNA</code> + <code>nFeature_RNA</code> 上限過濾。實務：scDblFinder 為首選，並注意 10x Multiome、Visium HD 等多模態資料須用模態專用 doublet 偵測（如 AMULET for ATAC）。</p>
+  <p data-lang="en">Xi & Li (2021, Cell Systems) benchmarked 9 doublet callers across 16 ground-truth datasets: <strong>scDblFinder</strong> ranked best overall, DoubletFinder second, Scrublet fastest but lower recall. Use consensus of ≥2 callers; no tool detects homotypic doublets — combine with nCount/nFeature filters.</p>
+  <p data-lang="zh"><strong>Sources:</strong> Xi NM, Li JJ (2021) Benchmarking computational doublet-detection methods, <em>Cell Systems</em> 12:176–194. DOI: <a href="https://doi.org/10.1016/j.cels.2020.11.008" target="_blank" rel="noopener">10.1016/j.cels.2020.11.008</a>; Germain PL et al. (2021) scDblFinder, <em>F1000Research</em> 10:979.</p>
+</div>
+
+<div class="errata">
+  <span class="errata-label" data-zh="補充說明" data-en="Notes" style="display:inline-block;background:#e0e7ff;color:#3730a3;padding:2px 10px;border-radius:4px;font-size:.72rem;font-weight:700;letter-spacing:.5px;margin-bottom:8px">補充說明 · Notes</span>
+  <h4 data-zh="Trajectory：Pseudotime ≠ 真實時間" data-en="Trajectory: pseudotime is not real time">Pseudotime 的本質與誤用</h4>
+  <p data-lang="zh">教學常呈現 Monocle3 / Slingshot / PAGA / scVelo 的 trajectory 並暗示「細胞發育順序」，需釐清：(1) <strong>Pseudotime 為 reconstruction，不是 ground truth</strong>，只反映「樣本內表達相似性的拓撲順序」，不必對應實際時間軸；(2) Saelens et al. (2019, <em>Nat Biotechnol</em>) 系統 benchmark 45 種 trajectory inference 工具，發現不同方法在同一資料可推得迥異拓撲；(3) <strong>RNA velocity</strong> (La Manno 2018; Bergen 2020 scVelo) 雖加入動力學，但 Bergen et al. (2021, Mol Syst Biol) 指出 splicing kinetics 假設在許多 lineage 違反（如 erythroid maturation），可能反推錯誤方向；(4) 不同 root cell 選擇即決定 pseudotime 方向。實務：報告 trajectory 須 (a) 同時測 ≥2 工具確認 topology 一致、(b) 用 lineage tracing / scNT-seq / sci-fate 等實驗驗證、(c) 避免 over-interpret 「leaves」為終末分化態。</p>
+  <p data-lang="en">Pseudotime is a reconstruction, not a true time axis. Saelens et al. (2019, Nat Biotechnol) showed different tools give different topologies on the same data. RNA velocity assumptions (constant splicing/degradation rates) are violated in erythroid maturation (Bergen 2021, Mol Syst Biol). Validate with lineage tracing or metabolic-labeling sequencing.</p>
+  <p data-lang="zh"><strong>Sources:</strong> Saelens W et al. (2019) A comparison of single-cell trajectory inference methods, <em>Nat Biotechnol</em> 37:547–554. DOI: <a href="https://doi.org/10.1038/s41587-019-0071-9" target="_blank" rel="noopener">10.1038/s41587-019-0071-9</a>; Bergen V et al. (2021) RNA velocity—current challenges, <em>Mol Syst Biol</em> 17:e10282.</p>
+</div>
+
+<div class="errata">
+  <span class="errata-label" data-zh="補充說明" data-en="Notes" style="display:inline-block;background:#e0e7ff;color:#3730a3;padding:2px 10px;border-radius:4px;font-size:.72rem;font-weight:700;letter-spacing:.5px;margin-bottom:8px">補充說明 · Notes</span>
+  <h4 data-zh="Cell type annotation：SingleR vs scANVI vs manual marker" data-en="Cell type annotation: SingleR vs scANVI vs manual marker">Annotation：自動化與專家審查的平衡</h4>
+  <p data-lang="zh">教學若僅推介單一 annotation 工具，需平衡介紹三類策略：(1) <strong>Marker-based 手動</strong>：以 dotplot/violin 對照 PanglaoDB、CellMarker 2.0 (Hu 2023, NAR)、Azimuth references，優點可解讀、可控；缺點主觀且 rare cell type 易漏。(2) <strong>SingleR / scmap / Symphony</strong>（reference-based 相關係數）：快速、需 bulk 或 scRNA reference；對 reference 不涵蓋的 cell type 會強制錯誤分類。(3) <strong>scANVI / Celltypist (Domínguez Conde 2022, Science)</strong>（probabilistic deep model）：可輸出不確定性、支援 zero-shot 與 fine-tune；需 GPU。Tan & Cahan (2019, Cell Systems) 與 Abdelaal et al. (2019, Genome Biology) benchmark 顯示 <strong>沒有單一最佳工具</strong>，跨方法 majority vote 表現最穩。實務：(a) 任何自動 annotation 都應以 marker gene + 領域專家審查；(b) 報告中需列出 reference 版本、unmapped cell 比例、低 confidence 比例。</p>
+  <p data-lang="en">No single annotation tool dominates. Abdelaal et al. (2019, Genome Biology) and Tan & Cahan (2019, Cell Systems) recommend cross-method majority vote followed by marker review. SingleR is fast and reference-bound; scANVI/Celltypist give probabilistic outputs; manual marker review remains indispensable.</p>
+  <p data-lang="zh"><strong>Sources:</strong> Abdelaal T et al. (2019) A comparison of automatic cell identification methods for single-cell RNA sequencing data, <em>Genome Biology</em> 20:194. DOI: <a href="https://doi.org/10.1186/s13059-019-1795-z" target="_blank" rel="noopener">10.1186/s13059-019-1795-z</a>; Domínguez Conde C et al. (2022) Celltypist, <em>Science</em> 376:eabl5197.</p>
+</div>
+
+<div class="errata">
+  <span class="errata-label" data-zh="補充說明" data-en="Notes" style="display:inline-block;background:#e0e7ff;color:#3730a3;padding:2px 10px;border-radius:4px;font-size:.72rem;font-weight:700;letter-spacing:.5px;margin-bottom:8px">補充說明 · Notes</span>
+  <h4 data-zh="Integration：Harmony / scVI / CCA 各有適用場景" data-en="Integration: Harmony vs scVI vs CCA tradeoffs">Integration：方法選擇與 over-correction</h4>
+  <p data-lang="zh">教學若預設 <code>Harmony</code> 或 Seurat CCA 為「萬用」integration，需澄清三大主流的取捨。Luecken et al. (2022, <em>Nat Methods</em>) scIB benchmark 16 種 integration 方法，於 13 個任務評估 batch removal vs biological conservation：(1) <strong>Harmony</strong> (Korsunsky 2019)：PCA-空間 fast soft-clustering，適合中等規模、組成差異小；過度校正風險高。(2) <strong>scVI / scANVI</strong> (Lopez 2018; Xu 2021)：VAE 模型，最佳「保留生物變異 + 校正 batch」綜合分；但需 GPU、訓練時間長、超參數敏感。(3) <strong>Seurat CCA / RPCA</strong>：基於 anchor，CCA 較 sensitive 但 over-correction 易；RPCA 為 v4+ 推薦折衷。(4) <strong>BBKNN</strong>：快速 KNN 校正，適合 cell-atlas 規模。實務：(a) 用 scIB metrics（kBET、iLISI、ARI）量化評估；(b) 警惕「批次差異 = 生物學差異」的情境（如疾病 vs 對照來自不同批次），integration 會抹除真實效應；(c) 報告須明列方法、版本、batch covariate。</p>
+  <p data-lang="en">Luecken et al. (2022, Nat Methods) scIB benchmark: scVI/scANVI top overall for biology conservation; Harmony fastest with over-correction risk; Seurat CCA sensitive but tends to over-correct (use RPCA). Quantify with kBET/iLISI/ARI. Watch for confounded batch × biology designs where integration removes real effects.</p>
+  <p data-lang="zh"><strong>Sources:</strong> Luecken MD et al. (2022) Benchmarking atlas-level data integration in single-cell genomics, <em>Nat Methods</em> 19:41–50. DOI: <a href="https://doi.org/10.1038/s41592-021-01336-8" target="_blank" rel="noopener">10.1038/s41592-021-01336-8</a>; Korsunsky I et al. (2019) Harmony, <em>Nat Methods</em> 16:1289.</p>
+</div>
+
+<div class="errata">
+  <span class="errata-label" data-zh="補充說明" data-en="Notes" style="display:inline-block;background:#e0e7ff;color:#3730a3;padding:2px 10px;border-radius:4px;font-size:.72rem;font-weight:700;letter-spacing:.5px;margin-bottom:8px">補充說明 · Notes</span>
+  <h4 data-zh="UMAP：局部結構可信，全域距離不可信" data-en="UMAP global structure is unreliable (Chari & Pachter 2023)">UMAP：誤把幾何當生物學</h4>
+  <p data-lang="zh">教學若以 UMAP cluster 間距推論「細胞型別相關性」，需強烈警告。Chari & Pachter (2023, <em>PLOS Comput Biol</em>) <em>The specious art of single-cell genomics</em> 系統論證：(1) UMAP / t-SNE 將高維點映射到 2D 必然 <strong>扭曲全域結構</strong>，cluster 間「距離」幾乎與真實高維距離無關；(2) 用同樣資料隨機 seed 可得到拓撲不同的 UMAP；(3) UMAP「分支」常被誤讀為發育軌跡，實為投影 artifact；(4) Pearson correlation between UMAP distance and true distance 常 &lt;0.3。實務：(a) UMAP 僅作 <strong>local neighborhood 視覺化</strong>，不要用 cluster 間距論親緣；(b) 軌跡分析應在 PCA 或 diffusion map 空間進行；(c) 報告應 (i) 公開隨機 seed、(ii) 同時呈現 PCA pairs 圖、(iii) 不在 UMAP 上做統計推論。Kobak & Linderman (2021, Nat Biotechnol) 提出 PCA-initialized t-SNE/UMAP 可改善 reproducibility，但仍不解決全域距離問題。</p>
+  <p data-lang="en">Chari & Pachter (2023, PLOS Comput Biol) demonstrate UMAP/t-SNE inherently distort global structure; inter-cluster distances do not reflect biology and can change with random seed. Use UMAP only for local neighborhood viz; perform trajectory and statistics in PCA / diffusion-map space; always disclose seeds and complement with PCA pair plots.</p>
+  <p data-lang="zh"><strong>Sources:</strong> Chari T, Pachter L (2023) The specious art of single-cell genomics, <em>PLOS Comput Biol</em> 19:e1011288. DOI: <a href="https://doi.org/10.1371/journal.pcbi.1011288" target="_blank" rel="noopener">10.1371/journal.pcbi.1011288</a>; Kobak D, Linderman GC (2021) Initialization is critical for preserving global data structure in both t-SNE and UMAP, <em>Nat Biotechnol</em> 39:156.</p>
+</div>
+
+
+<div class="errata">
+<h4 data-zh="Doublet detection：Xi &amp;amp; Li 2021 Cell Systems benchmark" data-en="Doublet detection: Xi &amp;amp; Li 2021 Cell Systems benchmark">Doublet detection：Xi &amp; Li 2021 Cell Systems benchmark</h4>
+<p data-lang="zh">教學在 QC 章節介紹 doublet 偵測時，常只列工具名稱（Scrublet, DoubletFinder, scDblFinder）而未給出選擇依據。<strong>Xi &amp; Li 2021 Cell Systems</strong>「Benchmarking Computational Doublet-Detection Methods for Single-Cell RNA Sequencing Data」系統比較 9 種 doublet 偵測工具於 16 真實+模擬資料集：<strong>DoubletFinder</strong> 與 <strong>scDblFinder</strong> 在 AUPRC 兩端均居前列；<strong>Scrublet</strong> 速度最快但對 inter-cell-type doublet 召回較弱；intra-cell-type doublet（同類細胞合併）所有工具皆難偵測。實務原則：(1) 推薦 <strong>scDblFinder</strong> (Germain 2022 F1000Research) 作為預設，因其同時用 cluster-based 與 random doublet simulation；(2) 預期 doublet rate 應依 10x 公佈值（~0.4% per 1000 cells loaded）設置；(3) 偵測前後務必比較 nFeature / nCount 分布；(4) 跨樣本聯合 doublet 偵測可降低 batch 干擾。</p>
+<p data-lang="en">When the QC chapter introduces doublet detection, it often lists tools (Scrublet, DoubletFinder, scDblFinder) without selection criteria. <strong>Xi &amp; Li 2021 Cell Systems</strong> ('Benchmarking Computational Doublet-Detection Methods for Single-Cell RNA Sequencing Data') benchmarks 9 tools on 16 real+simulated datasets: <strong>DoubletFinder</strong> and <strong>scDblFinder</strong> lead AUPRC on both ends; <strong>Scrublet</strong> is fastest but weaker on inter-cell-type doublets; intra-cell-type doublets (same-type merges) are hard for all tools. Rules: (1) recommend <strong>scDblFinder</strong> (Germain 2022 F1000Research) as default — it combines cluster-based and random doublet simulation; (2) set expected doublet rate per 10x's published curve (~0.4% per 1,000 cells loaded); (3) always compare nFeature / nCount distributions before/after; (4) joint doublet detection across samples reduces batch interference.</p>
+</div>
+
+<div class="errata">
+<h4 data-zh="Tran 2020 Genome Biology：batch correction 在無真 batch 時會傷害訊號" data-en="Tran 2020 Genome Biology: batch correction harms signal when no real batch effect">Tran 2020 Genome Biology：batch correction 在無真 batch 時會傷害訊號</h4>
+<p data-lang="zh">教學在 integration 章節常以「先 batch correct 再分析」作為標配，需補充警告：<strong>Tran, Ang, Chevrier, Zhang, Lee, Goh, Chen 2020 Genome Biology</strong>「A benchmark of batch-effect correction methods for single-cell RNA sequencing data」比較 14 種整合方法（Harmony, scVI, BBKNN, Seurat v3 CCA, MNN, Scanorama, Liger 等）於 5 個情境後指出：(1) <strong>無真 batch（同實驗、同 platform）時做 over-correction</strong>，部分方法（如 BBKNN 預設參數）會把不同細胞類型「壓平」進同一 cluster；(2) Harmony 與 Seurat v3 在大多情境表現穩健但 hyperparameter 敏感；(3) scVI 在大 batch 效應強時優勢明顯但小批次易 overfit。實務原則：(1) 先以 PCA / UMAP on raw 資料評估 batch 效應強度；(2) 若 silhouette by batch &lt; 0.05 且 cell types 已分群，可不做 batch correction；(3) Luecken 2022 Nat Methods 的 <strong>scIB-metrics</strong> 同時報 batch removal 與 bio conservation 雙軸；(4) 報告校正前後 marker gene 表現是否被壓抑。</p>
+<p data-lang="en">When the integration chapter teaches 'batch-correct first, then analyse', add a caution: <strong>Tran, Ang, Chevrier, Zhang, Lee, Goh, Chen 2020 Genome Biology</strong> ('A benchmark of batch-effect correction methods for single-cell RNA sequencing data') compares 14 methods (Harmony, scVI, BBKNN, Seurat v3 CCA, MNN, Scanorama, Liger, etc.) across 5 scenarios and finds: (1) <strong>over-correction when no real batch exists</strong> (same experiment, same platform) — some methods (BBKNN at defaults) collapse distinct cell types into one cluster; (2) Harmony and Seurat v3 are robust across most scenarios but hyperparameter-sensitive; (3) scVI excels under strong batch effects but overfits on small batches. Rules: (1) first inspect batch strength on raw PCA / UMAP; (2) if silhouette-by-batch &lt; 0.05 and cell types separate cleanly, skip correction; (3) Luecken 2022 Nat Methods's <strong>scIB-metrics</strong> reports batch removal and biology conservation on separate axes; (4) verify that marker-gene expression is not suppressed before/after correction.</p>
+</div>
+
+<div class="errata">
+  <span class="errata-label" data-zh="補充說明" data-en="Notes" style="display:inline-block;background:#e0e7ff;color:#3730a3;padding:2px 10px;border-radius:4px;font-size:.72rem;font-weight:700;letter-spacing:.5px;margin-bottom:8px">補充說明 · Notes</span>
+  <h4 data-zh="QC：DoubletFinder API 已正名 doubletFinder_v3() → doubletFinder()" data-en="QC: DoubletFinder API renamed from doubletFinder_v3() to doubletFinder()">QC：DoubletFinder API 名稱</h4>
+  <p data-lang="zh">教學中若仍示範 <code>doubletFinder_v3()</code>，需更新：此為 <strong>DoubletFinder &lt; 2.0.4 的舊 API</strong>。自 2023 年發行的 DoubletFinder 2.0.4 起，函式已正名為 <code>doubletFinder()</code> 與 <code>paramSweep()</code>（不再帶 <code>_v3</code> 後綴）。新版本仍向後相容舊名稱，但建議讀者使用新 API；同時對應的參數（pN、pK、nExp）介面未變。</p>
+  <p data-lang="en">If the tutorial still demonstrates <code>doubletFinder_v3()</code>, update it: that is the <strong>pre-2.0.4 API</strong>. Since DoubletFinder 2.0.4 (2023) the functions are renamed <code>doubletFinder()</code> and <code>paramSweep()</code> (no <code>_v3</code> suffix). Old names still work for backward compatibility, but new code should use the new API. Parameters (pN, pK, nExp) are unchanged.</p>
+  <p data-lang="zh"><strong>Sources:</strong> <a href="https://github.com/chris-mcginnis-ucsf/DoubletFinder" target="_blank" rel="noopener">GitHub: chris-mcginnis-ucsf/DoubletFinder</a> README & release notes (v2.0.4, 2023).</p>
+</div>
+
+<div class="errata">
+  <span class="errata-label" data-zh="補充說明" data-en="Notes" style="display:inline-block;background:#e0e7ff;color:#3730a3;padding:2px 10px;border-radius:4px;font-size:.72rem;font-weight:700;letter-spacing:.5px;margin-bottom:8px">補充說明 · Notes</span>
+  <h4 data-zh="Annotation：FCGR3A Mono 的慣用名為 CD16+ Monocyte / non-classical monocyte" data-en="Annotation: FCGR3A Mono is commonly called CD16+ Monocyte / non-classical monocyte">Annotation：FCGR3A Mono 的常用名</h4>
+  <p data-lang="zh">教學表格若寫「FCGR3A Mono」，需補充：<strong>FCGR3A 即 CD16</strong>。在多數教科書、Seurat 官方 PBMC tutorial 與 Azimuth PBMC reference 中，此細胞群通常稱為 <strong>CD16+ Monocyte</strong> 或 <strong>非典型單核球 (non-classical monocyte)</strong>。三個名稱（FCGR3A Mono / CD16+ Mono / non-classical Mono）指向同一細胞群，文獻可互換；報告時建議使用 <strong>CD16+ Monocyte</strong> 以對齊免疫學社群慣例。</p>
+  <p data-lang="en">If the tutorial table lists "FCGR3A Mono", note that <strong>FCGR3A is CD16</strong>. Textbooks, the Seurat PBMC tutorial, and the Azimuth PBMC reference all use <strong>CD16+ Monocyte</strong> or <strong>non-classical monocyte</strong> for the same population. The three names are interchangeable; prefer <strong>CD16+ Monocyte</strong> in reports to align with immunology conventions.</p>
+  <p data-lang="zh"><strong>Sources:</strong> Hao Y et al. (2021) Integrated analysis of multimodal single-cell data, <em>Cell</em> 184:3573 (Azimuth PBMC reference); Seurat <a href="https://satijalab.org/seurat/articles/pbmc3k_tutorial" target="_blank" rel="noopener">PBMC3K vignette</a>.</p>
+</div>
+
+<div class="errata">
+  <span class="errata-label" data-zh="補充說明" data-en="Notes" style="display:inline-block;background:#e0e7ff;color:#3730a3;padding:2px 10px;border-radius:4px;font-size:.72rem;font-weight:700;letter-spacing:.5px;margin-bottom:8px">補充說明 · Notes</span>
+  <h4 data-zh="Annotation：DC marker 需細分 cDC1 / cDC2 / pDC，CST3+FCER1A 不足以辨識亞群" data-en="Annotation: DC markers must distinguish cDC1 / cDC2 / pDC — CST3 + FCER1A is not enough">Annotation：DC marker 的細分</h4>
+  <p data-lang="zh">教學表格若以 <code>FCER1A</code>、<code>CST3</code> 標示 DC，需補充：(1) <strong>CST3</strong> 為廣義 myeloid / 單核細胞與 DC 共表達基因，特異性低；(2) <strong>FCER1A</strong> 主要標示 <strong>cDC2</strong>（conventional DC type 2）；(3) <strong>cDC1</strong> 常用 marker 為 <code>CLEC9A</code>、<code>XCR1</code>、<code>BATF3</code>；(4) <strong>pDC</strong>（漿細胞樣 DC）常用 marker 為 <code>LILRA4</code>、<code>IL3RA</code> (CD123)、<code>CLEC4C</code>；(5) <strong>AS-DC</strong>（Villani 2017 Science 描述的新亞群）以 <code>AXL</code>、<code>SIGLEC6</code> 標示。若要精細註釋 DC 子群，建議搭配 <strong>Azimuth PBMC reference</strong> 或 <strong>CellTypist immune model</strong> 使用。</p>
+  <p data-lang="en">If the tutorial uses <code>FCER1A</code> + <code>CST3</code> to label DCs, refine: <strong>CST3</strong> is shared across myeloid cells (low specificity); <strong>FCER1A</strong> mainly marks <strong>cDC2</strong>. <strong>cDC1</strong> markers: <code>CLEC9A</code>, <code>XCR1</code>, <code>BATF3</code>. <strong>pDC</strong> markers: <code>LILRA4</code>, <code>IL3RA</code> (CD123), <code>CLEC4C</code>. <strong>AS-DC</strong> (Villani 2017): <code>AXL</code>, <code>SIGLEC6</code>. For fine DC sub-typing, use <strong>Azimuth PBMC reference</strong> or <strong>CellTypist immune model</strong>.</p>
+  <p data-lang="zh"><strong>Sources:</strong> Domínguez Conde C et al. (2022) Cross-tissue immune cell analysis reveals tissue-specific features in humans, <em>Science</em> 376:eabl5197. DOI: <a href="https://doi.org/10.1126/science.abl5197" target="_blank" rel="noopener">10.1126/science.abl5197</a>; Villani AC et al. (2017) Single-cell RNA-seq reveals new types of human blood dendritic cells, monocytes, and progenitors, <em>Science</em> 356:eaah4573.</p>
+</div>
+
+<div class="errata">
+  <span class="errata-label" data-zh="補充說明" data-en="Notes" style="display:inline-block;background:#e0e7ff;color:#3730a3;padding:2px 10px;border-radius:4px;font-size:.72rem;font-weight:700;letter-spacing:.5px;margin-bottom:8px">補充說明 · Notes</span>
+  <h4 data-zh="DE：跨條件比較共識 — pseudobulk + edgeR-LRT / DESeq2-LRT 優於 single-cell Wilcoxon" data-en="DE: Cross-condition consensus — pseudobulk + edgeR-LRT / DESeq2-LRT beats single-cell Wilcoxon">DE：跨條件比較的當前共識</h4>
+  <p data-lang="zh">教學若僅提到 <code>FindMarkers(test.use="wilcox")</code> 做跨條件比較，需更新：<strong>Squair et al. 2021 Nat Commun</strong>「Confronting false discoveries in single-cell differential expression」與 <strong>Murphy et al. 2022 Nat Commun</strong>「Limitations of cell-cell communication inference from single-cell RNA sequencing」皆指出：(1) 把 <strong>cluster × sample 做 pseudobulk</strong> 後使用 <code>edgeR-LRT</code> 或 <code>DESeq2-LRT</code>，比直接對單細胞做 Wilcoxon / MAST <strong>在控制 FDR 上明顯較佳</strong>，後者會把同一樣本內細胞當獨立樣本而過度膨脹 type I error；(2) sample 數 (donor / replicate) 過少時 (n &lt; 4 per group) pseudobulk 也不可靠，須謹慎；(3) 對 cell-type rare 或樣本內 zero-inflation 高的情境，可改用 <strong>MAST hurdle model</strong> + random effect 補充。實務：(a) 跨 donor / condition 的 DE 必須 pseudobulk；(b) 報告須明列 sample 數、pseudobulk strategy 與檢定方法。</p>
+  <p data-lang="en">If the tutorial only mentions <code>FindMarkers(test.use="wilcox")</code> for cross-condition DE, update: <strong>Squair et al. 2021 Nat Commun</strong> ("Confronting false discoveries in single-cell differential expression") and <strong>Murphy et al. 2022 Nat Commun</strong> show <strong>pseudobulk by cluster × sample</strong> followed by <code>edgeR-LRT</code> or <code>DESeq2-LRT</code> controls FDR far better than single-cell Wilcoxon / MAST, which treats cells within a sample as independent and inflates type I error. With very few samples (n &lt; 4 per group) pseudobulk is also unreliable; consider <strong>MAST hurdle model</strong> with random effects. Always report sample count and pseudobulk strategy.</p>
+  <p data-lang="zh"><strong>Sources:</strong> Squair JW et al. (2021) Confronting false discoveries in single-cell differential expression, <em>Nat Commun</em> 12:5692. DOI: <a href="https://doi.org/10.1038/s41467-021-25960-2" target="_blank" rel="noopener">10.1038/s41467-021-25960-2</a>; Murphy AE et al. (2022), <em>Nat Commun</em> 13:7980. DOI: <a href="https://doi.org/10.1038/s41467-022-35519-4" target="_blank" rel="noopener">10.1038/s41467-022-35519-4</a>.</p>
 </div>
 </section>
 
 <nav class="page-nav">
-  <a href="../index.html"><span class="nav-dir">← 教學首頁</span><span class="nav-title">回到 12 步驟教學</span></a>
-  <a href="../scrna-quiz/index.html"><span class="nav-dir">互動考題 →</span><span class="nav-title">126 題 scRNA-seq 測驗</span></a>
+  <a href="../index.html"><span class="nav-dir" data-zh="← 教學首頁" data-en="← Tutorial home">← 教學首頁</span><span class="nav-title" data-zh="回到主教學頁" data-en="Back to tutorial hub">回到主教學頁</span></a>
+  <a href="../scrna-quiz/index.html" target="_blank" rel="noopener"><span class="nav-dir" data-zh="互動考題 →" data-en="Interactive quiz →">互動考題 →</span><span class="nav-title" data-zh="互動式考題" data-en="Interactive Quiz">互動式考題</span></a>
 </nav>
+
+
+
 </main>
 
 <footer class="site-footer" style="text-align:center;color:var(--c-ink-muted);padding:20px;font-size:.85rem;border-top:1px solid var(--c-border-light);margin-top:40px">
   © Charlene · scRNA-seq Interactive Tutorial — References<br>
-  收錄 50+ 篇學術論文、官方文件與資料庫連結 · 最後更新 2026-05
+  <span data-zh="學術論文、官方文件與工具連結 · 最後更新 2026-05" data-en="Papers, official docs and tool links · Last updated 2026-05">學術論文、官方文件與工具連結 · 最後更新 2026-05</span>
 </footer>
 
+<script src="../i18n.js"></script>
 </body>
 </html>
