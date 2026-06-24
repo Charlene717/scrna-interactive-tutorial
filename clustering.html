@@ -1,70 +1,476 @@
-<!DOCTYPE html><html lang="zh-Hant"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>clustering — scRNA-seq Tutorial</title><link rel="stylesheet" href="styles.css"></head><body>
-<nav class="top-nav"><div class="top-nav-inner"><a href="index.html" class="top-nav-brand"><span>🧬</span> <span data-zh="scRNA-seq 教學" data-en="scRNA-seq Tutorial">scRNA-seq 教學</span></a><ul class="top-nav-links"><li><a href="qc.html">QC</a></li><li><a href="normalization.html">Norm.</a></li><li><a href="variable-features.html">Features</a></li><li><a href="scaling.html">Scaling</a></li><li><a href="pca.html">PCA</a></li><li><a href="clustering.html" class=active>Clustering</a></li><li><a href="umap.html">UMAP</a></li><li><a href="annotation.html">Annot.</a></li><li><a href="differential-expression.html">DE</a></li><li><a href="integration.html">Integ.</a></li><li><a href="cellchat.html">CellChat</a></li><li><a href="trajectory.html">Traj.</a></li>
+<!DOCTYPE html><html lang="zh-Hant"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Step 6: Clustering — scRNA-seq Tutorial</title>
+<link rel="stylesheet" href="styles.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+</head><body>
+<nav class="top-nav"><div class="top-nav-inner">
+  <a href="index.html" class="top-nav-brand"><span>🧬</span> <span data-zh="scRNA-seq 教學" data-en="scRNA-seq Tutorial">scRNA-seq 教學</span></a>
+  <ul class="top-nav-links"><li><a href="qc.html">QC</a></li><li><a href="normalization.html">Norm.</a></li><li><a href="variable-features.html">Features</a></li><li><a href="scaling.html">Scaling</a></li><li><a href="pca.html">PCA</a></li><li><a href="clustering.html" class="active">Clustering</a></li><li><a href="umap.html">UMAP</a></li><li><a href="annotation.html">Annot.</a></li><li><a href="differential-expression.html">DE</a></li><li><a href="integration.html">Integ.</a></li><li><a href="cellchat.html">CellChat</a></li><li><a href="trajectory.html">Traj.</a></li>
     <li><a href="references/index.html" data-zh="📚 參考資料" data-en="📚 References">📚 參考資料</a></li>
-  </ul></div></nav><div class="progress-bar-container"><div class="progress-bar" id="progressBar"></div></div>
-<header class="page-hero"><div class="step-badge">STEP 6 / 9</div><h1 data-zh="聚類 (Clustering)" data-en="Clustering">聚類 (Clustering)</h1><p class="subtitle" data-lang="zh">依據 PCA 空間中的近鄰關係建立圖網路，辨識細胞族群與亞群。</p><p class="subtitle" data-lang="en">Build graph networks from PCA-space neighbor relationships to identify cell populations and subpopulations.</p></header><main class="content-wrap">
-<section class="section"><div class="section-label" data-zh="核心概念" data-en="CONCEPT">核心概念</div><h2 data-zh="一、聚類分析的目的" data-en="I. Purpose of Clustering">一、聚類分析的目的</h2>
-<div data-lang="zh"><p>在典型的 scRNA-seq 實驗中，我們會獲得成千上萬個細胞的高維基因表達數據。聚類將具有<strong>相似轉錄組特徵</strong>的細胞歸類在一起——識別細胞異質性、發現新細胞類型、並為後續的細胞類型鑑定奠定基礎。</p></div>
-<div data-lang="en"><p>In a typical scRNA-seq experiment, we obtain high-dimensional gene expression data for thousands of cells. Clustering groups cells with <strong>similar transcriptomic profiles</strong> together — identifying heterogeneity, discovering new cell types, and laying the foundation for annotation.</p></div></section>
+  </ul>
+</div></nav>
+<div class="progress-bar-container"><div class="progress-bar" id="progressBar"></div></div>
+<header class="page-hero"><div class="step-badge">STEP 6 / 9</div>
+<h1 data-zh="聚類 (Clustering)" data-en="Clustering">聚類 (Clustering)</h1>
+<p class="subtitle" data-lang="zh">在 PCA 空間中建立 kNN 圖、用社群偵測切割成細胞族群——這是「發現細胞類型」的核心步驟。</p>
+<p class="subtitle" data-lang="en">Build a kNN graph in PCA space and partition it via community detection — the core step for discovering cell populations.</p>
+</header>
+<main class="content-wrap">
 
-<section class="section"><div class="section-label" data-zh="三步邏輯" data-en="THREE STEPS">三步邏輯</div><h2 data-zh="二、Graph-based 聚類的三步邏輯" data-en="II. Graph-based Clustering: Three Steps">二、聚類三步邏輯</h2>
-<div class="workflow">
-<div class="workflow-step" data-step="1"><h4 data-zh="構建 KNN 圖" data-en="Build KNN Graph">構建 KNN 圖</h4><div data-lang="zh"><p>計算細胞在 PCA 空間中的距離，為每個細胞找到最近的 K 個鄰居，建立網絡。K 值通常由軟體自動設定（Seurat 預設 k=20）。</p></div><div data-lang="en"><p>Calculate distances between cells in PCA space, find K nearest neighbors for each cell, build a network. K is usually set automatically (Seurat default k=20).</p></div></div>
-<div class="workflow-step" data-step="2"><h4 data-zh="計算 SNN 權重" data-en="Compute SNN Weights">計算 SNN 權重</h4><div data-lang="zh"><p>使用<strong>共享近鄰 (Shared Nearest Neighbor, SNN)</strong> 算法優化連接權重——兩個細胞共享的鄰居越多，它們之間的連接就越強，代表它們越可能是同一群體。</p></div><div data-lang="en"><p>Optimize edge weights using <strong>Shared Nearest Neighbor (SNN)</strong> — the more neighbors two cells share, the stronger their connection, indicating higher probability of belonging to the same population.</p></div></div>
-<div class="workflow-step" data-step="3"><h4 data-zh="社區發現 (Community Detection)" data-en="Community Detection">社區發現</h4><div data-lang="zh"><p>使用 <strong>Louvain</strong>（優化模塊度）或 <strong>Leiden</strong>（改良版，產生更具連通性的群體）演算法將網絡切割成群集。<strong>目前推薦使用 Leiden</strong>——它修正了 Louvain 可能產生的斷裂社區問題。</p></div><div data-lang="en"><p>Use <strong>Louvain</strong> (modularity optimization) or <strong>Leiden</strong> (improved, produces better-connected communities) to partition the network into clusters. <strong>Leiden is currently recommended</strong> — it fixes Louvain's issue of potentially producing disconnected communities.</p></div></div></div></section>
-
-<section class="section"><div class="section-label" data-zh="互動模擬" data-en="INTERACTIVE">互動模擬</div><h2 data-zh="三、Resolution 參數" data-en="III. Resolution Parameter">三、Resolution 參數</h2>
-<div data-lang="zh"><p><strong>Resolution</strong> 是決定分群細緻度的核心參數。低值產生少量大群，高值產生多個小群。</p></div><div data-lang="en"><p><strong>Resolution</strong> is the key parameter controlling clustering granularity. Low values produce few large clusters; high values produce many small ones.</p></div>
-<div class="interactive-panel"><div class="slider-group"><label>Resolution <span id="valRes">0.5</span></label><input type="range" id="sliderRes" min="1" max="20" value="5" step="1"></div>
-<div id="resDesc" style="font-size:.88rem;color:var(--c-ink-light);margin-bottom:8px;"></div><div class="chart-container" style="height:360px;"><canvas id="clChart"></canvas></div></div></section>
-
-<section class="section"><div class="section-label" data-zh="方法比較" data-en="COMPARISON">方法比較</div><h2 data-zh="四、Graph-based vs K-means" data-en="IV. Graph-based vs K-means">四、方法比較</h2>
-<table class="comp-table"><thead><tr><th></th><th data-zh="Graph-based（推薦）" data-en="Graph-based (Recommended)">Graph-based</th><th>K-means</th></tr></thead><tbody>
-<tr><td data-zh="預設於" data-en="Default in"><strong>預設於</strong></td><td>Seurat, Scanpy</td><td data-lang="zh">傳統 ML</td><td data-lang="en">Traditional ML</td></tr>
-<tr><td data-zh="需預設群數？" data-en="Need preset K?"><strong>需預設 K？</strong></td><td data-lang="zh">不需要（由 resolution 控制粗細）</td><td data-lang="zh">必須事先指定</td><td data-lang="en">No (controlled by resolution)</td><td data-lang="en">Must be specified beforehand</td></tr>
-<tr><td data-zh="群體形狀" data-en="Cluster shape"><strong>形狀</strong></td><td data-lang="zh">可處理非凸、不規則形狀</td><td data-lang="zh">假設球形、大小相近</td><td data-lang="en">Handles non-convex, irregular shapes</td><td data-lang="en">Assumes spherical, similar-sized clusters</td></tr>
-</tbody></table></section>
-
-<section class="section"><div class="section-label" data-zh="常見陷阱" data-en="PITFALLS">常見陷阱</div><h2 data-zh="五、聚類分析常見陷阱" data-en="V. Common Pitfalls">五、常見陷阱</h2>
+<!-- ===== Section 1: Overview ===== -->
+<section class="section">
+<div class="section-label" data-zh="概覽" data-en="OVERVIEW">概覽</div>
+<h2 data-zh="一、為什麼要聚類？從 PCA 空間到細胞族群" data-en="I. Why cluster? From PCA space to cell populations">一、為什麼要聚類？</h2>
+<div data-lang="zh">
+<p>在前一步 PCA 之後，每個細胞在 ~20 維的 PC 空間中佔一個點。聚類的目的是：把「轉錄組相近」的細胞歸成同一群——這些群就是後續解讀為<strong>細胞類型</strong>或<strong>細胞狀態</strong>的單位。</p>
+<p><strong>為什麼用 graph-based clustering 而不是 k-means？</strong> scRNA-seq 的細胞族群有三個特殊性：</p>
+<ul style="margin:8px 0 0 20px;color:var(--c-ink-light);">
+<li><strong>族群大小極不均</strong>：從占 40% 的 T cell 到占 0.5% 的稀有 pDC</li>
+<li><strong>形狀非凸（non-convex）</strong>：細胞狀態形成彎曲的流形，不是球形</li>
+<li><strong>群數未知</strong>：不知道組織裡有幾種細胞類型，沒法事先指定 k</li>
+</ul>
+<p>k-means 三個都不擅長；graph-based（Louvain / Leiden）三個都做得好——這就是它成為 scRNA-seq 標準的原因。</p>
+</div>
+<div data-lang="en">
+<p>After PCA, each cell occupies a point in ~20-dimensional PC space. Clustering groups cells with similar transcriptomic profiles — these groups become the units we later interpret as <strong>cell types</strong> or <strong>cell states</strong>.</p>
+<p><strong>Why graph-based clustering, not k-means?</strong> scRNA-seq cell populations have three special features:</p>
+<ul style="margin:8px 0 0 20px;color:var(--c-ink-light);">
+<li><strong>Extreme size imbalance</strong>: from 40%-of-cells T cells to 0.5% rare pDCs</li>
+<li><strong>Non-convex shapes</strong>: cell states form curved manifolds, not spheres</li>
+<li><strong>Unknown number of groups</strong>: you don't know how many cell types exist a priori, can't pre-specify k</li>
+</ul>
+<p>k-means handles none of these well; graph-based (Louvain / Leiden) handles all three — that is why it became the scRNA-seq standard.</p>
+</div>
 <div class="card-grid cols-3">
-<div class="card" style="border-left:4px solid var(--c-danger);"><h4 data-zh="✂️ 過度聚類" data-en="✂️ Over-clustering">✂️ 過度聚類</h4><div data-lang="zh"><p><strong>現象：</strong>同一種細胞被拆成多群。<br><strong>原因：</strong>Resolution 過高，或將技術噪聲誤認為異質性。<br><strong>檢查：</strong>群間 DE 基因極少或差異微小。</p></div><div data-lang="en"><p><strong>Symptom:</strong> Same cell type split into multiple clusters.<br><strong>Cause:</strong> Resolution too high, or technical noise mistaken for heterogeneity.<br><strong>Check:</strong> Very few or trivial DE genes between clusters.</p></div></div>
-<div class="card" style="border-left:4px solid var(--c-danger);"><h4 data-zh="🧪 批次效應" data-en="🧪 Batch Effects">🧪 批次效應</h4><div data-lang="zh"><p><strong>現象：</strong>聚類反映樣本來源而非細胞類型。<br><strong>解法：</strong>聚類前必須先做 Integration（如 Harmony、RPCA）。</p></div><div data-lang="en"><p><strong>Symptom:</strong> Clusters reflect sample origin, not cell type.<br><strong>Solution:</strong> Must perform Integration (Harmony, RPCA) before clustering.</p></div></div>
-<div class="card" style="border-left:4px solid var(--c-danger);"><h4 data-zh="👯 Doublets" data-en="👯 Doublets">👯 Doublets</h4><div data-lang="zh"><p><strong>現象：</strong>UMAP 上出現在兩大群中間的「橋樑」小群，marker 混合了兩種細胞特徵。<br><strong>解法：</strong>用 DoubletFinder 等工具在 QC 階段預先過濾。</p></div><div data-lang="en"><p><strong>Symptom:</strong> Small "bridge" cluster between two major groups on UMAP, with mixed markers from both.<br><strong>Solution:</strong> Use DoubletFinder etc. to pre-filter during QC.</p></div></div></div></section>
+<div class="card"><div class="card-icon">🕸️</div><h4 data-zh="kNN 圖" data-en="kNN graph">kNN 圖</h4><p data-lang="zh">每個細胞連到 PCA 空間中最近的 k 個鄰居，把資料變成一張圖。</p><p data-lang="en">Each cell connects to its k nearest neighbors in PCA space, turning the data into a graph.</p></div>
+<div class="card"><div class="card-icon">🔗</div><h4 data-zh="SNN 加權" data-en="SNN weighting">SNN 加權</h4><p data-lang="zh">兩個細胞共享越多鄰居，邊權越大——強化「真朋友」、弱化「擦肩而過」。</p><p data-lang="en">More shared neighbors → heavier edge weight — strengthens true friends, weakens passers-by.</p></div>
+<div class="card"><div class="card-icon">🪐</div><h4 data-zh="社群偵測" data-en="Community detection">社群偵測</h4><p data-lang="zh">用 Louvain / Leiden 把圖切成密集連接的子圖——每個子圖就是一個 cluster。</p><p data-lang="en">Louvain / Leiden partition the graph into densely-connected subgraphs — each is a cluster.</p></div>
+</div>
+<div class="callout tip"><span class="callout-icon">💡</span><div>
+<span data-lang="zh"><strong>關鍵心法：</strong>聚類結果<strong>不是真理</strong>——它是「在當前 k、resolution、PC 數設定下，數據被怎麼切」的<strong>一個合理切法</strong>。換參數會得到不同分群。所以聚類後一定要回到生物學驗證（marker gene、已知細胞類型）。</span>
+<span data-lang="en"><strong>Key mindset:</strong> clustering results are <strong>not ground truth</strong> — they are <strong>one reasonable partition</strong> under the chosen k, resolution, and #PCs. Different parameters give different clusters. Always validate against biology (markers, known cell types) afterwards.</span>
+</div></div>
+</section>
 
-<section class="section"><div class="section-label" data-zh="程式碼" data-en="CODE">程式碼</div><h2 data-zh="六、實作範例" data-en="VI. Code Examples">六、實作範例</h2>
+<!-- ===== Section 2: kNN graph construction ===== -->
+<section class="section">
+<div class="section-label" data-zh="kNN 圖" data-en="kNN GRAPH">kNN 圖</div>
+<h2 data-zh="二、kNN 圖如何建構？" data-en="II. How is the kNN graph built?">二、kNN 圖如何建構？</h2>
+<div data-lang="zh">
+<p>聚類流程的第一步是把點雲變成圖。具體做法：</p>
+<ol style="margin:8px 0 0 20px;color:var(--c-ink-light);">
+<li>在前 N 個 PC（通常 15–30）構成的空間中，<strong>計算每個細胞到其他細胞的距離</strong>（預設歐氏距離）</li>
+<li>每個細胞保留最近的 <code>k.param</code> 個鄰居（Seurat 預設 k=20，Scanpy 預設 n_neighbors=15）</li>
+<li>建立邊：細胞 i 連到它的 k 個鄰居</li>
+<li>計算 <strong>SNN</strong>：若細胞 i 與 j 共享的鄰居佔比 ≥ <code>prune.SNN</code>（預設 1/15），則加邊 ij，權重 = Jaccard 相似度</li>
+</ol>
+</div>
+<div data-lang="en">
+<p>The first step is turning the point cloud into a graph:</p>
+<ol style="margin:8px 0 0 20px;color:var(--c-ink-light);">
+<li>In the top N PC space (typically 15–30), <strong>compute pairwise distances</strong> (default Euclidean)</li>
+<li>Each cell keeps its <code>k.param</code> nearest neighbors (Seurat default k=20, Scanpy default n_neighbors=15)</li>
+<li>Build edges: cell i connects to its k neighbors</li>
+<li>Compute <strong>SNN</strong>: if cells i and j share a fraction ≥ <code>prune.SNN</code> (default 1/15) of neighbors, add edge ij with weight = Jaccard similarity</li>
+</ol>
+</div>
+<div class="card-grid cols-2">
+<div class="card"><div class="card-icon">🎛️</div><h4 data-zh="k 值怎麼選？" data-en="How to choose k?">k 值的選擇</h4>
+<div data-lang="zh"><p><strong>k 小（5–10）：</strong>圖較稀疏，敏感於局部結構，容易分出稀有亞群但也容易過分群。<br><strong>k 大（30–50）：</strong>圖較密集，分群較粗，平滑掉小變異。<br><strong>實務：</strong>細胞數 &lt; 10K 用 k=10–15，10K–50K 用 k=15–25，&gt;50K 用 k=30+。</p></div>
+<div data-lang="en"><p><strong>Small k (5–10):</strong> sparser graph, sensitive to local structure — finds rare subpopulations but easily over-clusters.<br><strong>Large k (30–50):</strong> denser graph, coarser clusters, smooths small variations.<br><strong>Rule of thumb:</strong> &lt;10K cells → k=10–15; 10K–50K → k=15–25; &gt;50K → k=30+.</p></div>
+</div>
+<div class="card"><div class="card-icon">🤝</div><h4 data-zh="為什麼要 SNN 不直接用 kNN？" data-en="Why SNN instead of raw kNN?">為什麼要 SNN？</h4>
+<div data-lang="zh"><p>原始 kNN 是<strong>有方向、不對稱的</strong>——A 把 B 列為鄰居，B 不一定把 A 列為鄰居。SNN 用「共享鄰居數」重新加權邊，使連接<strong>對稱且抗噪</strong>——只有「真的彼此靠近且情境相同」的細胞才有強連結。這對下游社群偵測幫助很大。</p></div>
+<div data-lang="en"><p>Raw kNN is <strong>directional and asymmetric</strong> — A may list B as a neighbor without B listing A. SNN re-weights edges by shared neighbors, making links <strong>symmetric and noise-robust</strong> — only cells that "really cluster together in context" get strong edges. This significantly helps downstream community detection.</p></div>
+</div>
+</div>
+</section>
+
+<!-- ===== Section 3: Louvain vs Leiden ===== -->
+<section class="section">
+<div class="section-label" data-zh="社群偵測" data-en="COMMUNITY DETECTION">社群偵測</div>
+<h2 data-zh="三、Louvain vs Leiden：算法的演進" data-en="III. Louvain vs Leiden: algorithmic evolution">三、Louvain vs Leiden</h2>
+<div data-lang="zh">
+<p>建好 SNN 圖後，要從圖中找出「密集連接的子圖（社群）」。最常用兩種演算法：</p>
+</div>
+<div data-lang="en">
+<p>Once the SNN graph is built, we need to find "densely-connected subgraphs (communities)." Two algorithms dominate:</p>
+</div>
+<div class="card-grid cols-2">
+<div class="card"><h4>🌀 <span data-zh="Louvain（2008）" data-en="Louvain (2008)">Louvain (2008)</span></h4>
+<div data-lang="zh">
+<p><strong>核心：</strong>貪婪優化 <strong>modularity Q</strong>——衡量「群內連結 / 群間連結」是否顯著高於隨機。每次將節點移到能讓 Q 提升最多的鄰居社群。</p>
+<p><strong>缺點：</strong>Traag (2019) 證明 Louvain 可能產生<strong>內部不連通的「社群」</strong>——同一群裡有兩個子集彼此沒有任何邊。生物上極不合理。</p>
+</div>
+<div data-lang="en">
+<p><strong>Core:</strong> greedy optimization of <strong>modularity Q</strong>, measuring whether intra-community edges exceed random expectation. At each iteration, move a node to the neighbor community that maximizes Q.</p>
+<p><strong>Flaw:</strong> Traag (2019) showed Louvain can produce <strong>internally disconnected "communities"</strong> — a cluster containing two subsets with no edges between them. Biologically unreasonable.</p>
+</div>
+</div>
+<div class="card"><h4>🍃 <span data-zh="Leiden（2019，推薦）" data-en="Leiden (2019, recommended)">Leiden (2019)</span></h4>
+<div data-lang="zh">
+<p><strong>核心改進：</strong>在 Louvain 流程後加入「<strong>細化階段 (refinement)</strong>」——強制保證每個社群<strong>內部連通</strong>，再做下一輪聚合。</p>
+<p><strong>好處：</strong>(1) 不會產生破碎社群；(2) 收斂更快；(3) 對細粒度結構更敏感。<strong>Scanpy 預設 Leiden；Seurat v4+ 把 Leiden 加為 <code>algorithm=4</code></strong>。</p>
+</div>
+<div data-lang="en">
+<p><strong>Key improvement:</strong> adds a <strong>refinement phase</strong> after the Louvain loop — forces every community to be <strong>internally connected</strong>, then aggregates.</p>
+<p><strong>Benefits:</strong> (1) no broken communities; (2) faster convergence; (3) better fine-structure sensitivity. <strong>Scanpy defaults to Leiden; Seurat v4+ exposes it as <code>algorithm=4</code></strong>.</p>
+</div>
+</div>
+</div>
+<div class="callout tip"><span class="callout-icon">💡</span><div>
+<span data-lang="zh"><strong>Resolution 參數的直覺：</strong>Modularity 公式裡有個 <code>γ</code>（resolution）——它平衡「群內密度」與「群數懲罰」。γ 越大，每個群被要求越緻密，於是切得越細；γ 越小，越容忍稀疏，於是切得越粗。<strong>沒有「正確的」resolution</strong>——它只決定你想看「鳥瞰圖」還是「街景圖」。</span>
+<span data-lang="en"><strong>Intuition for resolution:</strong> the modularity formula contains a <code>γ</code> (resolution) parameter — it balances "within-cluster density" vs "penalty for many clusters." Higher γ → each cluster must be denser → finer partition. Lower γ → tolerates sparser clusters → coarser partition. <strong>There is no "correct" resolution</strong> — it just decides whether you want a bird's-eye view or a street view.</span>
+</div></div>
+</section>
+
+<!-- ===== Section 4: Interactive Sim ===== -->
+<section class="section">
+<div class="section-label" data-zh="互動模擬" data-en="INTERACTIVE">互動模擬</div>
+<h2 data-zh="四、Resolution 互動模擬" data-en="IV. Interactive Resolution Sim">四、Resolution 互動模擬</h2>
+<div data-lang="zh"><p>下方為合成「PCA-縮減 2D 空間」散佈圖。拖動 <strong>resolution</strong> 與 <strong>k.param</strong>，觀察分群數的變化。<span style="color:#c0392b;font-weight:600;">低 resolution → 群數少，可能合併不同細胞類型</span>；<span style="color:#8e44ad;font-weight:600;">高 resolution → 群數多，可能把同類細胞拆碎</span>。</p></div>
+<div data-lang="en"><p>The plot is a synthetic "PCA-reduced 2D" scatter. Drag <strong>resolution</strong> and <strong>k.param</strong> to see cluster-count change. <span style="color:#c0392b;font-weight:600;">Low resolution → few clusters, may merge distinct cell types</span>; <span style="color:#8e44ad;font-weight:600;">high resolution → many clusters, may split same cell type</span>.</p></div>
+<div class="interactive-panel">
+<div class="sim-stats"><span class="sim-stat" id="statRes2">—</span><span class="sim-stat pass" id="statKp">—</span><span class="sim-stat" style="background:var(--c-bg-alt);color:var(--c-ink-light);" id="statNC">—</span></div>
+<div class="slider-group"><label><span data-zh="Resolution（γ）" data-en="Resolution (γ)">Resolution</span> <span id="valRes">0.5</span></label><input type="range" id="sliderRes" min="1" max="30" value="5" step="1"></div>
+<div class="slider-group"><label><span data-zh="k.param（每個細胞的鄰居數）" data-en="k.param (neighbors per cell)">k.param</span> <span id="valKp">20</span></label><input type="range" id="sliderKp" min="5" max="50" value="20" step="5"></div>
+<div id="resDesc" style="font-size:.88rem;color:var(--c-ink-light);margin:8px 0;"></div>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px;margin-top:10px;">
+  <div><div style="font-size:.82rem;font-weight:600;text-align:center;margin-bottom:4px;color:var(--c-ink-light);"><span data-zh="① 聚類結果（2D 模擬 PCA 空間）" data-en="① Clustering result (sim 2D PCA space)">① 聚類結果</span></div><div class="chart-container" style="height:300px;"><canvas id="clChart"></canvas></div></div>
+  <div><div style="font-size:.82rem;font-weight:600;text-align:center;margin-bottom:4px;color:var(--c-ink-light);"><span data-zh="② 每群細胞數（檢查均衡）" data-en="② Cells per cluster (check balance)">② 每群細胞數</span></div><div class="chart-container" style="height:300px;"><canvas id="barChart"></canvas></div></div>
+</div>
+<p style="font-size:.78rem;color:var(--c-ink-muted);text-align:center;margin-top:8px;"><span data-zh="左圖：點代表細胞，顏色代表 cluster。右圖：每個 cluster 的細胞數——觀察是否有 cluster 太小（可能過分群）或太大（可能未分開）。" data-en="Left: each dot is a cell, colored by cluster. Right: cell count per cluster — watch for tiny (over-split) or huge (under-split) clusters.">左圖點代表細胞、顏色代表 cluster；右圖檢查群大小是否均衡。</span></p>
+</div>
+</section>
+
+<!-- ===== Section 5: Comp table ===== -->
+<section class="section">
+<div class="section-label" data-zh="方法比較" data-en="COMPARISON">方法比較</div>
+<h2 data-zh="五、四種聚類方法在 scRNA-seq 的適用度" data-en="V. Four clustering methods compared">五、聚類方法比較</h2>
+<table class="comp-table">
+<thead><tr>
+<th data-zh="方法" data-en="Method">方法</th>
+<th data-zh="核心假設" data-en="Core assumption">核心假設</th>
+<th data-zh="需預設群數？" data-en="Need preset k?">需預設群數？</th>
+<th data-zh="可處理形狀" data-en="Cluster shape">可處理形狀</th>
+<th data-zh="scRNA-seq 適用度" data-en="scRNA-seq fit">適用</th>
+</tr></thead>
+<tbody>
+<tr>
+<td><strong>Louvain</strong></td>
+<td data-lang="zh">圖中存在密集子社群</td><td data-lang="zh">否（resolution 控制）</td><td data-lang="zh">任意（非凸 OK）</td><td data-lang="zh">⭐⭐⭐⭐（可能產生破碎社群）</td>
+<td data-lang="en">Graph has dense subcommunities</td><td data-lang="en">No (controlled by resolution)</td><td data-lang="en">Any (non-convex OK)</td><td data-lang="en">⭐⭐⭐⭐ (may produce broken communities)</td>
+</tr>
+<tr>
+<td><strong>Leiden（推薦）</strong></td>
+<td data-lang="zh">同 Louvain + 強制社群內連通</td><td data-lang="zh">否</td><td data-lang="zh">任意</td><td data-lang="zh">⭐⭐⭐⭐⭐</td>
+<td data-lang="en">Same as Louvain + connectivity guarantee</td><td data-lang="en">No</td><td data-lang="en">Any</td><td data-lang="en">⭐⭐⭐⭐⭐</td>
+</tr>
+<tr>
+<td><strong>Hierarchical</strong></td>
+<td data-lang="zh">細胞間具有樹狀層級關係</td><td data-lang="zh">否（切樹高度決定）</td><td data-lang="zh">取決於 linkage</td><td data-lang="zh">⭐⭐（大資料慢，O(n²) 記憶體）</td>
+<td data-lang="en">Cells have tree-like hierarchy</td><td data-lang="en">No (cut tree at chosen height)</td><td data-lang="en">Depends on linkage</td><td data-lang="en">⭐⭐ (slow on large data; O(n²) memory)</td>
+</tr>
+<tr>
+<td><strong>K-means</strong></td>
+<td data-lang="zh">群為球形且大小相近</td><td data-lang="zh">必須事先指定 k</td><td data-lang="zh">僅球形</td><td data-lang="zh">⭐（極不建議用於 scRNA-seq）</td>
+<td data-lang="en">Spherical, similarly-sized clusters</td><td data-lang="en">Must specify k upfront</td><td data-lang="en">Spherical only</td><td data-lang="en">⭐ (strongly discouraged for scRNA-seq)</td>
+</tr>
+</tbody>
+</table>
+<div class="callout tip"><span class="callout-icon">💡</span><div>
+<span data-lang="zh"><strong>共識：</strong>2024 後的 scRNA-seq 文獻幾乎一致用 <strong>Leiden</strong>。Seurat v5 仍預設 Louvain（<code>algorithm=1</code>）是基於歷史相容性——新分析建議手動指定 <code>algorithm=4</code>（Leiden）。</span>
+<span data-lang="en"><strong>Consensus:</strong> post-2024 scRNA-seq papers near-uniformly use <strong>Leiden</strong>. Seurat v5 still defaults to Louvain (<code>algorithm=1</code>) for backwards compatibility — for new analyses, explicitly pass <code>algorithm=4</code> (Leiden).</span>
+</div></div>
+</section>
+
+<!-- ===== Section 6: Code ===== -->
+<section class="section">
+<div class="section-label" data-zh="程式碼" data-en="CODE">程式碼</div>
+<h2 data-zh="六、實作範例" data-en="VI. Code Examples">六、實作範例</h2>
 <div class="code-tabs"><div class="code-tab-btns"><button class="code-tab-btn active" onclick="switchTab(this,'r1')">R / Seurat</button><button class="code-tab-btn" onclick="switchTab(this,'py1')">Python / Scanpy</button></div>
-<div class="code-tab-content active" id="r1"><pre><span class="comment"># 建立 KNN/SNN 圖</span>
-pbmc &lt;- <span class="func">FindNeighbors</span>(pbmc, dims = <span class="num">1</span>:<span class="num">15</span>)
-<span class="comment"># Leiden 聚類（推薦）</span>
-pbmc &lt;- <span class="func">FindClusters</span>(pbmc, resolution = <span class="num">0.5</span>, algorithm = <span class="num">4</span>)
-<span class="comment"># 嘗試多個 resolution 比較</span>
-pbmc &lt;- <span class="func">FindClusters</span>(pbmc, resolution = <span class="func">c</span>(<span class="num">0.2</span>, <span class="num">0.5</span>, <span class="num">0.8</span>, <span class="num">1.2</span>))
-<span class="comment"># 用 clustree 視覺化不同 resolution 的關係</span>
-<span class="func">library</span>(clustree)
-<span class="func">clustree</span>(pbmc)</pre></div>
-<div class="code-tab-content" id="py1"><pre>sc.pp.neighbors(adata, n_pcs=<span class="num">15</span>)
-sc.tl.leiden(adata, resolution=<span class="num">0.5</span>)
-<span class="comment"># 嘗試多個 resolution</span>
-<span class="kw">for</span> r <span class="kw">in</span> [<span class="num">0.2</span>, <span class="num">0.5</span>, <span class="num">0.8</span>, <span class="num">1.2</span>]:
-    sc.tl.leiden(adata, resolution=r, key_added=<span class="str">f"leiden_{r}"</span>)</pre></div></div></section>
+<div class="code-tab-content active" id="r1"><pre><span class="comment"># 1. 建立 kNN/SNN 圖（在 PCA 空間中）</span>
+pbmc &lt;- <span class="func">FindNeighbors</span>(pbmc, dims = <span class="num">1</span>:<span class="num">20</span>, k.param = <span class="num">20</span>, prune.SNN = <span class="num">1</span>/<span class="num">15</span>)
 
-<section class="quiz-section"><h3>📝 <span data-zh="自我檢測" data-en="Self-Check">自我檢測</span></h3>
-<div class="quiz-q" data-answer="0"><p data-lang="zh">提高 resolution 參數會？</p><p data-lang="en">Increasing the resolution parameter will?</p><div class="quiz-options">
+<span class="comment"># 2. 跑 Leiden 聚類（algorithm=4），resolution=0.5 是常用起點</span>
+pbmc &lt;- <span class="func">FindClusters</span>(pbmc, resolution = <span class="num">0.5</span>, algorithm = <span class="num">4</span>, method = <span class="str">"igraph"</span>)
+
+<span class="comment"># 3. 同時跑多個 resolution，用 clustree 視覺化它們的階層關係</span>
+pbmc &lt;- <span class="func">FindClusters</span>(pbmc, resolution = <span class="func">c</span>(<span class="num">0.2</span>, <span class="num">0.4</span>, <span class="num">0.6</span>, <span class="num">0.8</span>, <span class="num">1.0</span>, <span class="num">1.5</span>), algorithm = <span class="num">4</span>)
+<span class="func">library</span>(clustree)
+<span class="func">clustree</span>(pbmc, prefix = <span class="str">"RNA_snn_res."</span>)
+
+<span class="comment"># 4. 設定使用的 cluster identity（選定 resolution 後）</span>
+<span class="func">Idents</span>(pbmc) &lt;- <span class="str">"RNA_snn_res.0.5"</span>
+
+<span class="comment"># 5. 用 marker 驗證生物意義</span>
+markers &lt;- <span class="func">FindAllMarkers</span>(pbmc, only.pos = <span class="kw">TRUE</span>, min.pct = <span class="num">0.25</span>, logfc.threshold = <span class="num">0.25</span>)
+
+<span class="comment"># 6. 視覺化</span>
+<span class="func">DimPlot</span>(pbmc, reduction = <span class="str">"umap"</span>, label = <span class="kw">TRUE</span>)</pre></div>
+<div class="code-tab-content" id="py1"><pre><span class="kw">import</span> scanpy <span class="kw">as</span> sc
+
+<span class="comment"># 1. 建鄰居圖（n_neighbors 等同 Seurat 的 k.param）</span>
+sc.pp.neighbors(adata, n_pcs=<span class="num">20</span>, n_neighbors=<span class="num">15</span>)
+
+<span class="comment"># 2. Leiden 聚類（Scanpy 預設就是 Leiden）</span>
+sc.tl.leiden(adata, resolution=<span class="num">0.5</span>, key_added=<span class="str">"leiden_r0.5"</span>)
+
+<span class="comment"># 3. 多個 resolution 一起跑</span>
+<span class="kw">for</span> r <span class="kw">in</span> [<span class="num">0.2</span>, <span class="num">0.4</span>, <span class="num">0.6</span>, <span class="num">0.8</span>, <span class="num">1.0</span>, <span class="num">1.5</span>]:
+    sc.tl.leiden(adata, resolution=r, key_added=<span class="str">f"leiden_r{r}"</span>)
+
+<span class="comment"># 4. 用 marker 驗證（Wilcoxon rank-sum test）</span>
+sc.tl.rank_genes_groups(adata, <span class="str">"leiden_r0.5"</span>, method=<span class="str">"wilcoxon"</span>)
+sc.pl.rank_genes_groups(adata, n_genes=<span class="num">10</span>)
+
+<span class="comment"># 5. 視覺化</span>
+sc.pl.umap(adata, color=[<span class="str">"leiden_r0.5"</span>], legend_loc=<span class="str">"on data"</span>)</pre></div>
+</div>
+<div class="callout warn"><span class="callout-icon">⚠️</span><div>
+<span data-lang="zh"><strong>Seurat 跑 Leiden 的小坑：</strong>原生 <code>algorithm=4</code> 依賴 reticulate + Python 的 leidenalg；建議改用 <code>method="igraph"</code> 走 R 端的 igraph 實作，速度更快且不需 Python。或直接安裝 <code>leiden</code> R 套件。</span>
+<span data-lang="en"><strong>Seurat Leiden gotcha:</strong> native <code>algorithm=4</code> depends on reticulate + Python's leidenalg. Prefer <code>method="igraph"</code> for the R-side igraph implementation — faster and Python-free. Or install the <code>leiden</code> R package directly.</span>
+</div></div>
+</section>
+
+<!-- ===== Section 7: Best practices ===== -->
+<section class="section">
+<div class="section-label" data-zh="最佳實務" data-en="BEST PRACTICES">最佳實務</div>
+<h2 data-zh="七、最佳實務 Checklist" data-en="VII. Best Practices Checklist">七、最佳實務</h2>
+<div class="card-grid cols-2">
+<div class="card"><h4>✅ <span data-zh="先掃多個 resolution" data-en="Sweep multiple resolutions first">先掃多個 resolution</span></h4>
+<div data-lang="zh"><p>用 <code>FindClusters</code> 同時跑 0.2 / 0.4 / 0.6 / 0.8 / 1.0 / 1.5，再用 <strong>clustree</strong> 視覺化「群隨 resolution 怎麼分裂」。穩定的層級結構往往對應真實生物學。</p></div>
+<div data-lang="en"><p>Run <code>FindClusters</code> with 0.2 / 0.4 / 0.6 / 0.8 / 1.0 / 1.5 simultaneously, then use <strong>clustree</strong> to visualize "how clusters split as resolution increases." Stable hierarchies often reflect real biology.</p></div>
+</div>
+<div class="card"><h4>✅ <span data-zh="生物學驗證：marker 必須對得上" data-en="Validate via markers">用 marker 驗證</span></h4>
+<div data-lang="zh"><p>每個 cluster 都應該有<strong>差異表現基因 (DEG)</strong>支撐——若 cluster 之間 |log2FC| &lt; 0.5、p 值都不顯著，就是過分群。<code>FindAllMarkers</code> 之後檢視每群 top 10 markers 是否合理。</p></div>
+<div data-lang="en"><p>Every cluster should have <strong>supporting DEGs</strong>. If between-cluster |log2FC| &lt; 0.5 with weak p-values, you've over-clustered. After <code>FindAllMarkers</code>, check whether each cluster's top 10 markers make biological sense.</p></div>
+</div>
+<div class="card"><h4>✅ <span data-zh="依下游解讀力選 resolution" data-en="Pick resolution by interpretability">解讀力決定 resolution</span></h4>
+<div data-lang="zh"><p>沒有「最佳」resolution——只有「能否解讀」。若你的研究問題是「CD4 vs CD8」就低 resolution；若想細到 naive / memory / effector，就高 resolution。讓<strong>研究問題</strong>決定，而不是讓<strong>數字</strong>決定。</p></div>
+<div data-lang="en"><p>There's no "best" resolution — only "can you interpret it?" If your question is "CD4 vs CD8," low resolution suffices; if you need naive / memory / effector subtypes, go higher. Let your <strong>question</strong> decide, not the number.</p></div>
+</div>
+<div class="card"><h4>✅ <span data-zh="記得整合，再聚類" data-en="Integrate before clustering">先整合，再聚類</span></h4>
+<div data-lang="zh"><p>多樣本資料若直接 PCA → cluster，第一刀通常切「樣本」。必須先用 Harmony / RPCA / scVI 整合，得到批次校正的 embedding 後再 <code>FindNeighbors</code>。</p></div>
+<div data-lang="en"><p>For multi-sample data, naive PCA → cluster usually splits by "sample" first. Integrate first (Harmony / RPCA / scVI), then run <code>FindNeighbors</code> on the corrected embedding.</p></div>
+</div>
+<div class="card"><h4>✅ <span data-zh="固定 random seed" data-en="Fix random seed">固定 random seed</span></h4>
+<div data-lang="zh"><p>Leiden / Louvain 都是隨機算法（節點訪問順序隨機）——同樣 resolution 不同 seed 可能差 1–2 群。Seurat 預設 seed=1234；Scanpy 用 <code>random_state</code>。</p></div>
+<div data-lang="en"><p>Leiden / Louvain are stochastic (node visit order is random) — same resolution, different seed can change cluster count by 1–2. Seurat default seed=1234; Scanpy uses <code>random_state</code>.</p></div>
+</div>
+<div class="card"><h4>✅ <span data-zh="檢查每群細胞數" data-en="Check cells-per-cluster">檢查群大小</span></h4>
+<div data-lang="zh"><p>用 <code>table(Idents(pbmc))</code>。<strong>單細胞群</strong>幾乎一定是噪音或 doublet；<strong>佔比 &lt; 0.5%</strong> 的群需特別小心驗證。佔比 &gt; 50% 的單一群通常意味著解析度太低。</p></div>
+<div data-lang="en"><p>Run <code>table(Idents(pbmc))</code>. <strong>Single-cell clusters</strong> are almost always noise or doublets; clusters <strong>&lt;0.5% of cells</strong> need careful validation. Any single cluster &gt;50% usually means resolution too low.</p></div>
+</div>
+</div>
+</section>
+
+<!-- ===== Section 8: Pitfalls ===== -->
+<section class="section">
+<div class="section-label" data-zh="常見陷阱" data-en="PITFALLS">常見陷阱</div>
+<h2 data-zh="八、常見陷阱" data-en="VIII. Common Pitfalls">八、常見陷阱</h2>
+<div class="card-grid cols-3">
+<div class="card" style="border-left:4px solid var(--c-danger);"><h4>✂️ <span data-zh="過度聚類 (over-clustering)" data-en="Over-clustering">✂️ 過度聚類</span></h4>
+<div data-lang="zh"><p><strong>症狀：</strong>同細胞類型被拆 3–5 個小群，群間無顯著 DEG（|logFC|&lt;0.5）。<br><strong>原因：</strong>Resolution 過高、k 太小、npcs 太多帶噪。<br><strong>檢查：</strong>跑 <code>FindAllMarkers</code> 後看 markers 是否互相重複或多為 ribosomal。</p></div>
+<div data-lang="en"><p><strong>Symptom:</strong> same cell type split into 3–5 tiny clusters with no significant DEGs (|logFC|&lt;0.5).<br><strong>Cause:</strong> resolution too high, k too small, too many noisy PCs.<br><strong>Check:</strong> after <code>FindAllMarkers</code>, see if markers heavily overlap or are mostly ribosomal.</p></div>
+</div>
+<div class="card" style="border-left:4px solid var(--c-danger);"><h4>🥒 <span data-zh="不足聚類 (under-clustering)" data-en="Under-clustering">🥒 不足聚類</span></h4>
+<div data-lang="zh"><p><strong>症狀：</strong>單一 cluster 內 markers 顯示「兩種不同細胞類型混在一起」（例如 T cell + NK 共存）。<br><strong>解法：</strong>調高 resolution；或對該 cluster 做 <code>subset</code> 再次跑分群。</p></div>
+<div data-lang="en"><p><strong>Symptom:</strong> markers in a single cluster mix two distinct cell types (e.g., T + NK co-occurring).<br><strong>Fix:</strong> raise resolution, or <code>subset</code> that cluster and re-cluster within it.</p></div>
+</div>
+<div class="card" style="border-left:4px solid var(--c-danger);"><h4>🧪 <span data-zh="批次效應假裝成 cluster" data-en="Batches masquerade as clusters">🧪 批次當細胞群</span></h4>
+<div data-lang="zh"><p><strong>症狀：</strong>UMAP 上不同樣本完美分開，每群都對應一個 donor。<br><strong>解法：</strong>必須先 integration（Harmony、RPCA、scVI），再以校正後 embedding 重做 <code>FindNeighbors → FindClusters</code>。</p></div>
+<div data-lang="en"><p><strong>Symptom:</strong> on UMAP, samples separate perfectly with each cluster equaling one donor.<br><strong>Fix:</strong> integrate first (Harmony / RPCA / scVI), then redo <code>FindNeighbors → FindClusters</code> on the corrected embedding.</p></div>
+</div>
+<div class="card" style="border-left:4px solid var(--c-danger);"><h4>👯 <span data-zh="Doublet 形成「橋接群」" data-en="Doublets form a bridge cluster">👯 Doublet 橋接群</span></h4>
+<div data-lang="zh"><p><strong>症狀：</strong>UMAP 上兩個大群之間夾著一個小群，其 markers 同時混合兩邊特徵基因（如 T+B 都高表現）。<br><strong>解法：</strong>回 QC 階段用 DoubletFinder / Scrublet 過濾。</p></div>
+<div data-lang="en"><p><strong>Symptom:</strong> small cluster bridging two large ones on UMAP, with markers mixing features of both sides (e.g., T+B genes both high).<br><strong>Fix:</strong> back to QC, apply DoubletFinder / Scrublet.</p></div>
+</div>
+<div class="card" style="border-left:4px solid var(--c-danger);"><h4>📏 <span data-zh="resolution 對細胞數敏感" data-en="Resolution depends on cell count">📏 群數依資料大小</span></h4>
+<div data-lang="zh"><p><strong>事實：</strong>resolution=0.5 在 5K 細胞與 50K 細胞會得到非常不同的 cluster 數——數據越大、群被切越細。比較兩個資料集時不能直接套用同一個 resolution。</p></div>
+<div data-lang="en"><p><strong>Fact:</strong> resolution=0.5 yields very different cluster counts at 5K vs 50K cells — larger data, finer splits. You cannot apply the same resolution across datasets without checking.</p></div>
+</div>
+<div class="card" style="border-left:4px solid var(--c-danger);"><h4>🎲 <span data-zh="忘了固定 seed 結果不重現" data-en="Unfixed seed = irreproducible">🎲 seed 沒固定</span></h4>
+<div data-lang="zh"><p><strong>症狀：</strong>同一資料同樣參數，兩次跑 cluster 數不同、ID 也不同。<br><strong>解法：</strong><code>FindClusters(... random.seed=1234)</code> 或 <code>sc.tl.leiden(..., random_state=42)</code>。</p></div>
+<div data-lang="en"><p><strong>Symptom:</strong> same data, same params, different cluster count or IDs across runs.<br><strong>Fix:</strong> <code>FindClusters(... random.seed=1234)</code> or <code>sc.tl.leiden(..., random_state=42)</code>.</p></div>
+</div>
+</div>
+<div class="callout warn"><span class="callout-icon">⚠️</span><div>
+<span data-lang="zh"><strong>檢查清單：</strong>分群完成後，立刻：① 看每群細胞數 ② 跑 markers ③ UMAP 上看群是否與 sample id 高度相關 ④ 確認群數與生物學期望符合。四項都過才能進入 annotation 階段。</span>
+<span data-lang="en"><strong>Post-clustering checklist:</strong> immediately ① check cells-per-cluster ② run markers ③ overlay sample ID on UMAP ④ confirm cluster count matches biological expectations. Pass all four before moving to annotation.</span>
+</div></div>
+</section>
+
+<!-- ===== Section 9: Quiz ===== -->
+<section class="quiz-section">
+<h3>📝 <span data-zh="自我檢測" data-en="Self-Check">自我檢測</span></h3>
+
+<div class="quiz-q" data-answer="0">
+<p data-lang="zh">1. 提高 resolution 參數會？</p>
+<p data-lang="en">1. Increasing resolution will?</p>
+<div class="quiz-options">
 <div class="quiz-opt" data-idx="0"><span data-lang="zh">A. 產生更多、更細的 cluster</span><span data-lang="en">A. Produce more, finer clusters</span></div>
 <div class="quiz-opt" data-idx="1"><span data-lang="zh">B. 產生更少、更大的 cluster</span><span data-lang="en">B. Produce fewer, larger clusters</span></div>
-<div class="quiz-opt" data-idx="2"><span data-lang="zh">C. 改變 PCA 的結果</span><span data-lang="en">C. Change PCA results</span></div>
-<div class="quiz-opt" data-idx="3"><span data-lang="zh">D. 移除低品質細胞</span><span data-lang="en">D. Remove low-quality cells</span></div></div><div class="quiz-feedback" id="fb1"></div></div></section>
-<nav class="page-nav"><a href="pca.html"><span class="nav-dir" data-zh="← 上一步" data-en="← Previous">← 上一步</span><span class="nav-title" data-zh="Step 5：PCA" data-en="Step 5: PCA">Step 5：PCA</span></a><a href="umap.html"><span class="nav-dir" data-zh="下一步 →" data-en="Next →">下一步 →</span><span class="nav-title" data-zh="Step 7：UMAP" data-en="Step 7: UMAP">Step 7：UMAP</span></a></nav></main>
+<div class="quiz-opt" data-idx="2"><span data-lang="zh">C. 改變 PCA 結果</span><span data-lang="en">C. Change PCA results</span></div>
+<div class="quiz-opt" data-idx="3"><span data-lang="zh">D. 移除低品質細胞</span><span data-lang="en">D. Remove low-quality cells</span></div>
+</div><div class="quiz-feedback" id="fb1"></div></div>
+
+<div class="quiz-q" data-answer="1">
+<p data-lang="zh">2. Leiden 比 Louvain 的主要改進在哪？</p>
+<p data-lang="en">2. What's Leiden's main improvement over Louvain?</p>
+<div class="quiz-options">
+<div class="quiz-opt" data-idx="0"><span data-lang="zh">A. 更快、不需 modularity</span><span data-lang="en">A. Faster and doesn't need modularity</span></div>
+<div class="quiz-opt" data-idx="1"><span data-lang="zh">B. 保證每個社群內部連通，不會產生破碎社群</span><span data-lang="en">B. Guarantees connected communities, no broken clusters</span></div>
+<div class="quiz-opt" data-idx="2"><span data-lang="zh">C. 自動移除批次效應</span><span data-lang="en">C. Auto-removes batch effects</span></div>
+<div class="quiz-opt" data-idx="3"><span data-lang="zh">D. 不需要 PCA</span><span data-lang="en">D. Doesn't need PCA</span></div>
+</div><div class="quiz-feedback" id="fb2"></div></div>
+
+<div class="quiz-q" data-answer="2">
+<p data-lang="zh">3. 你發現 UMAP 上每個 cluster 都恰好對應一個 donor。最可能的原因？</p>
+<p data-lang="en">3. You find every UMAP cluster corresponds exactly to one donor. Most likely cause?</p>
+<div class="quiz-options">
+<div class="quiz-opt" data-idx="0"><span data-lang="zh">A. 每個 donor 都有獨特的細胞類型</span><span data-lang="en">A. Each donor has unique cell types</span></div>
+<div class="quiz-opt" data-idx="1"><span data-lang="zh">B. Resolution 太高</span><span data-lang="en">B. Resolution too high</span></div>
+<div class="quiz-opt" data-idx="2"><span data-lang="zh">C. 批次效應主導：需要先做 integration 再分群</span><span data-lang="en">C. Batch effects dominate — must integrate before clustering</span></div>
+<div class="quiz-opt" data-idx="3"><span data-lang="zh">D. PCA 算錯</span><span data-lang="en">D. PCA error</span></div>
+</div><div class="quiz-feedback" id="fb3"></div></div>
+
+<div class="quiz-q" data-answer="1">
+<p data-lang="zh">4. 為什麼 scRNA-seq 不用 k-means？</p>
+<p data-lang="en">4. Why not use k-means for scRNA-seq?</p>
+<div class="quiz-options">
+<div class="quiz-opt" data-idx="0"><span data-lang="zh">A. k-means 太慢</span><span data-lang="en">A. k-means is too slow</span></div>
+<div class="quiz-opt" data-idx="1"><span data-lang="zh">B. 需要事先指定群數、且假設球形大小相近群體，不符合 scRNA-seq 的非凸、不均衡族群</span><span data-lang="en">B. Needs preset k and assumes spherical, similar-sized clusters — incompatible with non-convex, imbalanced scRNA-seq populations</span></div>
+<div class="quiz-opt" data-idx="2"><span data-lang="zh">C. k-means 結果不可重現</span><span data-lang="en">C. k-means is not reproducible</span></div>
+<div class="quiz-opt" data-idx="3"><span data-lang="zh">D. k-means 需要 GPU</span><span data-lang="en">D. k-means needs GPU</span></div>
+</div><div class="quiz-feedback" id="fb4"></div></div>
+</section>
+
+<nav class="page-nav">
+<a href="pca.html"><span class="nav-dir" data-zh="← 上一步" data-en="← Previous">← 上一步</span><span class="nav-title" data-zh="Step 5：PCA" data-en="Step 5: PCA">Step 5：PCA</span></a>
+<a href="umap.html"><span class="nav-dir" data-zh="下一步 →" data-en="Next →">下一步 →</span><span class="nav-title" data-zh="Step 7：UMAP" data-en="Step 7: UMAP">Step 7：UMAP</span></a>
+</nav>
+</main>
 <footer class="site-footer">© Charlene — scRNA-seq Interactive Tutorial</footer>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script><script src="i18n.js"></script><script>
+<script src="i18n.js"></script>
+<script>
 window.addEventListener("scroll",()=>{const h=document.documentElement;document.getElementById("progressBar").style.width=(h.scrollTop/(h.scrollHeight-h.clientHeight))*100+"%";});
 function switchTab(b,id){const p=b.closest(".code-tabs");p.querySelectorAll(".code-tab-btn").forEach(x=>x.classList.remove("active"));p.querySelectorAll(".code-tab-content").forEach(x=>x.classList.remove("active"));b.classList.add("active");document.getElementById(id).classList.add("active");}
 
-const ctrs=[{x:-6,y:3},{x:-3,y:-4},{x:4,y:2},{x:5,y:-3},{x:-1,y:6},{x:0,y:0},{x:7,y:5},{x:-7,y:-2}];const clrs=['#1a6b5a','#c0392b','#2980b9','#d4a03c','#8e44ad','#e67e22','#16a085','#e74c3c'];const allP=[];ctrs.forEach((c,ci)=>{for(let i=0;i<80;i++)allP.push({x:c.x+(Math.random()-0.5)*5,y:c.y+(Math.random()-0.5)*5,bc:ci});});
-const ds=[];for(let i=0;i<8;i++)ds.push({label:'Cluster '+i,data:[],backgroundColor:clrs[i]+'88',pointRadius:3.5,hidden:false});
-const clChart=new Chart(document.getElementById('clChart'),{type:'scatter',data:{datasets:ds},options:{responsive:true,maintainAspectRatio:false,animation:false,scales:{x:{min:-12,max:12,title:{display:true,text:'UMAP 1'}},y:{min:-10,max:12,title:{display:true,text:'UMAP 2'}}},plugins:{legend:{position:'right',labels:{font:{size:11}}}}}});
-function upCl(){const rv=+document.getElementById('sliderRes').value;const res=rv/10;document.getElementById('valRes').textContent=res.toFixed(1);const nC=Math.max(2,Math.min(8,Math.round(res*5+1)));const L=I18n.get();const dsc=L==='zh'?{l:'<strong>低 Resolution ('+res.toFixed(1)+')：</strong>'+nC+' 個大群，適合宏觀概覽。',m:'<strong>中 Resolution ('+res.toFixed(1)+')：</strong>'+nC+' 個群，多數分析起點。',h:'<strong>高 Resolution ('+res.toFixed(1)+')：</strong>'+nC+' 個細群，需注意過度聚類。'}:{l:'<strong>Low Resolution ('+res.toFixed(1)+'):</strong> '+nC+' broad clusters for overview.',m:'<strong>Mid Resolution ('+res.toFixed(1)+'):</strong> '+nC+' clusters, typical starting point.',h:'<strong>High Resolution ('+res.toFixed(1)+'):</strong> '+nC+' fine clusters, watch for over-clustering.'};document.getElementById('resDesc').innerHTML=res<=0.4?dsc.l:res<=1.0?dsc.m:dsc.h;const bk=[];for(let i=0;i<8;i++)bk.push([]);allP.forEach(p=>{bk[p.bc%nC].push({x:p.x,y:p.y});});for(let i=0;i<8;i++){clChart.data.datasets[i].data=bk[i]||[];clChart.data.datasets[i].hidden=i>=nC;}clChart.update('none');}
-document.getElementById('sliderRes').addEventListener('input',upCl);document.addEventListener('langchange',upCl);upCl();
-window._QF={zh:{q1_y:'Resolution 越高，網絡被切割得越細，產生更多小群。',q1_n:'答案是 A。Resolution 控制的是分群粗細度。'},en:{q1_y:'Higher resolution = finer partitioning = more clusters.',q1_n:'Answer is A. Resolution controls clustering granularity.'}};
-const QF=window._QF||{};document.querySelectorAll(".quiz-q").forEach((q,qi)=>{const ans=+q.dataset.answer;q.querySelectorAll(".quiz-opt").forEach(o=>{o.addEventListener("click",()=>{if(q.classList.contains("answered"))return;q.classList.add("answered");const fb=document.getElementById("fb"+(qi+1));const ok=+o.dataset.idx===ans;o.classList.add(ok?"correct":"wrong");if(!ok)q.querySelectorAll(".quiz-opt")[ans].classList.add("correct");const L=I18n.get();fb.className="quiz-feedback show "+(ok?"correct-fb":"wrong-fb");fb.textContent=(ok?"✅ ":"❌ ")+(QF[L]&&QF[L]["q"+(qi+1)+"_"+(ok?"y":"n")]||"");});});});
-</script></body></html>
+// ===== Cluster sim: synthetic 2D points with 8 true subgroups =====
+// Top-level structure: 5 "super-clusters", each containing 1-2 subgroups
+// Lower resolution merges subgroups within same super; higher resolution splits all 8
+function randn(){let u=0,v=0;while(u===0)u=Math.random();while(v===0)v=Math.random();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);}
+const subCenters=[
+  {x:-6.5,y:3.5,n:90,super:0,name:'T-naive'},
+  {x:-5.0,y:2.0,n:60,super:0,name:'T-mem'},
+  {x:5.0,y:4.0,n:70,super:1,name:'B-naive'},
+  {x:6.5,y:5.5,n:30,super:1,name:'B-mem'},
+  {x:-1.5,y:-5.0,n:85,super:2,name:'CD14 Mono'},
+  {x:1.0,y:-4.5,n:40,super:2,name:'CD16 Mono'},
+  {x:-5.5,y:-3.0,n:55,super:3,name:'NK'},
+  {x:6.0,y:-2.0,n:15,super:4,name:'pDC (rare)'}
+];
+const palette=['#1a6b5a','#c0392b','#2980b9','#d4a03c','#8e44ad','#e67e22','#16a085','#e74c3c','#27ae60','#9b59b6','#34495e','#f39c12'];
+const cellsRaw=[];
+subCenters.forEach((c,sci)=>{for(let i=0;i<c.n;i++)cellsRaw.push({x:c.x+randn()*0.85,y:c.y+randn()*0.85,sci});});
+
+// Build datasets up to 12 colors
+const ds=[];for(let i=0;i<12;i++)ds.push({label:'Cluster '+i,data:[],backgroundColor:palette[i]+'aa',pointRadius:3.2,hidden:false});
+const clChart=new Chart(document.getElementById('clChart'),{type:'scatter',data:{datasets:ds},options:{responsive:true,maintainAspectRatio:false,animation:false,plugins:{legend:{position:'right',labels:{font:{size:9},boxWidth:8}}},scales:{x:{min:-12,max:12,title:{display:true,text:'sim-PC1',font:{size:10}},ticks:{font:{size:9}}},y:{min:-9,max:9,title:{display:true,text:'sim-PC2',font:{size:10}},ticks:{font:{size:9}}}}}});
+
+// Bar chart for cluster sizes
+const barChart=new Chart(document.getElementById('barChart'),{type:'bar',data:{labels:[],datasets:[{label:'cells',data:[],backgroundColor:[]}]},options:{responsive:true,maintainAspectRatio:false,animation:false,plugins:{legend:{display:false}},scales:{x:{title:{display:true,text:'Cluster ID',font:{size:10}},ticks:{font:{size:9}}},y:{title:{display:true,text:'# cells',font:{size:10}},ticks:{font:{size:9}}}}}});
+
+// resolutionVal & kp => effective cluster count
+// Strategy:
+//  - res<=0.2 & high kp: 2-3 super-merged
+//  - res 0.3-0.5: ~5 (super clusters as defined)
+//  - res 0.6-1.0: 8 (all subgroups)
+//  - res 1.2-2.0: 10-12 (over-clustering: split a big subgroup further)
+function decidePartition(res,kp){
+  // baseline: 8 true subgroups, super maps: 0,0,1,1,2,2,3,4
+  if(res<=0.3 && kp>=25){
+    return cellsRaw.map(c=>subCenters[c.sci].super); // 5 super clusters
+  } else if(res<=0.2){
+    return cellsRaw.map(c=>Math.min(2,subCenters[c.sci].super)); // 3 mega
+  } else if(res<=0.5){
+    return cellsRaw.map(c=>subCenters[c.sci].super);
+  } else if(res<=1.0){
+    return cellsRaw.map(c=>c.sci);
+  } else if(res<=1.5){
+    // 10 clusters: split T-naive into 2
+    return cellsRaw.map((c,i)=>{if(c.sci===0)return c.x<-6.5?8:0;return c.sci;});
+  } else {
+    // 12 clusters: split T-naive and CD14 Mono
+    return cellsRaw.map((c,i)=>{
+      if(c.sci===0)return c.x<-6.5?8:0;
+      if(c.sci===4)return c.y<-5?9:c.x<-1.5?10:4;
+      if(c.sci===2)return c.x<5.0?11:c.sci;
+      return c.sci;
+    });
+  }
+}
+
+function update(){
+  const rv=+document.getElementById('sliderRes').value;
+  const kp=+document.getElementById('sliderKp').value;
+  const res=rv/10;
+  document.getElementById('valRes').textContent=res.toFixed(1);
+  document.getElementById('valKp').textContent=kp;
+  const L=I18n.get();
+  const labels=decidePartition(res,kp);
+  const uniq=Array.from(new Set(labels)).sort((a,b)=>a-b);
+  const nC=uniq.length;
+  // Clear & fill datasets
+  for(let i=0;i<12;i++){ds[i].data=[];ds[i].hidden=true;}
+  // Map original label -> dense 0..nC-1
+  const labelMap=new Map();uniq.forEach((l,i)=>labelMap.set(l,i));
+  const counts=new Array(nC).fill(0);
+  cellsRaw.forEach((c,i)=>{const lbl=labels[i];const idx=labelMap.get(lbl);ds[idx].data.push({x:c.x,y:c.y});ds[idx].hidden=false;counts[idx]++;});
+  for(let i=0;i<nC;i++){ds[i].label=(L==='zh'?'群':'Cluster ')+i+' ('+counts[i]+')';}
+  clChart.update('none');
+  // Bar
+  barChart.data.labels=counts.map((_,i)=>'C'+i);
+  barChart.data.datasets[0].data=counts;
+  barChart.data.datasets[0].backgroundColor=counts.map((_,i)=>palette[i]+'cc');
+  barChart.update('none');
+
+  document.getElementById('statRes2').textContent=(L==='zh'?'Resolution ':'Resolution ')+res.toFixed(1);
+  document.getElementById('statKp').textContent='k.param '+kp;
+  document.getElementById('statNC').textContent=(L==='zh'?'群數：':'Clusters: ')+nC;
+
+  const desc=L==='zh'?
+    (res<=0.3?'<strong style="color:#c0392b;">⚠️ 過粗：</strong>細胞類型被合併（T+B+Mono 可能混入同群）。':
+     res<=0.6?'<strong style="color:#1a6b5a;">✅ 中等：</strong>主要細胞類型分離，多數分析的起點。':
+     res<=1.0?'<strong style="color:#1a6b5a;">✅ 細緻：</strong>亞型可見（pDC 等稀有群分出）。':
+     res<=1.5?'<strong style="color:#d4a03c;">注意：</strong>開始出現可能過分群——同類細胞被切成 2 群。':
+              '<strong style="color:#8e44ad;">⚠️ 過細：</strong>多數新群應無顯著 DEG，建議降回 ≤1.0。')+
+    (kp<10?' <em>k 太小可能造成圖過稀疏。</em>':kp>40?' <em>k 偏大會平滑掉細結構。</em>':'')
+   :
+    (res<=0.3?'<strong style="color:#c0392b;">⚠️ Too coarse:</strong> cell types merged (T+B+Mono may share a cluster).':
+     res<=0.6?'<strong style="color:#1a6b5a;">✅ Mid:</strong> main types separate — typical starting point.':
+     res<=1.0?'<strong style="color:#1a6b5a;">✅ Fine:</strong> subtypes visible (rare pDC emerges).':
+     res<=1.5?'<strong style="color:#d4a03c;">Watch:</strong> probable over-clustering — same type splits into 2.':
+              '<strong style="color:#8e44ad;">⚠️ Too fine:</strong> new clusters likely have no significant DEGs — drop back to ≤1.0.')+
+    (kp<10?' <em>k too small → sparse graph.</em>':kp>40?' <em>k too large smooths fine structure.</em>':'');
+  document.getElementById('resDesc').innerHTML=desc;
+}
+['sliderRes','sliderKp'].forEach(id=>document.getElementById(id).addEventListener('input',update));
+document.addEventListener('langchange',update);
+update();
+
+// ===== Quiz =====
+const QF={
+  zh:{q1_y:'Resolution 越高，圖切得越細，cluster 越多。',q1_n:'答案是 A。Resolution 控制分群粗細。',
+      q2_y:'Leiden 加入 refinement 階段，強制每個社群內部連通——Louvain 沒這個保證。',q2_n:'答案是 B。',
+      q3_y:'cluster 與 donor 完美對應就是批次效應的標準特徵。先 integration 再 cluster。',q3_n:'答案是 C。',
+      q4_y:'k-means 強假設球形且大小相近、需要事先 k——這對 scRNA-seq 完全不適。',q4_n:'答案是 B。'},
+  en:{q1_y:'Higher resolution = finer partitioning = more clusters.',q1_n:'Answer is A.',
+      q2_y:'Leiden adds a refinement phase guaranteeing internally connected communities — Louvain lacks this.',q2_n:'Answer is B.',
+      q3_y:'Cluster = donor mapping is the hallmark of batch effects. Integrate before clustering.',q3_n:'Answer is C.',
+      q4_y:'k-means assumes spherical, similar-sized clusters and needs preset k — none of which holds for scRNA-seq.',q4_n:'Answer is B.'}
+};
+document.querySelectorAll(".quiz-q").forEach((q,qi)=>{const ans=+q.dataset.answer;q.querySelectorAll(".quiz-opt").forEach(o=>{o.addEventListener("click",()=>{if(q.classList.contains("answered"))return;q.classList.add("answered");const fb=document.getElementById("fb"+(qi+1));const ok=+o.dataset.idx===ans;o.classList.add(ok?"correct":"wrong");if(!ok)q.querySelectorAll(".quiz-opt")[ans].classList.add("correct");const L=I18n.get();fb.className="quiz-feedback show "+(ok?"correct-fb":"wrong-fb");fb.textContent=(ok?"✅ ":"❌ ")+(QF[L]&&QF[L]["q"+(qi+1)+"_"+(ok?"y":"n")]||"");});});});
+</script>
+</body></html>

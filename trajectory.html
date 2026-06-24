@@ -1,73 +1,615 @@
-<!DOCTYPE html><html lang="zh-Hant"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>trajectory — scRNA-seq Tutorial</title><link rel="stylesheet" href="styles.css"></head><body>
-<nav class="top-nav"><div class="top-nav-inner"><a href="index.html" class="top-nav-brand"><span>🧬</span> <span data-zh="scRNA-seq 教學" data-en="scRNA-seq Tutorial">scRNA-seq 教學</span></a><ul class="top-nav-links"><li><a href="qc.html">QC</a></li><li><a href="normalization.html">Norm.</a></li><li><a href="variable-features.html">Features</a></li><li><a href="scaling.html">Scaling</a></li><li><a href="pca.html">PCA</a></li><li><a href="clustering.html">Clustering</a></li><li><a href="umap.html">UMAP</a></li><li><a href="annotation.html">Annot.</a></li><li><a href="differential-expression.html">DE</a></li><li><a href="integration.html">Integ.</a></li><li><a href="cellchat.html">CellChat</a></li><li><a href="trajectory.html" class=active>Traj.</a></li>
+<!DOCTYPE html><html lang="zh-Hant"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Trajectory — scRNA-seq Tutorial</title>
+<link rel="stylesheet" href="styles.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+</head><body>
+<nav class="top-nav"><div class="top-nav-inner">
+  <a href="index.html" class="top-nav-brand"><span>🧬</span> <span data-zh="scRNA-seq 教學" data-en="scRNA-seq Tutorial">scRNA-seq 教學</span></a>
+  <ul class="top-nav-links"><li><a href="qc.html">QC</a></li><li><a href="normalization.html">Norm.</a></li><li><a href="variable-features.html">Features</a></li><li><a href="scaling.html">Scaling</a></li><li><a href="pca.html">PCA</a></li><li><a href="clustering.html">Clustering</a></li><li><a href="umap.html">UMAP</a></li><li><a href="annotation.html">Annot.</a></li><li><a href="differential-expression.html">DE</a></li><li><a href="integration.html">Integ.</a></li><li><a href="cellchat.html">CellChat</a></li><li><a href="trajectory.html" class="active">Traj.</a></li>
     <li><a href="references/index.html" data-zh="📚 參考資料" data-en="📚 References">📚 參考資料</a></li>
-  </ul></div></nav><div class="progress-bar-container"><div class="progress-bar" id="progressBar"></div></div>
-<header class="page-hero"><div class="step-badge">ADVANCED</div><h1 data-zh="軌跡分析 (Trajectory / Pseudotime)" data-en="Trajectory / Pseudotime">軌跡分析</h1><p class="subtitle" data-lang="zh">從靜態的快照數據中推估細胞狀態轉變的動態路徑與時間順序。</p><p class="subtitle" data-lang="en">Infer dynamic cell state transitions and temporal ordering from static snapshot data.</p></header><main class="content-wrap">
-<section class="section"><div class="section-label" data-zh="核心概念" data-en="CONCEPT">核心概念</div><h2 data-zh="一、什麼是 Pseudotime？" data-en="I. What Is Pseudotime?">一、Pseudotime</h2>
-<div data-lang="zh"><p>scRNA-seq 是一張「快照」——在某個時間點捕捉所有細胞的狀態。但因為不同細胞處於分化過程的不同階段，我們可以利用它們之間的表達漸變，重建出一條<strong>擬時序 (Pseudotime)</strong> 軸——好比從一張團體照中推測每個人的年齡。</p></div>
-<div data-lang="en"><p>scRNA-seq is a "snapshot" — capturing all cells' states at one timepoint. But since different cells are at different stages of differentiation, we can use expression gradients to reconstruct a <strong>pseudotime</strong> axis — like estimating each person's age from a group photo.</p></div>
-<div class="card-grid cols-2"><div class="card"><div class="card-icon">🎯</div><h4 data-zh="適用情境" data-en="Use Cases">適用情境</h4><div data-lang="zh"><p>細胞分化（幹→終端）、免疫細胞活化、疾病進程、藥物反應動態。</p></div><div data-lang="en"><p>Cell differentiation (stem→terminal), immune activation, disease progression, drug response dynamics.</p></div></div>
-<div class="card"><div class="card-icon">⚠️</div><h4 data-zh="前提假設" data-en="Prerequisites">前提假設</h4><div data-lang="zh"><p>數據中<strong>必須存在處於不同狀態的細胞</strong>。全部都是終端分化就無法重建軌跡。</p></div><div data-lang="en"><p>Data <strong>must contain cells at different states</strong>. Fully differentiated cells can't reconstruct a trajectory.</p></div></div></div></section>
+  </ul>
+</div></nav>
+<div class="progress-bar-container"><div class="progress-bar" id="progressBar"></div></div>
+<header class="page-hero"><div class="step-badge">ADVANCED</div>
+<h1 data-zh="軌跡分析 (Trajectory / Pseudotime)" data-en="Trajectory / Pseudotime">軌跡分析 (Trajectory / Pseudotime)</h1>
+<p class="subtitle" data-lang="zh">從靜態快照推估細胞狀態轉變的「時間軸」——從幹細胞、發育、疾病進程到 RNA velocity 的動態方向。</p>
+<p class="subtitle" data-lang="en">Infer the "timeline" of cell state transitions from static snapshots — from stemness and development to disease progression and the directional cues of RNA velocity.</p>
+</header>
+<main class="content-wrap">
 
-<section class="section"><div class="section-label" data-zh="互動模擬" data-en="INTERACTIVE">互動模擬</div><h2 data-zh="二、Pseudotime 與基因表達動態" data-en="II. Pseudotime & Gene Expression Dynamics">二、互動模擬</h2>
-<div data-lang="zh"><p>切換 pseudotime 梯度與 cluster 著色。選擇基因觀察沿 pseudotime 的表達趨勢。</p></div><div data-lang="en"><p>Toggle between pseudotime gradient and cluster coloring. Select genes to see expression trends along pseudotime.</p></div>
-<div class="interactive-panel"><div class="toggle-row"><button class="toggle-btn active" id="btn-pt" onclick="colorT('pt')">Pseudotime</button><button class="toggle-btn" id="btn-cl" onclick="colorT('cl')">Cluster</button></div>
-<div class="chart-container" style="height:300px;"><canvas id="tChart"></canvas></div>
-<div style="margin-top:16px;"><div class="toggle-row"><button class="toggle-btn toggle-btn-sm active" id="gene-0" onclick="showG(0)"><span data-zh="幹細胞 marker" data-en="Stem marker">幹細胞 marker</span></button><button class="toggle-btn toggle-btn-sm" id="gene-1" onclick="showG(1)"><span data-zh="過渡基因" data-en="Transition gene">過渡基因</span></button><button class="toggle-btn toggle-btn-sm" id="gene-2" onclick="showG(2)"><span data-zh="終端 marker" data-en="Terminal marker">終端 marker</span></button></div>
-<div class="chart-container" style="height:200px;"><canvas id="gChart"></canvas></div></div></div></section>
+<!-- ===== Section 1: Concept ===== -->
+<section class="section">
+<div class="section-label" data-zh="概覽" data-en="OVERVIEW">概覽</div>
+<h2 data-zh="一、為什麼從快照能推時間？" data-en="I. Why Can a Snapshot Imply Time?">一、為什麼從快照能推時間？</h2>
+<div data-lang="zh">
+<p>scRNA-seq 是<strong>單一時間點</strong>的快照，理論上「沒有時間」。但生物系統的關鍵直覺是：<strong>在同一個時間點，組織中存在處於分化、活化、衰老等不同階段的細胞</strong>。如果這些細胞之間有連續的表達變化，我們就能依「相鄰細胞表達相似」的邏輯，把細胞排成一條<strong>擬時序 (pseudotime)</strong> 軸，重建「從新生到終端」的動態過程。</p>
+<p>常見應用：幹細胞 → 終端細胞的分化路徑、naive → effector → memory T cell 的活化、疾病早期 → 末期的進展、細胞週期 (G1 → S → G2 → M)、發育階段重建。</p>
+</div>
+<div data-lang="en">
+<p>scRNA-seq is a <strong>single-timepoint</strong> snapshot — in principle, "no time". But the biological intuition is key: <strong>at any moment, a tissue contains cells at different stages of differentiation, activation, senescence</strong>. If their expression varies continuously, we can — under the assumption "neighboring cells share expression" — order them along a <strong>pseudotime</strong> axis to reconstruct the dynamics from naïve to terminal.</p>
+<p>Common uses: stem → terminal differentiation, naive → effector → memory T-cell activation, early → late disease progression, cell cycle (G1 → S → G2 → M), developmental staging.</p>
+</div>
 
-<section class="section"><div class="section-label" data-zh="方法比較" data-en="METHODS">方法比較</div><h2 data-zh="三、主流工具" data-en="III. Major Tools">三、工具比較</h2>
-<table class="comp-table"><thead><tr><th data-zh="工具" data-en="Tool">工具</th><th data-zh="核心邏輯" data-en="Core Logic">邏輯</th><th data-zh="適用" data-en="Best For">適用</th></tr></thead><tbody>
-<tr><td><strong>Monocle3</strong> (R)</td><td data-lang="zh">學習主圖 (Principal Graph)</td><td data-lang="zh">通用型，支援分支</td><td data-lang="en">Learns principal graph</td><td data-lang="en">General, supports branching</td></tr>
-<tr><td><strong>Slingshot</strong> (R)</td><td data-lang="zh">擬合同時主曲線</td><td data-lang="zh">簡單線性/分支</td><td data-lang="en">Fits simultaneous principal curves</td><td data-lang="en">Simple linear/branching</td></tr>
-<tr><td><strong>RNA Velocity</strong> (Py)</td><td data-lang="zh">spliced/unspliced mRNA 比率</td><td data-lang="zh">推斷轉變「方向」</td><td data-lang="en">Spliced/unspliced mRNA ratio</td><td data-lang="en">Infers transition "direction"</td></tr>
-<tr><td><strong>CytoTRACE</strong></td><td data-lang="zh">基因多樣性推估分化潛能</td><td data-lang="zh">預測哪些細胞較未分化</td><td data-lang="en">Gene diversity estimates differentiation potential</td><td data-lang="en">Predicts which cells are less differentiated</td></tr>
-<tr><td><strong>PAGA</strong> (Py)</td><td data-lang="zh">圖抽象軌跡推斷</td><td data-lang="zh">大規模拓撲</td><td data-lang="en">Graph abstraction for trajectory</td><td data-lang="en">Large-scale topology</td></tr>
+<div class="card-grid cols-3">
+<div class="card"><div class="card-icon">🌱</div><h4 data-zh="發育分化" data-en="Developmental Differentiation">發育分化</h4>
+<div data-lang="zh"><p>造血幹細胞 → 分化譜系、神經前驅 → 終端神經元；軌跡可揭示分支點 (fate decision)。</p></div>
+<div data-lang="en"><p>HSCs → blood lineages, neural progenitors → mature neurons; trajectories expose fate-decision branch points.</p></div>
+</div>
+<div class="card"><div class="card-icon">⚕️</div><h4 data-zh="疾病進程" data-en="Disease Progression">疾病進程</h4>
+<div data-lang="zh"><p>例如腫瘤亞群從上皮 → EMT → 侵襲性；纖維化從靜止 fibroblast → 活化 myofibroblast。</p></div>
+<div data-lang="en"><p>Tumor subpopulations: epithelial → EMT → invasive; fibrosis: quiescent fibroblast → activated myofibroblast.</p></div>
+</div>
+<div class="card"><div class="card-icon">🔄</div><h4 data-zh="細胞週期" data-en="Cell Cycle">細胞週期</h4>
+<div data-lang="zh"><p>G1 → S → G2 → M 的周期性表達是常見的「假軌跡」——分析時必須先回歸掉或排除。</p></div>
+<div data-lang="en"><p>The cyclic G1 → S → G2 → M signature is a frequent <em>spurious</em> trajectory — regress it out or exclude before analysis.</p></div>
+</div>
+</div>
+
+<div class="callout tip"><span class="callout-icon">💡</span><div>
+<span data-lang="zh"><strong>核心前提：</strong>軌跡分析<em>需要</em>數據中存在「中間狀態」的細胞。如果樣本只包含兩個完全分化的終端群體，演算法仍會強行畫出一條軌跡，但這條軌跡<strong>沒有生物學意義</strong>——它只是兩團點之間最短距離的連線。先用 marker gene 與分群結果判斷分化過程是否存在，再決定要不要做 pseudotime。</span>
+<span data-lang="en"><strong>Core prerequisite:</strong> trajectory analysis <em>requires</em> intermediate-state cells. If your sample contains only two fully differentiated populations, the algorithm will still draw a trajectory — but it carries <strong>no biological meaning</strong>; it's just the shortest path between two blobs. Verify intermediate states via markers and clustering first, then decide whether pseudotime is even applicable.</span>
+</div></div>
+</section>
+
+<!-- ===== Section 2: Method taxonomy ===== -->
+<section class="section">
+<div class="section-label" data-zh="方法分類" data-en="METHOD TAXONOMY">方法分類</div>
+<h2 data-zh="二、核心方法的家族樹" data-en="II. Family Tree of Methods">二、核心方法的家族樹</h2>
+<div data-lang="zh"><p>軌跡分析數十種工具，可大致分為三大家族：</p></div>
+<div data-lang="en"><p>Dozens of trajectory tools fall broadly into three families:</p></div>
+
+<div class="card">
+<h4>🌳 <span data-zh="家族 1：樹/曲線型 (Tree-based)" data-en="Family 1: Tree-based">家族 1：樹/曲線型</span></h4>
+<div data-lang="zh">
+<ul style="margin:6px 0 0 20px;color:var(--c-ink-light);">
+<li><strong>Monocle 2 (DDRTree)</strong>：在 reduced 空間學一棵 reversed-graph embedding tree。</li>
+<li><strong>Monocle 3</strong>：以 UMAP 為底，再用 principal graph 學習拓撲；支援 disjoint trajectories、branching、cycle。</li>
+<li><strong>Slingshot</strong>：在已分群的 reduced 空間擬合 principal curve，先 MST 連接 cluster 再用 simultaneous principal curves 平滑每條 lineage。</li>
+</ul>
+</div>
+<div data-lang="en">
+<ul style="margin:6px 0 0 20px;color:var(--c-ink-light);">
+<li><strong>Monocle 2 (DDRTree)</strong>: learns a reversed-graph embedding tree in reduced space.</li>
+<li><strong>Monocle 3</strong>: UMAP-based; principal graph learning supports disjoint trajectories, branching, and cycles.</li>
+<li><strong>Slingshot</strong>: fits principal curves on clustered, reduced data — MST over clusters, then simultaneous principal curves per lineage.</li>
+</ul>
+</div>
+</div>
+
+<div class="card">
+<h4>🕸️ <span data-zh="家族 2：圖型 (Graph-based)" data-en="Family 2: Graph-based">家族 2：圖型</span></h4>
+<div data-lang="zh">
+<ul style="margin:6px 0 0 20px;color:var(--c-ink-light);">
+<li><strong>PAGA (Partition-based Graph Abstraction)</strong>：先做 cluster，再用統計檢定決定 cluster 間是否「連通」。<em>不</em>強制一條軌跡，輸出一張 cluster 拓撲圖——適合大尺度概覽。</li>
+<li><strong>PAGA → init</strong>：PAGA 結果可作為其他工具（如 ForceAtlas2、UMAP）的初始化，產出可解釋的全景。</li>
+</ul>
+</div>
+<div data-lang="en">
+<ul style="margin:6px 0 0 20px;color:var(--c-ink-light);">
+<li><strong>PAGA</strong>: clusters first, then statistical tests decide which clusters are connected. Does <em>not</em> force a single trajectory — outputs a topology graph, ideal for large-scale overview.</li>
+<li><strong>PAGA → init</strong>: PAGA can initialize ForceAtlas2/UMAP for interpretable global layouts.</li>
+</ul>
+</div>
+</div>
+
+<div class="card">
+<h4>🧭 <span data-zh="家族 3：方向性 (Directional / Velocity)" data-en="Family 3: Directional / Velocity">家族 3：方向性</span></h4>
+<div data-lang="zh">
+<ul style="margin:6px 0 0 20px;color:var(--c-ink-light);">
+<li><strong>RNA Velocity</strong> (La Manno et al., <em>Nature</em> 2018, velocyto)：利用 spliced / unspliced mRNA 比率推估每個細胞「正在朝哪走」。</li>
+<li><strong>scVelo</strong>：將 velocity 升級為 dynamical model，估計每基因的 splicing kinetics。</li>
+<li><strong>CellRank</strong>：把 pseudotime、velocity、實驗時間整合進 Markov chain，輸出 macrostate（terminal / initial / intermediate）與 fate probability。</li>
+</ul>
+</div>
+<div data-lang="en">
+<ul style="margin:6px 0 0 20px;color:var(--c-ink-light);">
+<li><strong>RNA Velocity</strong> (La Manno et al., <em>Nature</em> 2018, velocyto): spliced/unspliced ratio infers each cell's instantaneous direction.</li>
+<li><strong>scVelo</strong>: upgrades velocity to a dynamical model with per-gene splicing kinetics.</li>
+<li><strong>CellRank</strong>: unifies pseudotime + velocity + experimental time into a Markov chain; returns macrostates (terminal/initial/intermediate) and fate probabilities.</li>
+</ul>
+</div>
+</div>
+</section>
+
+<!-- ===== Section 3: Comparison table ===== -->
+<section class="section">
+<div class="section-label" data-zh="方法比較" data-en="COMPARISON">方法比較</div>
+<h2 data-zh="三、工具完整比較" data-en="III. Tool Comparison">三、工具完整比較</h2>
+<table class="comp-table">
+<thead><tr>
+<th data-zh="工具" data-en="Tool">工具</th>
+<th data-zh="拓撲" data-en="Topology">拓撲</th>
+<th data-zh="輸入" data-en="Input">輸入</th>
+<th data-zh="速度 / 規模" data-en="Speed / Scale">速度</th>
+<th data-zh="何時用" data-en="When to Use">何時用</th>
+</tr></thead>
+<tbody>
+<tr><td><strong>Monocle 3</strong></td>
+<td data-lang="zh">UMAP + principal graph<br>(可分支、cycle、disjoint)</td>
+<td data-lang="zh">已 normalize 的表達矩陣 + UMAP</td>
+<td data-lang="zh">中；&gt; 100k cells 可行</td>
+<td data-lang="zh">通用首選；想看分支拓撲</td>
+<td data-lang="en">UMAP + principal graph<br>(branch, cycle, disjoint)</td>
+<td data-lang="en">Normalized expression + UMAP</td>
+<td data-lang="en">Moderate; works at &gt; 100k cells</td>
+<td data-lang="en">Default choice; branched topology</td></tr>
+
+<tr><td><strong>Slingshot</strong></td>
+<td data-lang="zh">MST + principal curves</td>
+<td data-lang="zh">Reduced 空間 + cluster labels</td>
+<td data-lang="zh">快；數萬 cells 內順暢</td>
+<td data-lang="zh">已知 cluster 數量、要簡單線性 / 分支</td>
+<td data-lang="en">MST + principal curves</td>
+<td data-lang="en">Reduced space + cluster labels</td>
+<td data-lang="en">Fast; comfortable up to ~10⁴ cells</td>
+<td data-lang="en">Known clusters; simple linear/branching</td></tr>
+
+<tr><td><strong>PAGA</strong></td>
+<td data-lang="zh">Cluster-level graph</td>
+<td data-lang="zh">已分群的 neighbor graph</td>
+<td data-lang="zh">非常快</td>
+<td data-lang="zh">大數據集先看全景拓撲</td>
+<td data-lang="en">Cluster-level graph</td>
+<td data-lang="en">Clustered neighbor graph</td>
+<td data-lang="en">Very fast</td>
+<td data-lang="en">Global topology before fine ordering</td></tr>
+
+<tr><td><strong>scVelo</strong></td>
+<td data-lang="zh">向量場 (velocity field)</td>
+<td data-lang="zh">spliced + unspliced counts</td>
+<td data-lang="zh">中（dynamical 較慢）</td>
+<td data-lang="zh">要「方向」、有 unspliced 資料</td>
+<td data-lang="en">Velocity vector field</td>
+<td data-lang="en">spliced + unspliced counts</td>
+<td data-lang="en">Moderate (dynamical mode slower)</td>
+<td data-lang="en">Need direction; have unspliced</td></tr>
+
+<tr><td><strong>CellRank</strong></td>
+<td data-lang="zh">Markov chain；macrostate + fate prob</td>
+<td data-lang="zh">velocity / pseudotime / 時間實驗</td>
+<td data-lang="zh">中</td>
+<td data-lang="zh">想要終端細胞機率、fate map</td>
+<td data-lang="en">Markov chain; macrostates + fate prob</td>
+<td data-lang="en">velocity / pseudotime / time-resolved</td>
+<td data-lang="en">Moderate</td>
+<td data-lang="en">Fate probabilities and terminal states</td></tr>
 </tbody></table>
 
-<div class="decision-tree"><h4>🌳 <span data-zh="我該用哪個？" data-en="Which tool?">我該用哪個？</span></h4>
-<div data-lang="zh"><div class="dt-node"><span class="dt-q">Q1:</span><div>想知道分化「順序」？ <span class="dt-arrow">→</span> <strong>Monocle3</strong> 或 Slingshot。</div></div><div class="dt-node"><span class="dt-q">Q2:</span><div>想知道分化「方向」？ <span class="dt-arrow">→</span> <strong>RNA Velocity (scVelo)</strong>。</div></div><div class="dt-node"><span class="dt-q">Q3:</span><div>大規模數據，先看拓撲？ <span class="dt-arrow">→</span> <strong>PAGA</strong>。</div></div><div class="dt-node"><span class="dt-q">Q4:</span><div>想知道哪些細胞最未分化？ <span class="dt-arrow">→</span> <strong>CytoTRACE</strong>。</div></div></div>
-<div data-lang="en"><div class="dt-node"><span class="dt-q">Q1:</span><div>Want differentiation "order"? <span class="dt-arrow">→</span> <strong>Monocle3</strong> or Slingshot.</div></div><div class="dt-node"><span class="dt-q">Q2:</span><div>Want differentiation "direction"? <span class="dt-arrow">→</span> <strong>RNA Velocity (scVelo)</strong>.</div></div><div class="dt-node"><span class="dt-q">Q3:</span><div>Large-scale topology first? <span class="dt-arrow">→</span> <strong>PAGA</strong>.</div></div><div class="dt-node"><span class="dt-q">Q4:</span><div>Which cells are least differentiated? <span class="dt-arrow">→</span> <strong>CytoTRACE</strong>.</div></div></div></div></section>
+<div class="decision-tree">
+<h4>🌳 <span data-zh="我該用哪個？" data-en="Which tool?">我該用哪個？</span></h4>
+<div data-lang="zh">
+<div class="dt-node"><span class="dt-q">Q1:</span><div>第一次跑、想看全景拓撲？ <span class="dt-arrow">→</span> <strong>PAGA</strong> 先建立 cluster 連接圖。</div></div>
+<div class="dt-node"><span class="dt-q">Q2:</span><div>已知 cluster 結構、要快速排序？ <span class="dt-arrow">→</span> <strong>Slingshot</strong>。</div></div>
+<div class="dt-node"><span class="dt-q">Q3:</span><div>有分支、要 fine ordering？ <span class="dt-arrow">→</span> <strong>Monocle 3</strong>。</div></div>
+<div class="dt-node"><span class="dt-q">Q4:</span><div>有 unspliced reads、想知道「方向」？ <span class="dt-arrow">→</span> <strong>scVelo</strong>。</div></div>
+<div class="dt-node"><span class="dt-q">Q5:</span><div>要 terminal state / fate prob？ <span class="dt-arrow">→</span> <strong>CellRank</strong>。</div></div>
+</div>
+<div data-lang="en">
+<div class="dt-node"><span class="dt-q">Q1:</span><div>First pass, global topology? <span class="dt-arrow">→</span> <strong>PAGA</strong> for cluster-connectivity.</div></div>
+<div class="dt-node"><span class="dt-q">Q2:</span><div>Known clusters, fast ordering? <span class="dt-arrow">→</span> <strong>Slingshot</strong>.</div></div>
+<div class="dt-node"><span class="dt-q">Q3:</span><div>Branched topology, fine ordering? <span class="dt-arrow">→</span> <strong>Monocle 3</strong>.</div></div>
+<div class="dt-node"><span class="dt-q">Q4:</span><div>Have unspliced, want direction? <span class="dt-arrow">→</span> <strong>scVelo</strong>.</div></div>
+<div class="dt-node"><span class="dt-q">Q5:</span><div>Need terminal states / fate prob? <span class="dt-arrow">→</span> <strong>CellRank</strong>.</div></div>
+</div>
+</div>
+</section>
 
-<section class="section"><div class="section-label" data-zh="程式碼" data-en="CODE">程式碼</div><h2 data-zh="四、實作範例" data-en="IV. Code Examples">四、實作範例</h2>
-<div class="code-tabs"><div class="code-tab-btns"><button class="code-tab-btn active" onclick="switchTab(this,'r1')">R / Monocle3</button><button class="code-tab-btn" onclick="switchTab(this,'py1')">Python / scVelo</button></div>
-<div class="code-tab-content active" id="r1"><pre><span class="func">library</span>(monocle3)
+<!-- ===== Section 4: RNA velocity detail ===== -->
+<section class="section">
+<div class="section-label" data-zh="深入 RNA velocity" data-en="RNA VELOCITY">深入 RNA velocity</div>
+<h2 data-zh="四、RNA Velocity 的核心邏輯" data-en="IV. The Core Logic of RNA Velocity">四、RNA Velocity 的核心邏輯</h2>
+<div data-lang="zh">
+<p>RNA velocity 由 La Manno et al. (<em>Nature</em>, 2018) 引入：scRNA-seq 的 short-read 比對中，<strong>含 intron 的 reads</strong> 來自<strong>未剪接 (unspliced, nascent)</strong> mRNA，<strong>純 exon 的 reads</strong> 來自<strong>已剪接 (spliced, mature)</strong> mRNA。因為轉錄一個基因時，nascent 必須先存在、然後被剪接，所以：</p>
+<p style="background:var(--c-bg-alt);padding:12px 16px;border-radius:8px;font-family:var(--font-mono);font-size:.9rem;">d(spliced)/dt = β · unspliced − γ · spliced</p>
+<p>如果某個基因目前 unspliced 比例「異常高」(超過 steady-state)，代表它正在被啟動轉錄；反之則代表正在被關閉。把所有基因的瞬時導數合成一個向量場 → <strong>細胞「正在朝哪邊轉變」</strong>。</p>
+<h4 style="font-size:1rem;margin-top:14px;">兩種模型</h4>
+<ul style="margin:6px 0 0 20px;color:var(--c-ink-light);">
+<li><strong>Steady-state (stochastic)</strong>：假設每個基因在 high-expression 與 low-expression 細胞之間達 steady state；用 quantile 線性回歸估 γ。簡單、快，但對 transient 過程不夠精確。</li>
+<li><strong>Dynamical model (scVelo)</strong>：對每個基因估計 transcription α、splicing β、degradation γ 動力學參數，能解析 induction/repression 階段。較準確但需更大數據量。</li>
+</ul>
+</div>
+<div data-lang="en">
+<p>Introduced by La Manno et al. (<em>Nature</em> 2018): in scRNA-seq read alignment, <strong>intron-containing reads</strong> originate from <strong>unspliced (nascent)</strong> mRNA, and <strong>exon-only reads</strong> from <strong>spliced (mature)</strong> mRNA. Because nascent precedes mature in time:</p>
+<p style="background:var(--c-bg-alt);padding:12px 16px;border-radius:8px;font-family:var(--font-mono);font-size:.9rem;">d(spliced)/dt = β · unspliced − γ · spliced</p>
+<p>If a gene's unspliced fraction is "above steady state", it is being induced; below means repression. Aggregating per-gene derivatives gives a velocity vector field → <strong>where each cell is heading next</strong>.</p>
+<h4 style="font-size:1rem;margin-top:14px;">Two flavors</h4>
+<ul style="margin:6px 0 0 20px;color:var(--c-ink-light);">
+<li><strong>Steady-state (stochastic)</strong>: assumes each gene reaches steady state in high/low expression cells; γ from quantile regression. Fast but inaccurate for transients.</li>
+<li><strong>Dynamical model (scVelo)</strong>: fits per-gene transcription α, splicing β, degradation γ — resolves induction/repression phases. More accurate, more data-hungry.</li>
+</ul>
+</div>
+
+<div class="callout warn"><span class="callout-icon">⚠️</span><div>
+<span data-lang="zh"><strong>velocity 不是萬靈丹：</strong>需要可靠的 unspliced 量化。10x 3' chemistry 的 unspliced 訊號相對稀薄；在 <em>已分化、低週轉率</em> 組織（成年神經元、心肌）尤其不可靠，velocity 方向可能<strong>反向</strong>或變得隨機。新方法 <em>UniTVelo</em>、<em>VeloVAE</em>、<em>veloVI</em> 嘗試改善這些問題。先用 <code>scv.pl.proportions()</code> 檢查 unspliced 比例是否合理（通常 10–25%）。</span>
+<span data-lang="en"><strong>Velocity is not a panacea:</strong> it depends on reliable unspliced quantification. 10x 3' chemistry yields sparse unspliced reads; in <em>terminally differentiated, low-turnover</em> tissues (adult neurons, cardiomyocytes), velocity can be unreliable or even <strong>reversed</strong>. Newer methods (UniTVelo, VeloVAE, veloVI) tackle this. Always check the unspliced proportion (usually 10–25%) with <code>scv.pl.proportions()</code> first.</span>
+</div></div>
+</section>
+
+<!-- ===== Section 5: Interactive sim — NEW ===== -->
+<section class="section">
+<div class="section-label" data-zh="互動模擬" data-en="INTERACTIVE">互動模擬</div>
+<h2 data-zh="五、Pseudotime 估計模擬器" data-en="V. Pseudotime Estimator Simulator">五、Pseudotime 估計模擬器</h2>
+<div data-lang="zh"><p>真實世界裡，pseudotime 不會完美——分化過程有<strong>表達雜訊</strong>、不同 lineage 可能<strong>分支</strong>。拖動下方滑桿觀察：① 雜訊上升如何讓「估計 pseudotime」偏離「真實時間」、變得不單調；② 「分支因子」如何在散佈圖中產生兩條分歧的軌跡。並可切換對應的 marker gene 表達曲線。</p></div>
+<div data-lang="en"><p>In reality, pseudotime is imperfect — differentiation has <strong>expression noise</strong> and may <strong>branch</strong> into multiple lineages. Drag the sliders to see: ① how rising noise causes "estimated pseudotime" to deviate from "true time" and lose monotonicity; ② how the "branch factor" splits the scatter into divergent trajectories. Toggle the marker gene to inspect its trend.</p></div>
+
+<div class="interactive-panel">
+<div class="sim-stats">
+  <span class="sim-stat pass" id="ptCorr">ρ = —</span>
+  <span class="sim-stat" id="ptMono" style="background:var(--c-bg-alt);color:var(--c-ink-light);">— monotonic</span>
+  <span class="sim-stat fail" id="ptBranch">— branches</span>
+</div>
+
+<div class="slider-group"><label><span data-zh="表達雜訊強度 (σ)" data-en="Expression noise (σ)">σ (雜訊)</span> <span id="valSig">0.4</span></label><input type="range" id="sldSig" min="0" max="2" step="0.05" value="0.4"></div>
+<div class="slider-group"><label><span data-zh="分支因子 (branch strength)" data-en="Branching factor">分支因子</span> <span id="valBr">0.5</span></label><input type="range" id="sldBr" min="0" max="1" step="0.05" value="0.5"></div>
+<div class="slider-group"><label><span data-zh="細胞數" data-en="Number of cells">細胞數</span> <span id="valNc">300</span></label><input type="range" id="sldNc" min="50" max="600" step="50" value="300"></div>
+
+<div class="toggle-row" style="margin-top:10px;">
+<button class="toggle-btn active" id="m-stem" onclick="showMarker(0)"><span data-zh="幹細胞 marker" data-en="Stem marker">幹 marker</span></button>
+<button class="toggle-btn" id="m-trans" onclick="showMarker(1)"><span data-zh="過渡基因" data-en="Transition gene">過渡基因</span></button>
+<button class="toggle-btn" id="m-term" onclick="showMarker(2)"><span data-zh="終端 marker" data-en="Terminal marker">終端 marker</span></button>
+</div>
+
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px;margin-top:14px;">
+  <div>
+    <div style="font-size:.82rem;font-weight:600;text-align:center;margin-bottom:4px;color:var(--c-ink-light);"><span data-zh="① 模擬 UMAP（真實時間著色）" data-en="① Simulated UMAP (true time)">① 模擬 UMAP</span></div>
+    <div class="chart-container" style="height:230px;"><canvas id="umapChart"></canvas></div>
+  </div>
+  <div>
+    <div style="font-size:.82rem;font-weight:600;text-align:center;margin-bottom:4px;color:var(--c-ink-light);"><span data-zh="② 估計 pseudotime vs 真實時間" data-en="② Estimated pseudotime vs true time">② 估計 vs 真實</span></div>
+    <div class="chart-container" style="height:230px;"><canvas id="ptEstChart"></canvas></div>
+  </div>
+  <div>
+    <div style="font-size:.82rem;font-weight:600;text-align:center;margin-bottom:4px;color:var(--c-ink-light);"><span data-zh="③ Marker gene 沿 pseudotime" data-en="③ Marker along pseudotime">③ Marker 沿 pseudotime</span></div>
+    <div class="chart-container" style="height:230px;"><canvas id="markerChart"></canvas></div>
+  </div>
+</div>
+<p style="font-size:.78rem;color:var(--c-ink-muted);text-align:center;margin-top:8px;"><span data-zh="ρ = 估計 pseudotime 與真實時間的 Spearman 相關。雜訊愈大、ρ 愈低，估計結果愈不可靠；分支因子愈大，UMAP 出現兩條分岔軌跡。" data-en="ρ = Spearman correlation between estimated pseudotime and true time. Higher noise → lower ρ → less reliable; higher branching → two divergent trajectories on the UMAP.">ρ = 估計 pseudotime 與真實時間的 Spearman 相關，數值越接近 1 代表估計越準。</span></p>
+</div>
+</section>
+
+<!-- ===== Section 6: Code examples ===== -->
+<section class="section">
+<div class="section-label" data-zh="程式碼" data-en="CODE">程式碼</div>
+<h2 data-zh="六、實作範例（四套）" data-en="VI. Code Examples (4 Stacks)">六、實作範例</h2>
+<div class="code-tabs">
+<div class="code-tab-btns">
+  <button class="code-tab-btn active" onclick="switchTab(this,'r-m3')">R / Monocle 3</button>
+  <button class="code-tab-btn" onclick="switchTab(this,'r-slin')">R / Slingshot</button>
+  <button class="code-tab-btn" onclick="switchTab(this,'py-velo')">Py / scVelo</button>
+  <button class="code-tab-btn" onclick="switchTab(this,'py-cr')">Py / CellRank</button>
+</div>
+
+<div class="code-tab-content active" id="r-m3"><pre><span class="func">library</span>(monocle3)
+<span class="comment"># 從 Seurat 轉成 cell_data_set / Convert from Seurat</span>
 cds &lt;- <span class="func">as.cell_data_set</span>(pbmc)
-cds &lt;- <span class="func">learn_graph</span>(cds)
-cds &lt;- <span class="func">order_cells</span>(cds)  <span class="comment"># 互動選擇 root</span>
-<span class="func">plot_cells</span>(cds, color_cells_by = <span class="str">"pseudotime"</span>)
-<span class="comment"># 找沿軌跡變化的基因</span>
-traj_genes &lt;- <span class="func">graph_test</span>(cds, neighbor_graph = <span class="str">"principal_graph"</span>)</pre></div>
-<div class="code-tab-content" id="py1"><pre><span class="kw">import</span> scvelo <span class="kw">as</span> scv
-scv.pp.filter_and_normalize(adata, min_shared_counts=<span class="num">20</span>)
+cds &lt;- <span class="func">cluster_cells</span>(cds, reduction_method = <span class="str">"UMAP"</span>)
+cds &lt;- <span class="func">learn_graph</span>(cds, use_partition = <span class="kw">TRUE</span>)
+
+<span class="comment"># 互動式選擇根 (root) 細胞 / Interactively choose root</span>
+cds &lt;- <span class="func">order_cells</span>(cds)
+
+<span class="comment"># 視覺化 / Visualize</span>
+<span class="func">plot_cells</span>(cds, color_cells_by = <span class="str">"pseudotime"</span>,
+           label_branch_points = <span class="kw">FALSE</span>,
+           graph_label_size = <span class="num">3</span>)
+
+<span class="comment"># 找沿軌跡顯著變化的基因 / Genes that change along trajectory</span>
+traj_genes &lt;- <span class="func">graph_test</span>(cds, neighbor_graph = <span class="str">"principal_graph"</span>, cores = <span class="num">4</span>)
+sig &lt;- <span class="func">subset</span>(traj_genes, q_value &lt; <span class="num">0.05</span>)</pre></div>
+
+<div class="code-tab-content" id="r-slin"><pre><span class="func">library</span>(slingshot)
+<span class="comment"># reducedDim 可用 PCA、UMAP；clusterLabels 任何 cluster assignment</span>
+sce &lt;- <span class="func">slingshot</span>(sce,
+  reducedDim   = <span class="str">"UMAP"</span>,
+  clusterLabels = sce$seurat_clusters,
+  start.clus   = <span class="str">"HSC"</span>      <span class="comment"># 指定起點 cluster</span>
+)
+<span class="comment"># 每條 lineage 一條 pseudotime / one pseudotime per lineage</span>
+pt &lt;- <span class="func">slingPseudotime</span>(sce)
+<span class="comment"># 視覺化</span>
+<span class="func">plot</span>(<span class="func">reducedDims</span>(sce)$UMAP, col = pt[,<span class="num">1</span>], pch = <span class="num">16</span>)
+<span class="func">lines</span>(<span class="func">SlingshotDataSet</span>(sce), lwd = <span class="num">2</span>)</pre></div>
+
+<div class="code-tab-content" id="py-velo"><pre><span class="kw">import</span> scvelo <span class="kw">as</span> scv
+<span class="comment"># 預設：先檢查 unspliced 比例 / first: inspect unspliced fraction</span>
+scv.pl.proportions(adata)        <span class="comment"># 一般 10–25% 為合理</span>
+
+scv.pp.filter_and_normalize(adata, min_shared_counts=<span class="num">20</span>, n_top_genes=<span class="num">2000</span>)
 scv.pp.moments(adata, n_pcs=<span class="num">30</span>, n_neighbors=<span class="num">30</span>)
-scv.tl.velocity(adata)
+
+<span class="comment"># 動力學模型（較準但較慢） / dynamical model</span>
+scv.tl.recover_dynamics(adata, n_jobs=<span class="num">8</span>)
+scv.tl.velocity(adata, mode=<span class="str">"dynamical"</span>)
 scv.tl.velocity_graph(adata)
-scv.pl.velocity_embedding_stream(adata, basis=<span class="str">"umap"</span>)
-scv.tl.rank_velocity_genes(adata)</pre></div></div>
-<div class="callout danger"><span class="callout-icon">🚨</span><div><span data-lang="zh"><strong>Pseudotime ≠ 真實時間。</strong>它是根據表達相似性排列的「虛擬」時間軸。不同起始點、不同方法可能給出不同軌跡。結果需用實驗（lineage tracing、time-course）驗證。</span><span data-lang="en"><strong>Pseudotime ≠ real time.</strong> It's a "virtual" timeline based on expression similarity. Different root cells or methods may produce different trajectories. Validate with experiments (lineage tracing, time-course).</span></div></div>
-<div class="callout warn"><span class="callout-icon">⚠️</span><div><span data-lang="zh"><strong>RNA Velocity 的限制：</strong>依賴 spliced/unspliced 讀段的準確量化，在 10x 3' 數據中可能不夠精確。UniTVelo、VeloVAE 等新方法嘗試改善此問題。</span><span data-lang="en"><strong>RNA Velocity limitations:</strong> Relies on accurate spliced/unspliced quantification, which may be imprecise for 10x 3' data. Newer methods (UniTVelo, VeloVAE) attempt to address this.</span></div></div></section>
 
-<section class="quiz-section"><h3>📝 <span data-zh="自我檢測" data-en="Self-Check">自我檢測</span></h3>
-<div class="quiz-q" data-answer="1"><p data-lang="zh">RNA Velocity 相比傳統 pseudotime 的獨特優勢是？</p><p data-lang="en">Unique advantage of RNA Velocity over traditional pseudotime?</p><div class="quiz-options">
-<div class="quiz-opt" data-idx="0"><span data-lang="zh">A. 不需要先做聚類</span><span data-lang="en">A. No clustering needed</span></div>
-<div class="quiz-opt" data-idx="1"><span data-lang="zh">B. 能推斷細胞轉變的「方向」</span><span data-lang="en">B. Can infer the "direction" of transitions</span></div>
-<div class="quiz-opt" data-idx="2"><span data-lang="zh">C. 完全不需人工設定起始點</span><span data-lang="en">C. No manual root cell needed</span></div>
-<div class="quiz-opt" data-idx="3"><span data-lang="zh">D. 計算速度更快</span><span data-lang="en">D. Faster computation</span></div></div><div class="quiz-feedback" id="fb1"></div></div></section>
-<nav class="page-nav"><a href="cellchat.html"><span class="nav-dir" data-zh="← 上一步" data-en="← Previous">← 上一步</span><span class="nav-title" data-zh="CellChat" data-en="CellChat">CellChat</span></a><a href="index.html"><span class="nav-dir" data-zh="下一步 →" data-en="Next →">下一步 →</span><span class="nav-title" data-zh="教學首頁" data-en="Tutorial Home">教學首頁</span></a></nav></main>
+<span class="comment"># 視覺化 / Visualize</span>
+scv.pl.velocity_embedding_stream(adata, basis=<span class="str">"umap"</span>, color=<span class="str">"cell_type"</span>)
+scv.pl.velocity_embedding_grid(adata, basis=<span class="str">"umap"</span>, arrow_length=<span class="num">3</span>)
+
+<span class="comment"># latent time + driver genes</span>
+scv.tl.latent_time(adata)
+scv.tl.rank_dynamical_genes(adata, groupby=<span class="str">"cell_type"</span>)</pre></div>
+
+<div class="code-tab-content" id="py-cr"><pre><span class="kw">import</span> cellrank <span class="kw">as</span> cr
+<span class="kw">from</span> cellrank.kernels <span class="kw">import</span> VelocityKernel, ConnectivityKernel
+
+<span class="comment"># 1. 用 velocity + connectivity 構成 transition matrix</span>
+vk = VelocityKernel(adata).compute_transition_matrix()
+ck = ConnectivityKernel(adata).compute_transition_matrix()
+combined = <span class="num">0.8</span> * vk + <span class="num">0.2</span> * ck
+
+<span class="comment"># 2. GPCCA 估計 macrostate (terminal / initial / metastable)</span>
+g = cr.estimators.GPCCA(combined)
+g.compute_schur(n_components=<span class="num">20</span>)
+g.compute_macrostates(n_states=<span class="num">3</span>, cluster_key=<span class="str">"cell_type"</span>)
+g.plot_macrostates(which=<span class="str">"all"</span>)
+
+<span class="comment"># 3. 計算每個細胞走向各 terminal 的 fate probability</span>
+g.set_terminal_states_from_macrostates([<span class="str">"Mature_A"</span>,<span class="str">"Mature_B"</span>])
+g.compute_fate_probabilities()
+g.plot_fate_probabilities(same_plot=<span class="kw">False</span>)</pre></div>
+</div>
+</section>
+
+<!-- ===== Section 7: Validation ===== -->
+<section class="section">
+<div class="section-label" data-zh="驗證 trajectory" data-en="VALIDATION">驗證 trajectory</div>
+<h2 data-zh="七、如何判斷軌跡是「真的」？" data-en="VII. How to Tell if a Trajectory is Real">七、如何判斷軌跡是「真的」？</h2>
+<div data-lang="zh"><p>任何 pseudotime 演算法都會「給你答案」，但答案的可信度需另外驗證。下列三項是業界最常用的健全性檢查：</p></div>
+<div data-lang="en"><p>Every pseudotime tool will hand you an answer — its credibility needs separate verification. Three industry-standard sanity checks:</p></div>
+
+<div class="card-grid cols-3">
+<div class="card"><h4>📈 <span data-zh="① Marker 單調變化" data-en="① Monotonic markers">① Marker 單調變化</span></h4>
+<div data-lang="zh"><p>已知的幹細胞 marker（如 <em>CD34</em>、<em>SOX2</em>）應沿 pseudotime <strong>單調下降</strong>；終端 marker（如 <em>HBB</em> 對紅血球、<em>MS4A1</em> 對 mature B）應<strong>單調上升</strong>。若曲線雜亂或反向，軌跡可能錯誤或方向反了。</p></div>
+<div data-lang="en"><p>Known stem markers (<em>CD34</em>, <em>SOX2</em>) should <strong>decrease monotonically</strong> with pseudotime; terminal markers (<em>HBB</em> for erythrocytes, <em>MS4A1</em> for mature B) should <strong>rise monotonically</strong>. If the curve is messy or inverted, your trajectory is wrong or reversed.</p></div>
+</div>
+<div class="card"><h4>🧪 <span data-zh="② 重現已知 landmark" data-en="② Recapitulate landmarks">② 重現 landmark</span></h4>
+<div data-lang="zh"><p>例：B cell 成熟順序應為 pro-B → pre-B → immature → mature。若你的軌跡把 immature 排在 mature 後面，立即懷疑。</p></div>
+<div data-lang="en"><p>e.g., B-cell maturation should follow pro-B → pre-B → immature → mature. If your trajectory places immature after mature, suspect immediately.</p></div>
+</div>
+<div class="card"><h4>🧭 <span data-zh="③ velocity 方向交叉驗證" data-en="③ Cross-check with velocity">③ velocity 交叉驗證</span></h4>
+<div data-lang="zh"><p>若同時跑 pseudotime 與 RNA velocity，兩者方向<strong>應一致</strong>。不一致時通常是 root cell 選錯或某條 lineage 的 velocity 不可靠。</p></div>
+<div data-lang="en"><p>If you run both pseudotime and velocity, their directions <strong>should agree</strong>. Disagreements usually trace to a wrong root or unreliable velocity for one lineage.</p></div>
+</div>
+</div>
+</section>
+
+<!-- ===== Section 8: Best practices & pitfalls ===== -->
+<section class="section">
+<div class="section-label" data-zh="最佳實務" data-en="BEST PRACTICES">最佳實務</div>
+<h2 data-zh="八、最佳實務與常見陷阱" data-en="VIII. Best Practices & Common Pitfalls">八、最佳實務與常見陷阱</h2>
+
+<div class="decision-tree">
+<h4>✅ <span data-zh="最佳實務清單" data-en="Best Practice Checklist">最佳實務清單</span></h4>
+<div data-lang="zh">
+<div class="dt-node"><span class="dt-q">①</span><div><strong>先 cluster、再 trajectory。</strong>把 trajectory 強加在 noise 上沒有意義。先確認有合理的 cluster 結構與中間態。</div></div>
+<div class="dt-node"><span class="dt-q">②</span><div><strong>UMAP 只用來看，不用來算。</strong>UMAP 適合視覺化但會扭曲距離。請在 PCA / harmony 整合空間重新計算 k-NN graph 再丟給 trajectory 工具。</div></div>
+<div class="dt-node"><span class="dt-q">③</span><div><strong>先 PAGA 看全景，再 Monocle/Slingshot 細節。</strong>PAGA 告訴你「哪些 cluster 連通」，能避免錯把無關 cluster 連成一條 lineage。</div></div>
+<div class="dt-node"><span class="dt-q">④</span><div><strong>謹慎選 root cell。</strong>用生物學先驗（幹細胞 marker、CytoTRACE diversity score、或 velocity 起點）決定，避免隨機點選。</div></div>
+<div class="dt-node"><span class="dt-q">⑤</span><div><strong>細胞週期務必處理。</strong>否則 G1 → S → G2 → M 的周期性會蓋過你想看的分化訊號。Seurat <code>CellCycleScoring</code> + regress out 或排除 cycling cells。</div></div>
+</div>
+<div data-lang="en">
+<div class="dt-node"><span class="dt-q">①</span><div><strong>Cluster first, then trajectory.</strong> Forcing a trajectory onto noise is meaningless — verify cluster structure and intermediate states first.</div></div>
+<div class="dt-node"><span class="dt-q">②</span><div><strong>Use UMAP for viz only, not computation.</strong> UMAP is great visually but distorts distances. Recompute the k-NN graph in PCA / harmony space before feeding trajectory tools.</div></div>
+<div class="dt-node"><span class="dt-q">③</span><div><strong>PAGA for global, then Monocle/Slingshot for detail.</strong> PAGA tells you which clusters are connected, preventing spurious lineages between unrelated clusters.</div></div>
+<div class="dt-node"><span class="dt-q">④</span><div><strong>Pick the root cell carefully.</strong> Use biological priors (stem markers, CytoTRACE diversity, or velocity origin) — never random.</div></div>
+<div class="dt-node"><span class="dt-q">⑤</span><div><strong>Address cell cycle.</strong> Otherwise the G1→S→G2→M cycle dominates the signal you care about. Use Seurat <code>CellCycleScoring</code> + regress out, or exclude cycling cells.</div></div>
+</div>
+</div>
+
+<div class="card">
+<h4>🚧 <span data-zh="常見陷阱 Top 5" data-en="Top 5 Common Pitfalls">常見陷阱 Top 5</span></h4>
+<div data-lang="zh">
+<ol style="margin:8px 0 0 20px;color:var(--c-ink-light);">
+<li><strong>UMAP 的視覺 lineage 騙人</strong>：UMAP 上看起來連續的兩團 cluster，背後可能根本沒有真實連通——務必用 PAGA 統計檢定或 velocity 確認。</li>
+<li><strong>Root cell 選錯</strong>：起點不同，整條軌跡的方向、分支點全跟著錯。Trajectory 是「對 root 的相對距離」，root 錯，全錯。</li>
+<li><strong>把細胞週期當分化</strong>：cycling 細胞會在 UMAP 上沿 G1→S→G2→M 排成一條漂亮的弧——很容易被誤認為分化軌跡。</li>
+<li><strong>忽略增殖</strong>：許多 lineage 在分化時細胞數會擴張（progenitor → 大量 mature 細胞）。Pseudotime 排序不含「該位置的細胞數權重」，可能讓 progenitor 看起來「比實際少」。</li>
+<li><strong>把 velocity 用在錯的組織</strong>：成年穩定組織（神經元、心肌）unspliced 訊號很弱，velocity 方向不可信，甚至會出現整體反向。先檢查 unspliced 比例與 latent time 一致性。</li>
+</ol>
+</div>
+<div data-lang="en">
+<ol style="margin:8px 0 0 20px;color:var(--c-ink-light);">
+<li><strong>UMAP visual "lineage" lies</strong>: clusters that look continuous on UMAP may not be truly connected — verify with PAGA tests or velocity.</li>
+<li><strong>Wrong root cell</strong>: changing the root flips direction and reshapes branch points. Pseudotime is "distance from root" — wrong root, wrong everything.</li>
+<li><strong>Mistaking cell cycle for differentiation</strong>: cycling cells trace a beautiful G1→S→G2→M arc on UMAP — easily misread as a differentiation trajectory.</li>
+<li><strong>Ignoring proliferation</strong>: many lineages expand cell numbers during differentiation (progenitor → many mature cells). Pseudotime ordering carries no "cell-count weighting", so progenitors look "rarer than they really are".</li>
+<li><strong>Velocity in wrong tissue</strong>: adult quiescent tissues (neurons, cardiomyocytes) yield sparse unspliced — velocity is unreliable and may even invert globally. Check unspliced proportion and latent-time consistency first.</li>
+</ol>
+</div>
+</div>
+</section>
+
+<!-- ===== Section 9: Quiz ===== -->
+<section class="quiz-section">
+<h3>📝 <span data-zh="自我檢測" data-en="Self-Check">自我檢測</span></h3>
+
+<div class="quiz-q" data-answer="1">
+<p data-lang="zh">1. RNA Velocity 相比傳統 pseudotime 的核心優勢？</p>
+<p data-lang="en">1. The core advantage of RNA velocity over traditional pseudotime?</p>
+<div class="quiz-options">
+<div class="quiz-opt" data-idx="0"><span data-lang="zh">A. 不需要 root cell</span><span data-lang="en">A. No root cell needed</span></div>
+<div class="quiz-opt" data-idx="1"><span data-lang="zh">B. 能推斷每個細胞的瞬時「方向」</span><span data-lang="en">B. Can infer each cell's instantaneous "direction"</span></div>
+<div class="quiz-opt" data-idx="2"><span data-lang="zh">C. 完全不需 cluster</span><span data-lang="en">C. Requires no clustering</span></div>
+<div class="quiz-opt" data-idx="3"><span data-lang="zh">D. 速度比 Monocle 快</span><span data-lang="en">D. Faster than Monocle</span></div>
+</div><div class="quiz-feedback" id="fb1"></div></div>
+
+<div class="quiz-q" data-answer="2">
+<p data-lang="zh">2. 你想在大數據集（&gt; 200k cells）先看全景拓撲，最佳工具是？</p>
+<p data-lang="en">2. To get a global topology overview on &gt; 200k cells first, the best tool is?</p>
+<div class="quiz-options">
+<div class="quiz-opt" data-idx="0"><span data-lang="zh">A. Monocle 3</span><span data-lang="en">A. Monocle 3</span></div>
+<div class="quiz-opt" data-idx="1"><span data-lang="zh">B. Slingshot</span><span data-lang="en">B. Slingshot</span></div>
+<div class="quiz-opt" data-idx="2"><span data-lang="zh">C. PAGA</span><span data-lang="en">C. PAGA</span></div>
+<div class="quiz-opt" data-idx="3"><span data-lang="zh">D. CellRank</span><span data-lang="en">D. CellRank</span></div>
+</div><div class="quiz-feedback" id="fb2"></div></div>
+
+<div class="quiz-q" data-answer="3">
+<p data-lang="zh">3. 你在心肌組織上跑 scVelo，結果顯示細胞 velocity 整體「向相反方向流動」。最可能原因？</p>
+<p data-lang="en">3. You run scVelo on cardiac tissue and the velocity flows globally "in reverse". Most likely cause?</p>
+<div class="quiz-options">
+<div class="quiz-opt" data-idx="0"><span data-lang="zh">A. 細胞死掉了</span><span data-lang="en">A. The cells are dead</span></div>
+<div class="quiz-opt" data-idx="1"><span data-lang="zh">B. UMAP 畫錯</span><span data-lang="en">B. UMAP is wrong</span></div>
+<div class="quiz-opt" data-idx="2"><span data-lang="zh">C. 沒做 batch correction</span><span data-lang="en">C. Missing batch correction</span></div>
+<div class="quiz-opt" data-idx="3"><span data-lang="zh">D. 成年心肌週轉率低、unspliced 訊號弱，velocity 不可靠</span><span data-lang="en">D. Adult cardiomyocytes have low turnover & weak unspliced signal — velocity is unreliable</span></div>
+</div><div class="quiz-feedback" id="fb3"></div></div>
+
+<div class="quiz-q" data-answer="2">
+<p data-lang="zh">4. 你的 pseudotime 結果裡，已知的終端 marker 反而在 pseudotime 早期就高表達。最可能原因？</p>
+<p data-lang="en">4. In your pseudotime result, a known terminal marker is highly expressed at early pseudotime. Most likely cause?</p>
+<div class="quiz-options">
+<div class="quiz-opt" data-idx="0"><span data-lang="zh">A. 該 marker 不重要</span><span data-lang="en">A. The marker is unimportant</span></div>
+<div class="quiz-opt" data-idx="1"><span data-lang="zh">B. 演算法 bug，重跑就好</span><span data-lang="en">B. A bug — just re-run</span></div>
+<div class="quiz-opt" data-idx="2"><span data-lang="zh">C. Root cell 選錯，方向反了</span><span data-lang="en">C. Wrong root cell — direction is reversed</span></div>
+<div class="quiz-opt" data-idx="3"><span data-lang="zh">D. 需要更多細胞</span><span data-lang="en">D. Need more cells</span></div>
+</div><div class="quiz-feedback" id="fb4"></div></div>
+</section>
+
+<nav class="page-nav">
+<a href="cellchat.html"><span class="nav-dir" data-zh="← 上一步" data-en="← Previous">← 上一步</span><span class="nav-title" data-zh="CellChat" data-en="CellChat">CellChat</span></a>
+<a href="index.html"><span class="nav-dir" data-zh="下一步 →" data-en="Next →">下一步 →</span><span class="nav-title" data-zh="教學首頁" data-en="Tutorial Home">教學首頁</span></a>
+</nav>
+</main>
 <footer class="site-footer">© Charlene — scRNA-seq Interactive Tutorial</footer>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script><script src="i18n.js"></script><script>
-window.addEventListener("scroll",()=>{const h=document.documentElement;document.getElementById("progressBar").style.width=(h.scrollTop/(h.scrollHeight-h.clientHeight))*100+"%";});
-function switchTab(b,id){const p=b.closest(".code-tabs");p.querySelectorAll(".code-tab-btn").forEach(x=>x.classList.remove("active"));p.querySelectorAll(".code-tab-content").forEach(x=>x.classList.remove("active"));b.classList.add("active");document.getElementById(id).classList.add("active");}
+<script src="i18n.js"></script>
+<script>
+window.addEventListener('scroll',()=>{const h=document.documentElement;document.getElementById('progressBar').style.width=(h.scrollTop/(h.scrollHeight-h.clientHeight))*100+'%';});
+function switchTab(b,id){const p=b.closest('.code-tabs');p.querySelectorAll('.code-tab-btn').forEach(x=>x.classList.remove('active'));p.querySelectorAll('.code-tab-content').forEach(x=>x.classList.remove('active'));b.classList.add('active');document.getElementById(id).classList.add('active');}
 
-const tP=[];for(let i=0;i<200;i++){const t=i/200;const path=t<0.5?0:(Math.random()<0.5?1:2);let x,y;if(t<0.4){x=-6+t*15;y=2+Math.sin(t*6)*2;}else if(path<=1){x=-6+t*15;y=2+Math.sin(t*6)*2+(t-0.4)*8;}else{x=-6+t*15;y=2+Math.sin(t*6)*2-(t-0.4)*6;}x+=(Math.random()-0.5)*1.5;y+=(Math.random()-0.5)*1.5;tP.push({x,y,t,cl:t<0.3?0:t<0.6?1:2});}
-const ptCols=tP.map(p=>{const r=Math.round(50+p.t*180),g=Math.round(180-p.t*120),b=Math.round(80+p.t*60);return`rgba(${{r}},${{g}},${{b}},0.7)`;});
-const clCols=['#1a6b5a','#d4a03c','#c0392b'];const clCA=tP.map(p=>clCols[p.cl]+'99');
-const tChart=new Chart(document.getElementById('tChart'),{type:'scatter',data:{datasets:[{data:tP.map(p=>({x:p.x,y:p.y})),backgroundColor:ptCols,pointRadius:3.5}]},options:{responsive:true,maintainAspectRatio:false,animation:false,plugins:{legend:{display:false}},scales:{x:{min:-9,max:11,title:{display:true,text:'UMAP 1'}},y:{min:-8,max:10,title:{display:true,text:'UMAP 2'}}}}});
-function colorT(m){['pt','cl'].forEach(k=>document.getElementById('btn-'+k).classList.toggle('active',k===m));tChart.data.datasets[0].backgroundColor=m==='pt'?ptCols:clCA;tChart.update('none');}
-const gP=[{data:tP.map(p=>({x:p.t,y:Math.max(0,3-p.t*4+Math.random()*0.5)})),color:'#1a6b5a'},{data:tP.map(p=>({x:p.t,y:Math.max(0,Math.exp(-30*(p.t-0.45)**2)*3+Math.random()*0.3)})),color:'#d4a03c'},{data:tP.map(p=>({x:p.t,y:Math.max(0,p.t*3-0.5+Math.random()*0.4)})),color:'#c0392b'}];
-const gChart=new Chart(document.getElementById('gChart'),{type:'scatter',data:{datasets:[{data:gP[0].data,backgroundColor:gP[0].color+'66',pointRadius:2}]},options:{responsive:true,maintainAspectRatio:false,animation:false,plugins:{legend:{display:false}},scales:{x:{min:0,max:1,title:{display:true,text:'Pseudotime'}},y:{min:0,max:4,title:{display:true,text:'Expression'}}}}});
-function showG(i){for(let j=0;j<3;j++)document.getElementById('gene-'+j).classList.toggle('active',j===i);gChart.data.datasets[0].data=gP[i].data;gChart.data.datasets[0].backgroundColor=gP[i].color+'66';gChart.update('none');}
-window._QF={zh:{q1_y:'RNA Velocity 利用 spliced/unspliced mRNA 比率推斷每個細胞的瞬時方向，這是傳統 pseudotime（只有排序）做不到的。',q1_n:'答案是 B。RNA Velocity 的核心優勢在於推斷方向性。'},en:{q1_y:'RNA Velocity uses spliced/unspliced ratios to infer each cell\'s instantaneous direction — something traditional pseudotime (ordering only) cannot do.',q1_n:'Answer is B. RNA Velocity\'s core advantage is directional inference.'}};
-const QF=window._QF||{};document.querySelectorAll(".quiz-q").forEach((q,qi)=>{const ans=+q.dataset.answer;q.querySelectorAll(".quiz-opt").forEach(o=>{o.addEventListener("click",()=>{if(q.classList.contains("answered"))return;q.classList.add("answered");const fb=document.getElementById("fb"+(qi+1));const ok=+o.dataset.idx===ans;o.classList.add(ok?"correct":"wrong");if(!ok)q.querySelectorAll(".quiz-opt")[ans].classList.add("correct");const L=I18n.get();fb.className="quiz-feedback show "+(ok?"correct-fb":"wrong-fb");fb.textContent=(ok?"✅ ":"❌ ")+(QF[L]&&QF[L]["q"+(qi+1)+"_"+(ok?"y":"n")]||"");});});});
-</script></body></html>
+// ===== Pseudotime estimator simulator =====
+function randn(){let u=0,v=0;while(u===0)u=Math.random();while(v===0)v=Math.random();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);}
+
+let curMarker = 0;
+function ptColor(t){const r=Math.round(50+t*180),g=Math.round(180-t*120),b=Math.round(80+t*60);return 'rgba('+r+','+g+','+b+',0.7)';}
+
+const umapChart=new Chart(document.getElementById('umapChart'),{type:'scatter',
+  data:{datasets:[{data:[],backgroundColor:[],pointRadius:3}]},
+  options:{responsive:true,maintainAspectRatio:false,animation:false,
+    plugins:{legend:{display:false}},
+    scales:{x:{title:{display:true,text:'UMAP 1',font:{size:10}},ticks:{font:{size:9}}},y:{title:{display:true,text:'UMAP 2',font:{size:10}},ticks:{font:{size:9}}}}}});
+
+const ptEstChart=new Chart(document.getElementById('ptEstChart'),{type:'scatter',
+  data:{datasets:[
+    {label:'cells',data:[],backgroundColor:'rgba(26,107,90,0.55)',pointRadius:2.5},
+    {type:'line',label:'y=x',data:[{x:0,y:0},{x:1,y:1}],borderColor:'#c0392b',borderDash:[6,4],borderWidth:1.5,pointRadius:0,fill:false}
+  ]},
+  options:{responsive:true,maintainAspectRatio:false,animation:false,
+    plugins:{legend:{display:false}},
+    scales:{x:{min:0,max:1,title:{display:true,text:'true time',font:{size:10}},ticks:{font:{size:9}}},y:{min:0,max:1,title:{display:true,text:'estimated pseudotime',font:{size:10}},ticks:{font:{size:9}}}}}});
+
+const markerChart=new Chart(document.getElementById('markerChart'),{type:'scatter',
+  data:{datasets:[{data:[],backgroundColor:'rgba(212,160,60,0.55)',pointRadius:2.5}]},
+  options:{responsive:true,maintainAspectRatio:false,animation:false,
+    plugins:{legend:{display:false}},
+    scales:{x:{min:0,max:1,title:{display:true,text:'pseudotime',font:{size:10}},ticks:{font:{size:9}}},y:{min:0,max:4,title:{display:true,text:'expression',font:{size:10}},ticks:{font:{size:9}}}}}});
+
+// Spearman rank correlation
+function spearman(xs,ys){
+  const n=xs.length;
+  const rx=xs.map((v,i)=>({v,i})).sort((a,b)=>a.v-b.v).map((o,r)=>({i:o.i,r})).sort((a,b)=>a.i-b.i).map(o=>o.r);
+  const ry=ys.map((v,i)=>({v,i})).sort((a,b)=>a.v-b.v).map((o,r)=>({i:o.i,r})).sort((a,b)=>a.i-b.i).map(o=>o.r);
+  const mx=(n-1)/2, my=(n-1)/2;
+  let num=0,dx=0,dy=0;
+  for(let i=0;i<n;i++){const ax=rx[i]-mx, ay=ry[i]-my; num+=ax*ay; dx+=ax*ax; dy+=ay*ay;}
+  return num/Math.sqrt(dx*dy);
+}
+
+function updatePT(){
+  const sig=+document.getElementById('sldSig').value;
+  const br=+document.getElementById('sldBr').value;
+  const Nc=+document.getElementById('sldNc').value;
+  document.getElementById('valSig').textContent=sig.toFixed(2);
+  document.getElementById('valBr').textContent=br.toFixed(2);
+  document.getElementById('valNc').textContent=Nc;
+
+  // Generate cells with true time t in [0,1]; branch decision after t>0.5
+  const cells=[];
+  for(let i=0;i<Nc;i++){
+    const t=Math.random();
+    let branch=0;
+    if(t>0.5 && Math.random()<br) branch=1; else if(t>0.5) branch=0;
+    // UMAP coords: x roughly along t; y bifurcates after 0.5 by branch
+    let x=-6+t*12 + randn()*sig*1.2;
+    let y= (t<0.5? Math.sin(t*4)*1.5 : (branch?(t-0.5)*8:-(t-0.5)*6)) + randn()*sig*1.5;
+    cells.push({t,branch,x,y});
+  }
+  // estimated pseudotime = projection onto principal axis (here approximated as normalized x)
+  const xs=cells.map(c=>c.x); const xMin=Math.min(...xs), xMax=Math.max(...xs);
+  cells.forEach(c=>{c.pt=(c.x-xMin)/(xMax-xMin);});
+
+  // UMAP scatter (color = true time gradient)
+  umapChart.data.datasets[0].data=cells.map(c=>({x:c.x,y:c.y}));
+  umapChart.data.datasets[0].backgroundColor=cells.map(c=>ptColor(c.t));
+  umapChart.update('none');
+
+  // Estimated pseudotime vs true time
+  ptEstChart.data.datasets[0].data=cells.map(c=>({x:c.t,y:c.pt}));
+  ptEstChart.update('none');
+
+  // Marker expression along pseudotime
+  // 0: stem (decreases), 1: transition (peaks mid), 2: terminal (increases)
+  const markerColors=['rgba(26,107,90,0.55)','rgba(212,160,60,0.55)','rgba(192,57,43,0.55)'];
+  markerChart.data.datasets[0].data=cells.map(c=>{
+    let y;
+    if(curMarker===0) y=Math.max(0, 3-c.pt*3.5+randn()*sig*0.3);
+    else if(curMarker===1) y=Math.max(0, Math.exp(-15*(c.pt-0.5)*(c.pt-0.5))*3+randn()*sig*0.3);
+    else y=Math.max(0, c.pt*3+randn()*sig*0.3);
+    return {x:c.pt,y};
+  });
+  markerChart.data.datasets[0].backgroundColor=markerColors[curMarker];
+  markerChart.update('none');
+
+  // Stats
+  const rho=spearman(cells.map(c=>c.t),cells.map(c=>c.pt));
+  document.getElementById('ptCorr').textContent='ρ = '+rho.toFixed(2);
+  const monoEl=document.getElementById('ptMono');
+  const lang=I18n.get();
+  if(rho>0.85){monoEl.textContent=lang==='zh'?'近單調 ✓':'near-monotonic ✓'; monoEl.style.background='var(--c-accent-light)';monoEl.style.color='var(--c-accent-dark)';}
+  else if(rho>0.6){monoEl.textContent=lang==='zh'?'部分單調':'partly monotonic'; monoEl.style.background='var(--c-bg-alt)';monoEl.style.color='var(--c-ink-light)';}
+  else{monoEl.textContent=lang==='zh'?'非單調 ✗':'not monotonic ✗'; monoEl.style.background='var(--c-danger-light)';monoEl.style.color='var(--c-danger)';}
+
+  const nBranches = br>0.05 ? 2 : 1;
+  const brEl=document.getElementById('ptBranch');
+  brEl.textContent=(lang==='zh'?'分支數: ':'branches: ')+nBranches;
+  brEl.style.background = nBranches>1 ? 'var(--c-highlight-light)' : 'var(--c-bg-alt)';
+  brEl.style.color = nBranches>1 ? 'var(--c-highlight-dark, #7a5a00)' : 'var(--c-ink-light)';
+}
+
+function showMarker(i){
+  curMarker=i;
+  document.getElementById('m-stem').classList.toggle('active',i===0);
+  document.getElementById('m-trans').classList.toggle('active',i===1);
+  document.getElementById('m-term').classList.toggle('active',i===2);
+  updatePT();
+}
+
+['sldSig','sldBr','sldNc'].forEach(id=>document.getElementById(id).addEventListener('input',updatePT));
+document.addEventListener('langchange',updatePT);
+updatePT();
+
+// ===== Quiz =====
+const QF={
+  zh:{
+    q1_y:'RNA velocity 利用 spliced/unspliced 比率推估每個細胞的瞬時方向，是傳統 pseudotime（只有排序）做不到的。',
+    q1_n:'答案是 B。',
+    q2_y:'PAGA 計算速度極快、輸出 cluster-level topology，特別適合在大數據集上「先看全景」。',
+    q2_n:'答案是 C。',
+    q3_y:'成年穩定組織週轉率低，nascent transcription 少，unspliced 訊號弱，velocity 不可信甚至會反向。',
+    q3_n:'答案是 D。',
+    q4_y:'Pseudotime 是「對 root 的距離」。終端 marker 在早期高表達，最常見的解釋是 root 選錯、方向反了。',
+    q4_n:'答案是 C。'
+  },
+  en:{
+    q1_y:'RNA velocity uses spliced/unspliced ratios to infer each cell\'s instantaneous direction — something traditional pseudotime (ordering only) cannot do.',
+    q1_n:'Correct answer is B.',
+    q2_y:'PAGA is extremely fast and outputs cluster-level topology — ideal for global overview on very large datasets.',
+    q2_n:'Correct answer is C.',
+    q3_y:'Adult quiescent tissues have low turnover and weak unspliced signal, making velocity unreliable and sometimes globally reversed.',
+    q3_n:'Correct answer is D.',
+    q4_y:'Pseudotime is "distance from root". If a terminal marker peaks early, the most common reason is a wrong root and a reversed direction.',
+    q4_n:'Correct answer is C.'
+  }
+};
+document.querySelectorAll('.quiz-q').forEach((q,qi)=>{const ans=+q.dataset.answer;q.querySelectorAll('.quiz-opt').forEach(o=>{o.addEventListener('click',()=>{if(q.classList.contains('answered'))return;q.classList.add('answered');const fb=document.getElementById('fb'+(qi+1));const ok=+o.dataset.idx===ans;o.classList.add(ok?'correct':'wrong');if(!ok)q.querySelectorAll('.quiz-opt')[ans].classList.add('correct');const L=I18n.get();fb.className='quiz-feedback show '+(ok?'correct-fb':'wrong-fb');fb.textContent=(ok?'✅ ':'❌ ')+(QF[L]['q'+(qi+1)+'_'+(ok?'y':'n')]||'');});});});
+</script>
+</body></html>

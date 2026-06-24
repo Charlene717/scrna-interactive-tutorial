@@ -1,77 +1,745 @@
-<!DOCTYPE html><html lang="zh-Hant"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>integration — scRNA-seq Tutorial</title><link rel="stylesheet" href="styles.css"></head><body>
-<nav class="top-nav"><div class="top-nav-inner"><a href="index.html" class="top-nav-brand"><span>🧬</span> <span data-zh="scRNA-seq 教學" data-en="scRNA-seq Tutorial">scRNA-seq 教學</span></a><ul class="top-nav-links"><li><a href="qc.html">QC</a></li><li><a href="normalization.html">Norm.</a></li><li><a href="variable-features.html">Features</a></li><li><a href="scaling.html">Scaling</a></li><li><a href="pca.html">PCA</a></li><li><a href="clustering.html">Clustering</a></li><li><a href="umap.html">UMAP</a></li><li><a href="annotation.html">Annot.</a></li><li><a href="differential-expression.html">DE</a></li><li><a href="integration.html" class=active>Integ.</a></li><li><a href="cellchat.html">CellChat</a></li><li><a href="trajectory.html">Traj.</a></li>
+<!DOCTYPE html><html lang="zh-Hant"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Integration — scRNA-seq Tutorial</title>
+<link rel="stylesheet" href="styles.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+</head><body>
+<nav class="top-nav"><div class="top-nav-inner">
+  <a href="index.html" class="top-nav-brand"><span>🧬</span> <span data-zh="scRNA-seq 教學" data-en="scRNA-seq Tutorial">scRNA-seq 教學</span></a>
+  <ul class="top-nav-links"><li><a href="qc.html">QC</a></li><li><a href="normalization.html">Norm.</a></li><li><a href="variable-features.html">Features</a></li><li><a href="scaling.html">Scaling</a></li><li><a href="pca.html">PCA</a></li><li><a href="clustering.html">Clustering</a></li><li><a href="umap.html">UMAP</a></li><li><a href="annotation.html">Annot.</a></li><li><a href="differential-expression.html">DE</a></li><li><a href="integration.html" class="active">Integ.</a></li><li><a href="cellchat.html">CellChat</a></li><li><a href="trajectory.html">Traj.</a></li>
     <li><a href="references/index.html" data-zh="📚 參考資料" data-en="📚 References">📚 參考資料</a></li>
-  </ul></div></nav><div class="progress-bar-container"><div class="progress-bar" id="progressBar"></div></div>
-<header class="page-hero"><div class="step-badge">ADVANCED</div><h1 data-zh="數據整合 (Integration)" data-en="Data Integration">數據整合</h1><p class="subtitle" data-lang="zh">整合多樣本或多批次資料，降低 batch effect 並保留真實生物學差異。</p><p class="subtitle" data-lang="en">Integrate multi-sample or multi-batch data — remove batch effects while preserving true biological differences.</p></header><main class="content-wrap">
-<section class="section"><div class="section-label" data-zh="核心概念" data-en="CONCEPT">核心概念</div><h2 data-zh="一、什麼是批次效應？" data-en="I. What Are Batch Effects?">一、批次效應</h2>
-<div data-lang="zh"><p>合併不同實驗批次的數據時，聚類結果可能主要反映「樣本來源」而非「細胞類型」。每次實驗的系統性差異（試劑批號、操作手法、定序平台）會掩蓋真正的生物學訊號。</p></div>
-<div data-lang="en"><p>When combining data from different experimental batches, clustering may reflect "sample origin" rather than "cell type." Systematic differences between experiments (reagent lots, operator technique, sequencing platform) mask true biology.</p></div>
-<div class="callout tip"><span class="callout-icon">💡</span><div><span data-lang="zh"><strong>判斷標準：</strong>UMAP 上細胞主要按「樣本」而非「類型」分群 → 需要 Integration。</span><span data-lang="en"><strong>Diagnostic:</strong> If cells cluster by "sample" rather than "type" on UMAP → Integration needed.</span></div></div></section>
+  </ul>
+</div></nav>
+<div class="progress-bar-container"><div class="progress-bar" id="progressBar"></div></div>
+<header class="page-hero"><div class="step-badge">ADVANCED</div>
+<h1 data-zh="數據整合 (Data Integration)" data-en="Data Integration">數據整合 (Data Integration)</h1>
+<p class="subtitle" data-lang="zh">整合多樣本或多批次資料，降低 batch effect 並保留真實生物學差異。</p>
+<p class="subtitle" data-lang="en">Integrate multi-sample or multi-batch data — remove batch effects while preserving true biological differences.</p>
+</header>
+<main class="content-wrap">
 
-<section class="section"><div class="section-label" data-zh="互動模擬" data-en="INTERACTIVE">互動模擬</div><h2 data-zh="二、整合前後 UMAP 比較" data-en="II. Before/After Integration UMAP">二、整合前後比較</h2>
-<div data-lang="zh"><p>切換觀察整合前（按批次分群）與整合後（按細胞類型分群）的效果。可分別用批次或細胞類型著色。</p></div><div data-lang="en"><p>Toggle between before integration (clustered by batch) and after (clustered by cell type). Color by batch or cell type.</p></div>
-<div class="interactive-panel"><div class="toggle-row"><button class="toggle-btn active" id="btn-before" onclick="showI('before')"><span data-zh="整合前" data-en="Before">整合前</span></button><button class="toggle-btn" id="btn-after" onclick="showI('after')"><span data-zh="整合後" data-en="After">整合後</span></button></div>
-<div class="toggle-row"><button class="toggle-btn toggle-btn-sm active" id="btn-batch" onclick="colorB('batch')"><span data-zh="按批次著色" data-en="Color by batch">按批次著色</span></button><button class="toggle-btn toggle-btn-sm" id="btn-type" onclick="colorB('type')"><span data-zh="按細胞類型著色" data-en="Color by cell type">按類型著色</span></button></div>
-<div id="iDesc" style="font-size:.88rem;color:var(--c-ink-light);margin-bottom:8px;"></div><div class="chart-container" style="height:340px;"><canvas id="iChart"></canvas></div></div></section>
+<!-- ===== Section 1: Overview ===== -->
+<section class="section">
+<div class="section-label" data-zh="概覽" data-en="OVERVIEW">概覽</div>
+<h2 data-zh="一、為什麼需要 Integration？" data-en="I. Why Do We Need Integration?">一、為什麼需要 Integration？</h2>
+<div data-lang="zh">
+<p>合併不同實驗批次的 scRNA-seq 數據時，最棘手的問題是：聚類結果可能反映「樣本來源」而不是「細胞類型」。每次實驗的系統性差異（試劑批號、操作手法、定序平台、實驗日期、不同個體基因型）會在 UMAP 上產生「按樣本分群」的偽結果，掩蓋真正的生物學訊號。</p>
+<p><strong>Integration 的目標：</strong></p>
+<ul style="margin:8px 0 0 20px;color:var(--c-ink-light);">
+<li>同一細胞類型跨不同樣本應<strong>互相重疊</strong>（batch mixed）</li>
+<li>不同細胞類型仍應<strong>分開聚類</strong>（biology preserved）</li>
+<li>避免「過度校正」把真正的生物學差異也抹平</li>
+</ul>
+<p><strong>判斷需不需要 Integration 的快速診斷：</strong></p>
+<ul style="margin:8px 0 0 20px;color:var(--c-ink-light);">
+<li>UMAP 用 sample / batch 著色 → 若顏色分明、不混合 → 需要 Integration</li>
+<li>用 cell type 著色 → 若同類型細胞被切成多個小團 → 需要 Integration</li>
+<li>用 sample 著色 → 若顏色完全混在一起 → 不需要 Integration（已無 batch effect）</li>
+</ul>
+</div>
+<div data-lang="en">
+<p>The hardest problem when combining scRNA-seq batches is: clustering may reflect "sample origin" rather than "cell type." Systematic differences (reagent lots, operator technique, sequencing platform, experiment date, donor genotype) produce "clusters-by-sample" on UMAP and mask the true biology.</p>
+<p><strong>Goals of integration:</strong></p>
+<ul style="margin:8px 0 0 20px;color:var(--c-ink-light);">
+<li>The same cell type across samples should <strong>overlap</strong> (batch mixed)</li>
+<li>Different cell types should still <strong>cluster apart</strong> (biology preserved)</li>
+<li>Avoid "over-correction" that erases real biological differences</li>
+</ul>
+<p><strong>Quick diagnostic for whether integration is needed:</strong></p>
+<ul style="margin:8px 0 0 20px;color:var(--c-ink-light);">
+<li>Colour UMAP by sample / batch → distinct, non-mixing colours → integration needed</li>
+<li>Colour by cell type → same type broken into multiple sub-clusters → integration needed</li>
+<li>Colour by sample → colours fully mixed → integration NOT needed (no batch effect)</li>
+</ul>
+</div>
+<div class="callout tip"><span class="callout-icon">💡</span><div>
+<span data-lang="zh"><strong>關鍵原則：</strong>Integration 不是「越強越好」。理想狀態是 <strong>batch 混合 + cell type 分開</strong>。過度校正會把腫瘤特有細胞與正常細胞「合併」、把不同分化階段「壓平」。每次 integration 後都要同時看 batch 與 cell-type 著色的 UMAP。</span>
+<span data-lang="en"><strong>Key principle:</strong> Integration is NOT "more is better." The ideal state is <strong>batch mixed + cell types separated</strong>. Over-correction merges tumor-only populations with normals and flattens differentiation states. Always inspect UMAPs coloured by both batch and cell type after integration.</span>
+</div></div>
+</section>
 
-<section class="section"><div class="section-label" data-zh="方法比較" data-en="METHODS">方法比較</div><h2 data-zh="三、主流整合方法" data-en="III. Integration Methods">三、方法比較</h2>
-<table class="comp-table"><thead><tr><th data-zh="方法" data-en="Method">方法</th><th data-zh="核心邏輯" data-en="Core Logic">邏輯</th><th data-zh="速度" data-en="Speed">速度</th><th data-zh="適用" data-en="Best For">適用</th></tr></thead><tbody>
-<tr><td><strong>Harmony</strong></td><td data-lang="zh">在 PCA 空間中迭代校正</td><td>⚡</td><td data-lang="zh">通用、大數據集；最常用</td><td data-lang="en">Iterative correction in PCA space</td><td data-lang="en">General purpose, large datasets; most popular</td></tr>
-<tr><td><strong>CCA (Seurat v3)</strong></td><td data-lang="zh">找跨批次共享相關結構</td><td>🔵</td><td data-lang="zh">細胞組成相似時</td><td data-lang="en">Find shared correlation structure across batches</td><td data-lang="en">When cell composition is similar</td></tr>
-<tr><td><strong>RPCA (Seurat v5)</strong></td><td data-lang="zh">互惠 PCA 投影</td><td>🔵</td><td data-lang="zh">細胞組成差異大時</td><td data-lang="en">Reciprocal PCA projection</td><td data-lang="en">When cell composition differs substantially</td></tr>
-<tr><td><strong>scVI</strong></td><td data-lang="zh">變分自編碼器（深度學習）</td><td>🐢</td><td data-lang="zh">複雜批次結構；超大數據</td><td data-lang="en">Variational autoencoder (deep learning)</td><td data-lang="en">Complex batch structure; very large datasets</td></tr>
-<tr><td><strong>scanorama</strong></td><td data-lang="zh">全景拼接演算法</td><td>🔵</td><td data-lang="zh">Python 生態系</td><td data-lang="en">Panoramic stitching algorithm</td><td data-lang="en">Python ecosystem</td></tr>
+<!-- ===== Section 2: Sources of Batch Effects ===== -->
+<section class="section">
+<div class="section-label" data-zh="批次效應來源" data-en="BATCH SOURCES">批次效應來源</div>
+<h2 data-zh="二、Batch Effect 的來源" data-en="II. Sources of Batch Effects">二、批次效應的常見來源</h2>
+<div data-lang="zh"><p>理解 batch 來源，才能在實驗設計階段避免無法挽回的混淆，並在分析時選擇對應的策略。</p></div>
+<div data-lang="en"><p>Understanding the sources of batch effects helps you avoid irreparable confounding at design time and choose the right strategy at analysis.</p></div>
+
+<div class="card-grid cols-3">
+<div class="card"><div class="card-icon">🧪</div><h4 data-zh="① 試劑與化學版本" data-en="① Reagent & chemistry version">① 試劑與化學版本</h4>
+<div data-lang="zh"><p>10x Chromium v2 vs v3：v3 偵測敏感度與 UMI 數約高 1.5–2 倍；Smart-seq2 vs 10x：full-length vs 3'-bias 差異巨大。同一物種、同一細胞，不同化學版本的基因偵測譜可能完全不同。</p></div>
+<div data-lang="en"><p>10x Chromium v2 vs v3: v3 has 1.5–2× higher sensitivity and UMI counts; Smart-seq2 vs 10x: full-length vs 3'-biased capture differs dramatically. Same species, same cell — totally different detection profiles.</p></div>
+</div>
+<div class="card"><div class="card-icon">📅</div><h4 data-zh="② 捕獲日期與操作者" data-en="② Capture date & operator">② 捕獲日期與操作者</h4>
+<div data-lang="zh"><p>即使試劑相同，不同天、不同操作者也會產生顯著差異。樣本解離溫度、時間、細胞活性都影響基因表達譜。冷藏隔夜 vs 立即跑會大幅改變壓力反應基因。</p></div>
+<div data-lang="en"><p>Even with identical reagents, different days / operators produce significant differences. Dissociation temperature, time, and cell viability all affect expression. Overnight storage vs immediate run drastically changes stress-response genes.</p></div>
+</div>
+<div class="card"><div class="card-icon">🧬</div><h4 data-zh="③ 個體間變異" data-en="③ Donor variation">③ 個體間變異</h4>
+<div data-lang="zh"><p>不同病人 / 小鼠的基因型、性別、年齡、免疫狀態都不同。這些差異在 PBMC 等高度動態的組織中尤其明顯。即使技術完全相同，個體間 batch 仍存在。</p></div>
+<div data-lang="en"><p>Donors differ in genotype, sex, age, and immune state. Effects are especially strong in dynamic tissues like PBMC. Even with identical tech, donor-level batch effects remain.</p></div>
+</div>
+<div class="card"><div class="card-icon">🏥</div><h4 data-zh="④ 跨實驗室 / 中心" data-en="④ Cross-lab / center">④ 跨實驗室 / 中心</h4>
+<div data-lang="zh"><p>合作研究或公開數據集 meta-analysis 時，不同實驗室的 SOP、儀器型號、定序深度都不同。是最強的 batch 來源之一。</p></div>
+<div data-lang="en"><p>In collaborative studies or public-data meta-analysis, different labs use different SOPs, instruments, and sequencing depths. One of the strongest batch sources.</p></div>
+</div>
+<div class="card"><div class="card-icon">🔄</div><h4 data-zh="⑤ 多時間點 / 多條件" data-en="⑤ Time / condition">⑤ 多時間點 / 多條件</h4>
+<div data-lang="zh"><p>同一研究內不同時間點 / 不同處理組，若沒有交叉設計，時間點與條件會混淆。複雜批次結構（multi-batch × multi-condition）需要更強大的方法（如 scVI）。</p></div>
+<div data-lang="en"><p>Across timepoints / treatment groups in the same study, without crossed design, timepoint confounds with condition. Complex batch structure (multi-batch × multi-condition) needs stronger tools (e.g., scVI).</p></div>
+</div>
+<div class="card"><div class="card-icon">💻</div><h4 data-zh="⑥ 比對流程 / 參考基因組" data-en="⑥ Pipeline / reference">⑥ 比對流程 / 參考基因組</h4>
+<div data-lang="zh"><p>不同 Cell Ranger 版本、不同基因組 build（GRCh38 vs GRCh37）、不同 GTF 註釋，會造成同一細胞的 UMI matrix 略有差異。Meta-analysis 公開數據時特別要注意。</p></div>
+<div data-lang="en"><p>Different Cell Ranger versions, genome builds (GRCh38 vs GRCh37), or GTF annotations produce slightly different UMI matrices for the same cell. Watch out in meta-analyses of public data.</p></div>
+</div>
+</div>
+</section>
+
+<!-- ===== Section 3: Method Families ===== -->
+<section class="section">
+<div class="section-label" data-zh="四大方法家族" data-en="FOUR METHOD FAMILIES">四大方法家族</div>
+<h2 data-zh="三、四大整合方法家族" data-en="III. Four Families of Integration Methods">三、四大整合方法家族</h2>
+<div data-lang="zh"><p>主流方法可分為四大類，各有適用情境與限制：</p></div>
+<div data-lang="en"><p>Mainstream methods fall into four families, each with its niche:</p></div>
+
+<div class="card-grid cols-2">
+<div class="card"><div class="card-icon">🔗</div><h4 data-zh="① CCA-based（典型相關分析）" data-en="① CCA-based">① CCA-based</h4>
+<div data-lang="zh"><p><strong>代表：</strong>Seurat v3 <code>IntegrateData</code> (CCA + anchors)。<br>
+<strong>邏輯：</strong>用 Canonical Correlation Analysis 找跨批次共享的相關結構，定義「anchor cells」（在不同批次中互為最近鄰），用 anchors 校正其他細胞。<br>
+<strong>優：</strong>能保留細胞類型結構；對小批次效應穩定。<br>
+<strong>缺：</strong>記憶體與計算成本高；批次間細胞組成差異大時容易出錯。</p></div>
+<div data-lang="en"><p><strong>Examples:</strong> Seurat v3 <code>IntegrateData</code> (CCA + anchors).<br>
+<strong>Logic:</strong> Canonical Correlation Analysis finds shared correlation structure across batches; defines "anchor cells" (mutual nearest neighbours) and corrects others through anchors.<br>
+<strong>Pros:</strong> preserves cell-type structure; stable for small batch effects.<br>
+<strong>Cons:</strong> memory & compute hungry; fails when cell composition differs greatly.</p></div>
+</div>
+
+<div class="card"><div class="card-icon">🤝</div><h4 data-zh="② MNN-based（互為最近鄰）" data-en="② MNN-based">② MNN-based</h4>
+<div data-lang="zh"><p><strong>代表：</strong>mnnCorrect、fastMNN（Bioconductor batchelor）。<br>
+<strong>邏輯：</strong>找出跨批次的「互為最近鄰」(Mutual Nearest Neighbours) 細胞對；以這些 MNN 對為「橋」，校正整個矩陣。<br>
+<strong>優：</strong>不需事前定義 anchors；對細胞組成差異有一定容忍度。<br>
+<strong>缺：</strong>對極端不對稱的批次可能殘留 batch；速度中等。</p></div>
+<div data-lang="en"><p><strong>Examples:</strong> mnnCorrect, fastMNN (Bioconductor batchelor).<br>
+<strong>Logic:</strong> Find mutual nearest neighbours across batches; use them as "bridges" to correct the matrix.<br>
+<strong>Pros:</strong> no anchors needed up front; tolerates moderate composition differences.<br>
+<strong>Cons:</strong> may leave residual batch with very asymmetric batches; moderate speed.</p></div>
+</div>
+
+<div class="card"><div class="card-icon">⚡</div><h4 data-zh="③ Embedding-based（在 PCA 空間迭代）" data-en="③ Embedding-based">③ Embedding-based</h4>
+<div data-lang="zh"><p><strong>代表：</strong>Harmony（最廣泛使用）、scanorama。<br>
+<strong>邏輯：</strong>在 PCA 嵌入空間中，迭代地把每個細胞「拉向」同類細胞的中心、同時遠離批次中心。最終輸出一個校正過的低維空間（不是 expression matrix）。<br>
+<strong>優：</strong>極快、記憶體小；對大資料集（百萬細胞）也能跑；最廣泛使用的方法。<br>
+<strong>缺：</strong>輸出只在嵌入空間有效——不能用於 DE。</p></div>
+<div data-lang="en"><p><strong>Examples:</strong> Harmony (most widely used), scanorama.<br>
+<strong>Logic:</strong> In PCA embedding space, iteratively pull each cell toward the centre of same-type cells and away from batch centroids. Output is a corrected low-dim space, not an expression matrix.<br>
+<strong>Pros:</strong> very fast, low memory; scales to millions of cells; most widely adopted.<br>
+<strong>Cons:</strong> correction lives only in embedding space — not usable for DE.</p></div>
+</div>
+
+<div class="card"><div class="card-icon">🧠</div><h4 data-zh="④ Deep learning（變分自編碼器）" data-en="④ Deep learning (VAE)">④ Deep learning</h4>
+<div data-lang="zh"><p><strong>代表：</strong>scVI、scANVI、scArches、totalVI（含 CITE-seq）。<br>
+<strong>邏輯：</strong>用變分自編碼器 (VAE) 學一個 latent space，明確將 batch 作為 conditional variable 分離出來。scANVI 額外加入 cell-type label 監督。<br>
+<strong>優：</strong>處理複雜批次結構；可儲存模型供新數據投影（scArches）；同時支援多模態。<br>
+<strong>缺：</strong>需 GPU；訓練時間長；hyperparameter 調整較困難；對 hyperparameter 敏感。</p></div>
+<div data-lang="en"><p><strong>Examples:</strong> scVI, scANVI, scArches, totalVI (with CITE-seq).<br>
+<strong>Logic:</strong> A variational autoencoder learns a latent space, with batch as a conditional variable explicitly separated. scANVI adds cell-type label supervision.<br>
+<strong>Pros:</strong> handles complex batch structure; reusable models for new-data projection (scArches); multi-modal support.<br>
+<strong>Cons:</strong> needs GPU; long training; sensitive to hyperparameters.</p></div>
+</div>
+</div>
+</section>
+
+<!-- ===== Section 4: Method Comparison Table ===== -->
+<section class="section">
+<div class="section-label" data-zh="方法比較" data-en="COMPARISON">方法比較</div>
+<h2 data-zh="四、主流方法詳細比較" data-en="IV. Detailed Method Comparison">四、方法詳細比較</h2>
+<table class="comp-table">
+<thead><tr>
+<th data-zh="方法" data-en="Method">方法</th>
+<th data-zh="速度" data-en="Speed">速度</th>
+<th data-zh="記憶體" data-en="Memory">記憶體</th>
+<th data-zh="輸出" data-en="Output">輸出</th>
+<th data-zh="新資料投影" data-en="Map new data">新資料投影</th>
+<th data-zh="優缺要點" data-en="Key trade-off">要點</th>
+</tr></thead>
+<tbody>
+<tr><td><strong>Harmony</strong></td>
+<td>⚡⚡⚡</td>
+<td>🟢 低</td>
+<td data-lang="zh">校正後 PCA</td>
+<td data-lang="zh">❌（需 symphony）</td>
+<td data-lang="zh">最快；首選。輸出僅嵌入空間。</td>
+<td data-lang="en">Corrected PCA</td><td data-lang="en">❌ (need symphony)</td><td data-lang="en">Fastest; first choice. Embedding-only output.</td>
+</tr>
+<tr><td><strong>Seurat CCA / IntegrateData</strong></td>
+<td>🐢</td>
+<td>🔴 高</td>
+<td data-lang="zh">整合後 assay</td>
+<td data-lang="zh">✅ FindTransferAnchors</td>
+<td data-lang="zh">保留 expression matrix；&gt;100k 細胞耗時</td>
+<td data-lang="en">Integrated assay</td><td data-lang="en">✅ FindTransferAnchors</td><td data-lang="en">Keeps expression matrix; slow at &gt;100k cells</td>
+</tr>
+<tr><td><strong>Seurat RPCA</strong></td>
+<td>⚡⚡</td>
+<td>🟡 中</td>
+<td data-lang="zh">整合後 reduction</td>
+<td data-lang="zh">✅</td>
+<td data-lang="zh">細胞組成差異大時優於 CCA</td>
+<td data-lang="en">Integrated reduction</td><td data-lang="en">✅</td><td data-lang="en">Better than CCA when composition differs</td>
+</tr>
+<tr><td><strong>fastMNN</strong></td>
+<td>⚡⚡</td>
+<td>🟡 中</td>
+<td data-lang="zh">校正後 reducedDim</td>
+<td data-lang="zh">✅ MNN-projection</td>
+<td data-lang="zh">Bioconductor 生態；穩定中庸</td>
+<td data-lang="en">Corrected reducedDim</td><td data-lang="en">✅ MNN-projection</td><td data-lang="en">Bioconductor ecosystem; solid middle ground</td>
+</tr>
+<tr><td><strong>scVI</strong></td>
+<td>🐢 (CPU) / ⚡⚡ (GPU)</td>
+<td>🟡 中</td>
+<td data-lang="zh">latent (X_scVI)</td>
+<td data-lang="zh">✅✅ scArches</td>
+<td data-lang="zh">複雜 batch；可學習可重用模型</td>
+<td data-lang="en">Latent (X_scVI)</td><td data-lang="en">✅✅ scArches</td><td data-lang="en">Complex batch; reusable trained model</td>
+</tr>
+<tr><td><strong>scANVI</strong></td>
+<td>🐢</td>
+<td>🟡 中</td>
+<td data-lang="zh">latent + label</td>
+<td data-lang="zh">✅✅</td>
+<td data-lang="zh">已有 cell-type label 時表現最好</td>
+<td data-lang="en">Latent + label</td><td data-lang="en">✅✅</td><td data-lang="en">Best when cell-type labels exist</td>
+</tr>
 </tbody></table>
 
-<div class="decision-tree"><h4>🌳 <span data-zh="我該用哪種？" data-en="Which method?">我該用哪種？</span></h4>
+<div class="decision-tree">
+<h4>🌳 <span data-zh="該用哪一種？" data-en="Which method?">該用哪一種？</span></h4>
 <div data-lang="zh">
-<div class="dt-node"><span class="dt-q">Q1:</span><div>初次嘗試/快速探索？ <span class="dt-arrow">→</span> <strong>Harmony</strong>。</div></div>
-<div class="dt-node"><span class="dt-q">Q2:</span><div>批次間細胞組成差異大？（一個有腫瘤，另一個沒有）<span class="dt-arrow">→</span> <strong>RPCA</strong>。</div></div>
-<div class="dt-node"><span class="dt-q">Q3:</span><div>>50 萬細胞？ <span class="dt-arrow">→</span> Harmony 或 scVI（需 GPU）。</div></div>
-<div class="dt-node"><span class="dt-q">Q4:</span><div>複雜批次結構（多中心、多時間點）？ <span class="dt-arrow">→</span> <strong>scVI</strong>。</div></div>
-</div><div data-lang="en">
-<div class="dt-node"><span class="dt-q">Q1:</span><div>First try/exploration? <span class="dt-arrow">→</span> <strong>Harmony</strong>.</div></div>
-<div class="dt-node"><span class="dt-q">Q2:</span><div>Cell composition differs across batches? (one has tumor, other doesn't) <span class="dt-arrow">→</span> <strong>RPCA</strong>.</div></div>
-<div class="dt-node"><span class="dt-q">Q3:</span><div>>500K cells? <span class="dt-arrow">→</span> Harmony or scVI (needs GPU).</div></div>
-<div class="dt-node"><span class="dt-q">Q4:</span><div>Complex batch structure (multi-center, multi-timepoint)? <span class="dt-arrow">→</span> <strong>scVI</strong>.</div></div>
+<div class="dt-node"><span class="dt-q">Q1:</span><div>初次嘗試 / 快速探索？<span class="dt-arrow">→</span> <strong>Harmony</strong>（首選，極快）。</div></div>
+<div class="dt-node"><span class="dt-q">Q2:</span><div>細胞數 &gt; 500k 或需 GPU 級資源？<span class="dt-arrow">→</span> Harmony（CPU 仍夠用）或 <strong>scVI</strong>（GPU）。</div></div>
+<div class="dt-node"><span class="dt-q">Q3:</span><div>批次間細胞組成差異大（一個有腫瘤、一個沒有）？<span class="dt-arrow">→</span> <strong>Seurat RPCA</strong> 或 scVI。</div></div>
+<div class="dt-node"><span class="dt-q">Q4:</span><div>需要把新數據投影到已建立的 atlas？<span class="dt-arrow">→</span> <strong>scArches / Azimuth</strong>。</div></div>
+<div class="dt-node"><span class="dt-q">Q5:</span><div>需要在整合後做 DE？<span class="dt-arrow">→</span> 用 Harmony / scVI 的 embedding 找 cluster，但 <strong>DE 要回到原始 RNA assay 並用 pseudo-bulk</strong>。</div></div>
+</div>
+<div data-lang="en">
+<div class="dt-node"><span class="dt-q">Q1:</span><div>First try / quick exploration?<span class="dt-arrow">→</span> <strong>Harmony</strong> (default, very fast).</div></div>
+<div class="dt-node"><span class="dt-q">Q2:</span><div>&gt;500k cells or need GPU-class compute?<span class="dt-arrow">→</span> Harmony (CPU OK) or <strong>scVI</strong> (GPU).</div></div>
+<div class="dt-node"><span class="dt-q">Q3:</span><div>Big composition differences across batches (one has tumour, one doesn't)?<span class="dt-arrow">→</span> <strong>Seurat RPCA</strong> or scVI.</div></div>
+<div class="dt-node"><span class="dt-q">Q4:</span><div>Need to project new data onto an established atlas?<span class="dt-arrow">→</span> <strong>scArches / Azimuth</strong>.</div></div>
+<div class="dt-node"><span class="dt-q">Q5:</span><div>Plan to do DE after integration?<span class="dt-arrow">→</span> Use Harmony / scVI embedding for clustering, but <strong>perform DE on the original RNA assay with pseudo-bulk</strong>.</div></div>
+</div>
+</div>
+</section>
+
+<!-- ===== Section 5: Interactive — Integration Strength Slider ===== -->
+<section class="section">
+<div class="section-label" data-zh="互動模擬" data-en="INTERACTIVE">互動模擬</div>
+<h2 data-zh="五、整合強度滑桿模擬器" data-en="V. Integration Strength Slider">五、整合強度滑桿</h2>
+<div data-lang="zh"><p>調整下方的「整合強度」滑桿，觀察兩個 batch × 三種細胞類型在 2D 空間的位置變化。重點觀察<strong>過度整合</strong>的後果：當強度過高時，原本只在 batch B 中存在的「rare cell type」會被強行併入其他細胞，<strong>生物學訊號被抹平</strong>。</p></div>
+<div data-lang="en"><p>Move the "integration strength" slider and watch two batches × three cell types in 2D. Note the consequence of <strong>over-integration</strong>: at high strength, a rare cell type present only in batch B gets forced into other cells — <strong>biology is erased</strong>.</p></div>
+
+<div class="interactive-panel">
+<div class="slider-group"><label><span data-zh="整合強度 (Integration strength)" data-en="Integration strength">整合強度</span> <span id="valStr">0.0</span></label>
+<input type="range" id="sliderStr" min="0" max="100" value="0" step="1"></div>
+<div class="toggle-row" style="margin-top:8px;">
+<button class="toggle-btn toggle-btn-sm active" id="btn-batch" onclick="colorB('batch')"><span data-zh="按批次著色" data-en="Colour by batch">按批次著色</span></button>
+<button class="toggle-btn toggle-btn-sm" id="btn-type" onclick="colorB('type')"><span data-zh="按細胞類型著色" data-en="Colour by cell type">按細胞類型著色</span></button>
+</div>
+<div class="sim-stats">
+  <span class="sim-stat pass" id="statMix">—</span>
+  <span class="sim-stat" id="statBio" style="background:#eaf4fb;color:#1c4f80;">—</span>
+  <span class="sim-stat fail" id="statWarn">—</span>
+</div>
+<div class="chart-container" style="height:340px;"><canvas id="strChart"></canvas></div>
+<p style="font-size:.78rem;color:var(--c-ink-muted);text-align:center;margin-top:8px;">
+<span data-zh="強度 0 = 未整合（批次分開）；0.4-0.6 = 理想（batch 混合 + 類型分開）；&gt; 0.85 = 過度整合（rare cell 被吞）。" data-en="0 = unintegrated; 0.4-0.6 = sweet spot; &gt;0.85 = over-integrated (rare cell absorbed).">0 = 未整合；0.4-0.6 = 最佳區；&gt; 0.85 = 過度整合</span></p>
+</div>
+
+<div class="callout warn"><span class="callout-icon">⚠️</span><div>
+<span data-lang="zh"><strong>觀察重點：</strong>① 強度 0–0.3 區間 batch 仍可見，bio 訊號完整；② 0.4-0.6 是「甜蜜點」——batch 混合且 cell type 仍分開；③ &gt; 0.8 時 batch B 獨有的稀有細胞會被「吃掉」，<strong>無法挽回</strong>。實務上 Harmony / scVI 的預設參數通常落在甜蜜點，但<strong>每次都要看著 UMAP 確認</strong>，不要盲信預設值。</span>
+<span data-lang="en"><strong>Key insights:</strong> ① At 0–0.3, batch is still visible, biology intact; ② 0.4-0.6 is the "sweet spot" — batches mixed, cell types distinct; ③ Above 0.8, the rare batch-B-only population is absorbed — <strong>unrecoverable</strong>. In practice Harmony / scVI defaults usually sit in the sweet spot, but <strong>always inspect UMAPs</strong> — never trust defaults blindly.</span>
 </div></div>
+</section>
 
-<div class="callout warn"><span class="callout-icon">⚠️</span><div><span data-lang="zh"><strong>過度整合的風險：</strong>如果某種細胞真的只存在於某個條件（如腫瘤細胞只在疾病樣本中），強行整合可能會錯誤地將它與其他細胞合併。務必保留真實的生物學差異。</span><span data-lang="en"><strong>Over-integration risk:</strong> If a cell type genuinely exists in only one condition (e.g., tumor cells only in disease samples), forced integration may incorrectly merge it with other cells. Always preserve true biological differences.</span></div></div></section>
+<!-- ===== Section 6: Before/After UMAP ===== -->
+<section class="section">
+<div class="section-label" data-zh="前後對比" data-en="BEFORE/AFTER">前後對比</div>
+<h2 data-zh="六、整合前後 UMAP 對比" data-en="VI. Before/After Integration UMAP">六、整合前後對比</h2>
+<div data-lang="zh"><p>切換觀察整合前（按批次分群）與整合後（按細胞類型分群）的效果。可分別用批次或細胞類型著色。</p></div>
+<div data-lang="en"><p>Toggle between before integration (clustered by batch) and after (clustered by cell type). Color by batch or cell type.</p></div>
+<div class="interactive-panel">
+<div class="toggle-row">
+<button class="toggle-btn active" id="btn-before" onclick="showI('before')"><span data-zh="整合前" data-en="Before">整合前</span></button>
+<button class="toggle-btn" id="btn-after" onclick="showI('after')"><span data-zh="整合後" data-en="After">整合後</span></button>
+</div>
+<div class="toggle-row">
+<button class="toggle-btn toggle-btn-sm active" id="btn-batch2" onclick="colorB2('batch')"><span data-zh="按批次著色" data-en="Color by batch">按批次著色</span></button>
+<button class="toggle-btn toggle-btn-sm" id="btn-type2" onclick="colorB2('type')"><span data-zh="按細胞類型著色" data-en="Color by cell type">按類型著色</span></button>
+</div>
+<div id="iDesc" style="font-size:.88rem;color:var(--c-ink-light);margin-bottom:8px;"></div>
+<div class="chart-container" style="height:340px;"><canvas id="iChart"></canvas></div>
+</div>
+</section>
 
-<section class="section"><div class="section-label" data-zh="程式碼" data-en="CODE">程式碼</div><h2 data-zh="四、實作範例" data-en="IV. Code Examples">四、實作範例</h2>
-<div class="code-tabs"><div class="code-tab-btns"><button class="code-tab-btn active" onclick="switchTab(this,'r1')">R / Harmony</button><button class="code-tab-btn" onclick="switchTab(this,'r2')">R / Seurat v5</button><button class="code-tab-btn" onclick="switchTab(this,'py1')">Python / scVI</button></div>
-<div class="code-tab-content active" id="r1"><pre><span class="func">library</span>(harmony)
-pbmc &lt;- <span class="func">RunHarmony</span>(pbmc, group.by.vars = <span class="str">"batch"</span>)
-pbmc &lt;- <span class="func">FindNeighbors</span>(pbmc, reduction = <span class="str">"harmony"</span>, dims = <span class="num">1</span>:<span class="num">20</span>)
+<!-- ===== Section 7: Code ===== -->
+<section class="section">
+<div class="section-label" data-zh="程式碼" data-en="CODE">程式碼</div>
+<h2 data-zh="七、Harmony / Seurat / scVI 實作" data-en="VII. Code: Harmony, Seurat, scVI">七、實作範例</h2>
+<div class="code-tabs">
+<div class="code-tab-btns">
+<button class="code-tab-btn active" onclick="switchTab(this,'r1')">R / Harmony</button>
+<button class="code-tab-btn" onclick="switchTab(this,'r2')">R / Seurat CCA</button>
+<button class="code-tab-btn" onclick="switchTab(this,'r3')">R / Seurat v5 RPCA</button>
+<button class="code-tab-btn" onclick="switchTab(this,'py1')">Python / scVI</button>
+<button class="code-tab-btn" onclick="switchTab(this,'py2')">Python / Harmonypy</button>
+</div>
+
+<div class="code-tab-content active" id="r1"><pre><span class="comment"># ===== Harmony (R) — 最常用 =====</span>
+<span class="func">library</span>(Seurat); <span class="func">library</span>(harmony)
+
+<span class="comment"># Step 1: 整合前的標準流程（每個 sample 各自 HVG → 合併）</span>
+pbmc &lt;- <span class="func">merge</span>(pbmc1, <span class="func">list</span>(pbmc2, pbmc3))
+pbmc &lt;- <span class="func">NormalizeData</span>(pbmc) <span class="kw">%&gt;%</span>
+        <span class="func">FindVariableFeatures</span>() <span class="kw">%&gt;%</span>
+        <span class="func">ScaleData</span>() <span class="kw">%&gt;%</span>
+        <span class="func">RunPCA</span>(npcs = <span class="num">30</span>)
+
+<span class="comment"># Step 2: 跑 Harmony（在 PCA 空間做校正）</span>
+pbmc &lt;- <span class="func">RunHarmony</span>(pbmc,
+  group.by.vars = <span class="str">"batch"</span>,
+  reduction     = <span class="str">"pca"</span>,
+  dims.use      = <span class="num">1</span>:<span class="num">30</span>,
+  plot_convergence = <span class="kw">TRUE</span>)
+
+<span class="comment"># Step 3: 下游分析以 harmony reduction 為主</span>
+pbmc &lt;- <span class="func">FindNeighbors</span>(pbmc, reduction = <span class="str">"harmony"</span>, dims = <span class="num">1</span>:<span class="num">30</span>)
 pbmc &lt;- <span class="func">FindClusters</span>(pbmc, resolution = <span class="num">0.5</span>)
-pbmc &lt;- <span class="func">RunUMAP</span>(pbmc, reduction = <span class="str">"harmony"</span>, dims = <span class="num">1</span>:<span class="num">20</span>)</pre></div>
-<div class="code-tab-content" id="r2"><pre><span class="comment"># Seurat v5 整合</span>
-pbmc[["RNA"]] &lt;- <span class="func">split</span>(pbmc[["RNA"]], f = pbmc$batch)
-pbmc &lt;- <span class="func">IntegrateLayers</span>(pbmc, method = <span class="func">RPCAIntegration</span>(),
-  orig.reduction = <span class="str">"pca"</span>, new.reduction = <span class="str">"integrated.rpca"</span>)
-pbmc[["RNA"]] &lt;- <span class="func">JoinLayers</span>(pbmc[["RNA"]])</pre></div>
-<div class="code-tab-content" id="py1"><pre><span class="kw">import</span> scvi
-scvi.model.SCVI.setup_anndata(adata, batch_key=<span class="str">"batch"</span>)
-model = scvi.model.SCVI(adata, n_latent=<span class="num">30</span>)
-model.train(max_epochs=<span class="num">100</span>)
+pbmc &lt;- <span class="func">RunUMAP</span>(pbmc, reduction = <span class="str">"harmony"</span>, dims = <span class="num">1</span>:<span class="num">30</span>)
+
+<span class="comment"># Step 4: 視覺驗證（同時看 batch 與 cell type）</span>
+<span class="func">DimPlot</span>(pbmc, group.by = <span class="str">"batch"</span>)        <span class="comment"># 應充分混合</span>
+<span class="func">DimPlot</span>(pbmc, group.by = <span class="str">"cell_type"</span>)    <span class="comment"># 應仍分群</span></pre></div>
+
+<div class="code-tab-content" id="r2"><pre><span class="comment"># ===== Seurat v3/v4 CCA-based Integration =====</span>
+<span class="func">library</span>(Seurat)
+
+obj.list &lt;- <span class="func">list</span>(b1 = pbmc1, b2 = pbmc2, b3 = pbmc3)
+obj.list &lt;- <span class="func">lapply</span>(obj.list, <span class="kw">function</span>(x) {
+  x &lt;- <span class="func">NormalizeData</span>(x)
+  x &lt;- <span class="func">FindVariableFeatures</span>(x, nfeatures = <span class="num">2000</span>)
+})
+
+<span class="comment"># Step 1: 選共同 HVG</span>
+features &lt;- <span class="func">SelectIntegrationFeatures</span>(obj.list, nfeatures = <span class="num">2000</span>)
+
+<span class="comment"># Step 2: 找 anchors（CCA + MNN）</span>
+anchors &lt;- <span class="func">FindIntegrationAnchors</span>(obj.list,
+  anchor.features = features,
+  reduction = <span class="str">"cca"</span>)
+
+<span class="comment"># Step 3: 整合</span>
+integ &lt;- <span class="func">IntegrateData</span>(anchorset = anchors)
+<span class="func">DefaultAssay</span>(integ) &lt;- <span class="str">"integrated"</span>
+
+<span class="comment"># Step 4: 標準下游</span>
+integ &lt;- <span class="func">ScaleData</span>(integ) <span class="kw">%&gt;%</span> <span class="func">RunPCA</span>() <span class="kw">%&gt;%</span>
+         <span class="func">RunUMAP</span>(dims = <span class="num">1</span>:<span class="num">30</span>) <span class="kw">%&gt;%</span>
+         <span class="func">FindNeighbors</span>(dims = <span class="num">1</span>:<span class="num">30</span>) <span class="kw">%&gt;%</span>
+         <span class="func">FindClusters</span>()
+
+<span class="comment"># ⚠️ DE 要回到 RNA assay！</span>
+<span class="func">DefaultAssay</span>(integ) &lt;- <span class="str">"RNA"</span></pre></div>
+
+<div class="code-tab-content" id="r3"><pre><span class="comment"># ===== Seurat v5 IntegrateLayers (RPCA) =====</span>
+<span class="func">library</span>(Seurat)
+
+<span class="comment"># Step 1: 將 RNA assay 依 batch split 成多個 layers</span>
+pbmc[[<span class="str">"RNA"</span>]] &lt;- <span class="func">split</span>(pbmc[[<span class="str">"RNA"</span>]], f = pbmc$batch)
+
+<span class="comment"># Step 2: 標準預處理</span>
+pbmc &lt;- <span class="func">NormalizeData</span>(pbmc)
+pbmc &lt;- <span class="func">FindVariableFeatures</span>(pbmc)
+pbmc &lt;- <span class="func">ScaleData</span>(pbmc)
+pbmc &lt;- <span class="func">RunPCA</span>(pbmc)
+
+<span class="comment"># Step 3: RPCA 整合（細胞組成差異大時優於 CCA）</span>
+pbmc &lt;- <span class="func">IntegrateLayers</span>(
+  object         = pbmc,
+  method         = RPCAIntegration,
+  orig.reduction = <span class="str">"pca"</span>,
+  new.reduction  = <span class="str">"integrated.rpca"</span>,
+  verbose        = <span class="kw">TRUE</span>)
+
+<span class="comment"># Step 4: 整合後重新合併 layers + 下游</span>
+pbmc[[<span class="str">"RNA"</span>]] &lt;- <span class="func">JoinLayers</span>(pbmc[[<span class="str">"RNA"</span>]])
+pbmc &lt;- <span class="func">FindNeighbors</span>(pbmc, reduction = <span class="str">"integrated.rpca"</span>, dims = <span class="num">1</span>:<span class="num">30</span>)
+pbmc &lt;- <span class="func">RunUMAP</span>(pbmc, reduction = <span class="str">"integrated.rpca"</span>, dims = <span class="num">1</span>:<span class="num">30</span>)</pre></div>
+
+<div class="code-tab-content" id="py1"><pre><span class="comment"># ===== scVI (Python) — 深度學習 VAE =====</span>
+<span class="kw">import</span> scvi
+<span class="kw">import</span> scanpy <span class="kw">as</span> sc
+
+<span class="comment"># Step 1: 準備 AnnData，告訴 scVI 哪個欄位是 batch</span>
+scvi.model.SCVI.setup_anndata(adata,
+  batch_key = <span class="str">"batch"</span>,
+  layer     = <span class="str">"counts"</span>,        <span class="comment"># 必須是 raw counts!</span>
+  categorical_covariate_keys = [<span class="str">"donor"</span>])
+
+<span class="comment"># Step 2: 建立並訓練模型</span>
+model = scvi.model.SCVI(adata,
+  n_latent  = <span class="num">30</span>,
+  n_layers  = <span class="num">2</span>,
+  gene_likelihood = <span class="str">"nb"</span>)
+model.train(max_epochs = <span class="num">200</span>,
+  early_stopping = <span class="kw">True</span>,
+  early_stopping_patience = <span class="num">20</span>)
+
+<span class="comment"># Step 3: 取得 latent representation</span>
 adata.obsm[<span class="str">"X_scVI"</span>] = model.get_latent_representation()
-sc.pp.neighbors(adata, use_rep=<span class="str">"X_scVI"</span>)
-sc.tl.leiden(adata)
-sc.tl.umap(adata)</pre></div></div></section>
-<nav class="page-nav"><a href="differential-expression.html"><span class="nav-dir" data-zh="← 上一步" data-en="← Previous">← 上一步</span><span class="nav-title" data-zh="Step 9：DE" data-en="Step 9: DE">Step 9：DE</span></a><a href="cellchat.html"><span class="nav-dir" data-zh="下一步 →" data-en="Next →">下一步 →</span><span class="nav-title" data-zh="CellChat" data-en="CellChat">CellChat</span></a></nav></main>
+
+<span class="comment"># Step 4: 下游用 X_scVI</span>
+sc.pp.neighbors(adata, use_rep = <span class="str">"X_scVI"</span>)
+sc.tl.leiden(adata, resolution = <span class="num">0.5</span>)
+sc.tl.umap(adata)
+sc.pl.umap(adata, color = [<span class="str">"batch"</span>, <span class="str">"leiden"</span>])
+
+<span class="comment"># 加碼：scANVI（有 cell-type label 監督）</span>
+lvae = scvi.model.SCANVI.from_scvi_model(model,
+  adata             = adata,
+  labels_key        = <span class="str">"cell_type"</span>,
+  unlabeled_category = <span class="str">"Unknown"</span>)
+lvae.train(max_epochs = <span class="num">50</span>)
+adata.obsm[<span class="str">"X_scANVI"</span>] = lvae.get_latent_representation()</pre></div>
+
+<div class="code-tab-content" id="py2"><pre><span class="comment"># ===== Harmonypy (Python 版的 Harmony) =====</span>
+<span class="kw">import</span> scanpy.external <span class="kw">as</span> sce
+<span class="kw">import</span> scanpy <span class="kw">as</span> sc
+
+<span class="comment"># Step 1: 預處理</span>
+sc.pp.normalize_total(adata, target_sum=<span class="num">1e4</span>)
+sc.pp.log1p(adata)
+sc.pp.highly_variable_genes(adata, n_top_genes=<span class="num">2000</span>, batch_key=<span class="str">"batch"</span>)
+sc.pp.scale(adata, max_value=<span class="num">10</span>)
+sc.tl.pca(adata, n_comps=<span class="num">30</span>)
+
+<span class="comment"># Step 2: Harmony</span>
+sce.pp.harmony_integrate(adata, key=<span class="str">"batch"</span>,
+  adjusted_basis=<span class="str">"X_pca_harmony"</span>,
+  max_iter_harmony=<span class="num">20</span>)
+
+<span class="comment"># Step 3: 下游用 X_pca_harmony</span>
+sc.pp.neighbors(adata, use_rep=<span class="str">"X_pca_harmony"</span>)
+sc.tl.leiden(adata, resolution=<span class="num">0.5</span>)
+sc.tl.umap(adata)
+sc.pl.umap(adata, color=[<span class="str">"batch"</span>, <span class="str">"leiden"</span>])</pre></div>
+</div>
+</section>
+
+<!-- ===== Section 8: Quality Evaluation ===== -->
+<section class="section">
+<div class="section-label" data-zh="品質評估" data-en="QUALITY METRICS">品質評估</div>
+<h2 data-zh="八、Integration 品質評估" data-en="VIII. Evaluating Integration Quality">八、品質評估指標</h2>
+<div data-lang="zh"><p>整合後不能只看 UMAP 的「感覺」。應使用量化指標檢查 batch mixing 與 biology preservation 兩個維度。</p></div>
+<div data-lang="en"><p>Don't judge by UMAP "feel" alone. Use quantitative metrics for both batch mixing and biology preservation.</p></div>
+
+<div class="card-grid cols-2">
+<div class="card"><h4>🔀 kBET (k-nearest-neighbour Batch Effect Test)</h4>
+<div data-lang="zh"><p>對每個細胞檢驗 k 個最近鄰中各 batch 的比例是否符合期望（卡方檢定）。<strong>低 kBET rejection rate = 批次混合良好</strong>。<br>適合：分散異質的批次組成。</p></div>
+<div data-lang="en"><p>For each cell, test whether the batch composition of its k nearest neighbours matches expected (chi-square). <strong>Low kBET rejection = good batch mixing</strong>.<br>Best for: heterogeneous batch compositions.</p></div>
+</div>
+<div class="card"><h4>📐 LISI (Local Inverse Simpson's Index)</h4>
+<div data-lang="zh"><p>iLISI（batch LISI）越高 → 局部 batch 多樣性越好；cLISI（cell-type LISI）越低 → 局部 cell-type 一致性越好。<strong>理想：iLISI ↑ 同時 cLISI ↓</strong>。<br>Harmony 論文用此為主要指標。</p></div>
+<div data-lang="en"><p>iLISI (batch LISI) high → good local batch diversity; cLISI (cell-type LISI) low → good local cell-type consistency. <strong>Ideal: iLISI ↑ AND cLISI ↓</strong>.<br>Used as the main metric in the Harmony paper.</p></div>
+</div>
+<div class="card"><h4>📊 ASW (Average Silhouette Width)</h4>
+<div data-lang="zh"><p>對 batch 計算 ASW（越接近 0 越好——表示 batch 不形成獨立 cluster）；對 cell-type 計算 ASW（越高越好——表示 cell-type 仍分開）。</p></div>
+<div data-lang="en"><p>ASW for batch (close to 0 = better — batch doesn't form its own cluster); ASW for cell-type (higher = better — types still distinct).</p></div>
+</div>
+<div class="card"><h4>🏆 scIB Benchmark</h4>
+<div data-lang="zh"><p>Luecken et al. 2022 (Nat Methods) 提供整合的綜合 benchmark，計算 14 種指標的加權分數，分為 batch correction 與 biology conservation 兩大類。<br><strong>金標準的整合評估框架</strong>，每次發表前建議跑。</p></div>
+<div data-lang="en"><p>Luecken et al. 2022 (Nat Methods) provides a comprehensive benchmark combining 14 metrics into batch-correction + biology-conservation scores.<br>The <strong>gold-standard evaluation framework</strong>; run before publication.</p></div>
+</div>
+</div>
+</section>
+
+<!-- ===== Section 9: Best Practices ===== -->
+<section class="section">
+<div class="section-label" data-zh="最佳實務" data-en="BEST PRACTICES">最佳實務</div>
+<h2 data-zh="九、Integration 最佳實務" data-en="IX. Integration Best Practices">九、最佳實務</h2>
+<div class="card-grid cols-2">
+<div class="card"><h4>✅ <span data-zh="HVG 選擇要分批進行" data-en="Per-batch HVG selection">分批選 HVG，取聯集</span></h4>
+<div data-lang="zh"><p>正確流程：<strong>每個 sample 各自計算 HVG → 取聯集（union 或 intersection）</strong>。直接在合併後的數據選 HVG 會被最大 batch 主導，丟失小 batch 特有的訊號。Seurat <code>SelectIntegrationFeatures</code> 與 scanpy <code>highly_variable_genes(batch_key=...)</code> 都支援此邏輯。</p></div>
+<div data-lang="en"><p>Correct flow: <strong>compute HVGs per sample → take union (or intersection)</strong>. Selecting HVGs on the merged matrix is dominated by the largest batch and loses small-batch-specific signals. Seurat <code>SelectIntegrationFeatures</code> and scanpy <code>highly_variable_genes(batch_key=...)</code> both support this.</p></div>
+</div>
+<div class="card"><h4>✅ <span data-zh="先 QC 再 Integration" data-en="QC before Integration">QC 在 Integration 之前</span></h4>
+<div data-lang="zh"><p>低品質細胞、MT% 過高的死細胞、未清除的 doublets，會被 integration 算法當成「batch 結構」處理，造成嚴重的偽校正。<strong>務必先 QC 乾淨</strong>，再做 integration。</p></div>
+<div data-lang="en"><p>Low-quality cells, high-MT% dying cells, and uncleaned doublets are treated as "batch structure" by integration algorithms — leading to bogus corrections. <strong>Always QC clean first</strong>, then integrate.</p></div>
+</div>
+<div class="card"><h4>✅ <span data-zh="從 Harmony 開始" data-en="Start with Harmony">從 Harmony 開始</span></h4>
+<div data-lang="zh"><p>Harmony 速度快、預設參數穩定、廣泛使用。<strong>第一輪一律 Harmony</strong>，效果不佳再考慮 RPCA / scVI。不要一上來就用最重的工具。</p></div>
+<div data-lang="en"><p>Harmony is fast, has stable defaults, and is widely accepted. <strong>Always Harmony first</strong>; only escalate to RPCA / scVI if Harmony fails. Don't bring out the heavy artillery up front.</p></div>
+</div>
+<div class="card"><h4>✅ <span data-zh="DE 時回到原始 RNA Assay" data-en="DE on raw RNA">DE 必須用 RNA assay</span></h4>
+<div data-lang="zh"><p>整合後的 <code>integrated</code> assay 或 <code>X_scVI</code> latent 都<strong>不可用於 DE</strong>——它們已經被「校正」，每個基因的數值不再有量化意義。DE 一律回到 <code>DefaultAssay = "RNA"</code> 並用 pseudo-bulk。</p></div>
+<div data-lang="en"><p>The <code>integrated</code> assay or <code>X_scVI</code> latent <strong>cannot be used for DE</strong> — values have been "corrected" and lose quantitative meaning. Always revert to <code>DefaultAssay = "RNA"</code> + pseudo-bulk for DE.</p></div>
+</div>
+<div class="card"><h4>✅ <span data-zh="實驗設計避免混淆" data-en="Design to avoid confounding">設計階段就避免 batch-condition 混淆</span></h4>
+<div data-lang="zh"><p>每個 batch 應同時含有 disease + control（balanced design）。若 batch 與 condition 完全混淆（所有 disease 在 batch A、所有 control 在 batch B），<strong>沒有任何整合方法能挽救</strong>——分析時要明確聲明 limitation。</p></div>
+<div data-lang="en"><p>Each batch should contain BOTH disease and control (balanced design). If batch fully confounds with condition (all disease in batch A, all control in batch B), <strong>no integration method can save you</strong> — flag as a limitation.</p></div>
+</div>
+<div class="card"><h4>✅ <span data-zh="標註 integration 後不要重做" data-en="Don't re-integrate after annotation">註釋後不再 re-integrate</span></h4>
+<div data-lang="zh"><p>完成 annotation 後，<strong>不要再回頭重做 integration</strong>——這會打亂已建立的 cluster 邊界，需要重新註釋。如果要加入新樣本，使用 <strong>scArches / FindTransferAnchors</strong> 等 reference mapping 把新數據「投影」到既有空間。</p></div>
+<div data-lang="en"><p>After annotation, <strong>do not re-integrate</strong> — it scrambles existing cluster boundaries and forces re-annotation. To add new samples, use <strong>scArches / FindTransferAnchors</strong> reference mapping to project them onto the existing space.</p></div>
+</div>
+</div>
+</section>
+
+<!-- ===== Section 10: Pitfalls ===== -->
+<section class="section">
+<div class="section-label" data-zh="常見陷阱" data-en="PITFALLS">常見陷阱</div>
+<h2 data-zh="十、常見陷阱與 Troubleshooting" data-en="X. Common Pitfalls & Troubleshooting">十、常見陷阱</h2>
+
+<div class="card">
+<h4>🚨 <span data-zh="陷阱 1：過度整合抹去生物學" data-en="Pitfall 1: Over-correction erases biology">陷阱 1：過度整合抹平生物學</span></h4>
+<div data-lang="zh"><p>若一個 cell type 真的只存在於某個條件（如腫瘤細胞只在疾病樣本中），強行整合會把它與其他細胞「合併」。<strong>對策：</strong>整合後用 cell-type 著色檢查；若疾病特有 cluster 不見了，調降整合強度（Harmony 的 <code>theta</code> 由 2 降至 1）或改用 RPCA / scANVI（後者用 label 監督避免 over-correction）。</p></div>
+<div data-lang="en"><p>If a cell type genuinely exists in only one condition (tumour cells in disease only), forced integration merges it with other cells. <strong>Mitigation:</strong> after integration, colour by cell type; if a disease-only cluster vanishes, reduce integration strength (Harmony's <code>theta</code> from 2 → 1) or switch to RPCA / scANVI (latter uses label supervision to prevent over-correction).</p></div>
+</div>
+
+<div class="card">
+<h4>🚨 <span data-zh="陷阱 2：未過濾 MT / RPS 直接整合" data-en="Pitfall 2: Integrating without MT / RPS filter">陷阱 2：未過濾 MT / RPS 即整合</span></h4>
+<div data-lang="zh"><p>粒線體基因、核糖體基因在不同 batch 間可能有大幅差異（樣本處理 stress 不同），未過濾就整合會讓算法把 MT/RPS 差異當成最大 batch 訊號去校正，反而抑制真正的細胞類型分群。<strong>對策：</strong>QC 時用 <code>PercentageFeatureSet</code> 過濾；HVG 選擇時排除 <code>^MT-</code> 與 <code>^RPS</code>/<code>^RPL</code>。</p></div>
+<div data-lang="en"><p>MT and ribosomal genes can vary hugely across batches (different dissociation stress). Integrating without filtering them makes the algorithm chase MT/RPS variance as the dominant batch signal, suppressing real cell-type structure. <strong>Mitigation:</strong> filter with <code>PercentageFeatureSet</code> in QC; exclude <code>^MT-</code>, <code>^RPS</code>/<code>^RPL</code> from HVG selection.</p></div>
+</div>
+
+<div class="card">
+<h4>🚨 <span data-zh="陷阱 3：NaN 或 Inf 輸入" data-en="Pitfall 3: NaN / Inf input">陷阱 3：輸入有 NaN / Inf</span></h4>
+<div data-lang="zh"><p>合併多個 sample 時若有空 column、log(0) 未處理、scaling 後出現 NaN，scVI / Harmony 會在訓練中爆掉或產生奇怪結果。<strong>對策：</strong>跑 integration 前用 <code>any(is.na(...))</code> / <code>np.isnan(adata.X).sum()</code> 確認；移除全零基因；scVI 一定要傳 raw counts 而非 log1p。</p></div>
+<div data-lang="en"><p>When merging samples, empty columns, unhandled log(0), or NaN after scaling can crash scVI / Harmony or produce odd results. <strong>Mitigation:</strong> verify with <code>any(is.na(...))</code> / <code>np.isnan(adata.X).sum()</code>; drop all-zero genes; pass raw counts to scVI, not log1p.</p></div>
+</div>
+
+<div class="card">
+<h4>🚨 <span data-zh="陷阱 4：批次與條件混淆" data-en="Pitfall 4: Batch confounded with condition">陷阱 4：批次與條件完全混淆</span></h4>
+<div data-lang="zh"><p>若所有 disease 樣本在 batch A 跑、所有 control 在 batch B，整合<strong>必然連 disease 效應一起移除</strong>——沒有方法能分離兩者。<strong>對策：</strong>實驗設計階段每個 batch 內混合條件；若數據已收集且混淆，<strong>不應做 cross-condition 整合分析</strong>，或在論文中明確聲明此 limitation。</p></div>
+<div data-lang="en"><p>If all disease samples are in batch A and controls in batch B, integration <strong>inevitably removes disease effect along with batch</strong> — no method can separate them. <strong>Mitigation:</strong> balance condition across batches at design time; if data is already confounded, <strong>do not perform cross-condition integration analysis</strong>, or declare it as a limitation.</p></div>
+</div>
+
+<div class="card">
+<h4>🚨 <span data-zh="陷阱 5：用 IntegratedData 做 DE" data-en="Pitfall 5: DE on IntegratedData">陷阱 5：用 IntegratedData 做 DE</span></h4>
+<div data-lang="zh"><p>Seurat <code>integrated</code> assay 或 scVI <code>X_scVI</code> 經過校正，<strong>不是原始 expression 值</strong>。在它上面跑 <code>FindMarkers</code> 或 pseudo-bulk 會得到嚴重失真的結果（已知最常見的單細胞分析錯誤之一）。<strong>對策：</strong>DE 前明確 <code>DefaultAssay(obj) &lt;- "RNA"</code>；Python 用 <code>adata.layers["counts"]</code>。</p></div>
+<div data-lang="en"><p>Seurat's <code>integrated</code> assay or scVI's <code>X_scVI</code> contain corrected, not raw, values. Running <code>FindMarkers</code> or pseudo-bulk on them gives severely distorted results (one of the most common known mistakes in single-cell analysis). <strong>Mitigation:</strong> explicitly set <code>DefaultAssay(obj) &lt;- "RNA"</code> before DE; in Python use <code>adata.layers["counts"]</code>.</p></div>
+</div>
+
+<div class="card">
+<h4>🚨 <span data-zh="陷阱 6：scVI 不收斂" data-en="Pitfall 6: scVI not converging">陷阱 6：scVI / scANVI 訓練不收斂</span></h4>
+<div data-lang="zh"><p>scVI 訓練時 loss 不下降、ELBO 振盪：常見原因是 ① 傳入 log1p 而非 raw counts；② batch_key 設定錯誤；③ 樣本量太小（&lt; 5000 細胞）；④ early stopping patience 太短。<strong>對策：</strong>檢查 <code>setup_anndata</code> 用的 layer；用 <code>plot_convergence=True</code> 監控；確認 raw counts；增加 epochs 與 patience。</p></div>
+<div data-lang="en"><p>scVI fails to converge — loss won't drop, ELBO oscillates. Common causes: ① passing log1p instead of raw counts; ② wrong batch_key; ③ too few cells (&lt;5000); ④ early-stopping patience too tight. <strong>Mitigation:</strong> check the layer in <code>setup_anndata</code>; monitor with <code>plot_convergence=True</code>; confirm raw counts; increase epochs and patience.</p></div>
+</div>
+</section>
+
+<!-- ===== Section 11: Quiz ===== -->
+<section class="quiz-section">
+<h3>📝 <span data-zh="自我檢測" data-en="Self-Check">自我檢測</span></h3>
+
+<div class="quiz-q" data-answer="1">
+<p data-lang="zh">1. 整合後檢查 UMAP，發現原本只在疾病樣本中的腫瘤細胞 cluster「消失」了，與正常細胞合併。最可能原因？</p>
+<p data-lang="en">1. After integration, a tumour-only cluster from disease samples has "vanished" and merged with normals. Most likely cause?</p>
+<div class="quiz-options">
+<div class="quiz-opt" data-idx="0"><span data-lang="zh">A. 腫瘤細胞本來就跟正常細胞一樣</span><span data-lang="en">A. Tumour cells are biologically the same as normals</span></div>
+<div class="quiz-opt" data-idx="1"><span data-lang="zh">B. 過度整合，把生物學差異也校正掉了</span><span data-lang="en">B. Over-correction — biology has been wiped out</span></div>
+<div class="quiz-opt" data-idx="2"><span data-lang="zh">C. UMAP 視覺呈現問題，重畫即可</span><span data-lang="en">C. UMAP rendering issue, just replot</span></div>
+<div class="quiz-opt" data-idx="3"><span data-lang="zh">D. 細胞數不夠</span><span data-lang="en">D. Not enough cells</span></div>
+</div><div class="quiz-feedback" id="fb1"></div>
+</div>
+
+<div class="quiz-q" data-answer="3">
+<p data-lang="zh">2. 你想對整合後的 CD4 T cell 做 disease vs control 跨條件 DE，最正確的做法是？</p>
+<p data-lang="en">2. You want cross-condition DE (disease vs control) on integrated CD4 T cells. The correct workflow?</p>
+<div class="quiz-options">
+<div class="quiz-opt" data-idx="0"><span data-lang="zh">A. 在 integrated assay 上跑 FindMarkers</span><span data-lang="en">A. Run FindMarkers on the integrated assay</span></div>
+<div class="quiz-opt" data-idx="1"><span data-lang="zh">B. 在 X_scVI latent space 上跑 t-test</span><span data-lang="en">B. Run t-test on X_scVI latent space</span></div>
+<div class="quiz-opt" data-idx="2"><span data-lang="zh">C. 在 corrected expression 上做 wilcoxon</span><span data-lang="en">C. Wilcoxon on corrected expression</span></div>
+<div class="quiz-opt" data-idx="3"><span data-lang="zh">D. 切回原始 RNA assay，做 sample-level pseudo-bulk + DESeq2</span><span data-lang="en">D. Switch back to RNA assay, sample-level pseudo-bulk + DESeq2</span></div>
+</div><div class="quiz-feedback" id="fb2"></div>
+</div>
+
+<div class="quiz-q" data-answer="2">
+<p data-lang="zh">3. 你的實驗設計：3 個 disease 樣本全在 batch A 跑、3 個 control 全在 batch B 跑。要做 DE 比較疾病 vs 對照，最合適的做法？</p>
+<p data-lang="en">3. Your design: 3 disease samples all in batch A, 3 control samples all in batch B. Best plan for disease-vs-control DE?</p>
+<div class="quiz-options">
+<div class="quiz-opt" data-idx="0"><span data-lang="zh">A. 直接做 integration 然後 DE</span><span data-lang="en">A. Integrate then DE directly</span></div>
+<div class="quiz-opt" data-idx="1"><span data-lang="zh">B. 增加整合強度</span><span data-lang="en">B. Increase integration strength</span></div>
+<div class="quiz-opt" data-idx="2"><span data-lang="zh">C. batch 與條件完全混淆，無法分離；應重新設計實驗或明確聲明此 limitation</span><span data-lang="en">C. Batch fully confounds with condition; cannot separate. Redesign or declare limitation</span></div>
+<div class="quiz-opt" data-idx="3"><span data-lang="zh">D. 用 scVI 一定能解決</span><span data-lang="en">D. scVI will solve it</span></div>
+</div><div class="quiz-feedback" id="fb3"></div>
+</div>
+
+<div class="quiz-q" data-answer="1">
+<p data-lang="zh">4. 關於 Integration 工作流程，下列何者最不妥當？</p>
+<p data-lang="en">4. Which integration workflow choice is least appropriate?</p>
+<div class="quiz-options">
+<div class="quiz-opt" data-idx="0"><span data-lang="zh">A. 先做 QC 與 doublet 過濾，再整合</span><span data-lang="en">A. QC + doublet filtering before integration</span></div>
+<div class="quiz-opt" data-idx="1"><span data-lang="zh">B. 完成 annotation 後重新跑 integration 改變 cluster 結構</span><span data-lang="en">B. Re-integrate after annotation, scrambling clusters</span></div>
+<div class="quiz-opt" data-idx="2"><span data-lang="zh">C. 用 SelectIntegrationFeatures 分批選 HVG 後取聯集</span><span data-lang="en">C. Use SelectIntegrationFeatures for per-batch HVG selection + union</span></div>
+<div class="quiz-opt" data-idx="3"><span data-lang="zh">D. 整合後同時用 batch 與 cell-type 著色檢查</span><span data-lang="en">D. After integration, check UMAP coloured by both batch and cell type</span></div>
+</div><div class="quiz-feedback" id="fb4"></div>
+</div>
+</section>
+
+<nav class="page-nav">
+<a href="differential-expression.html"><span class="nav-dir" data-zh="← 上一步" data-en="← Previous">← 上一步</span><span class="nav-title" data-zh="Step 9：DE" data-en="Step 9: DE">Step 9：DE</span></a>
+<a href="cellchat.html"><span class="nav-dir" data-zh="下一步 →" data-en="Next →">下一步 →</span><span class="nav-title" data-zh="CellChat 細胞通訊" data-en="CellChat">CellChat</span></a>
+</nav>
+</main>
 <footer class="site-footer">© Charlene — scRNA-seq Interactive Tutorial</footer>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script><script src="i18n.js"></script><script>
+<script src="i18n.js"></script>
+<script>
 window.addEventListener("scroll",()=>{const h=document.documentElement;document.getElementById("progressBar").style.width=(h.scrollTop/(h.scrollHeight-h.clientHeight))*100+"%";});
 function switchTab(b,id){const p=b.closest(".code-tabs");p.querySelectorAll(".code-tab-btn").forEach(x=>x.classList.remove("active"));p.querySelectorAll(".code-tab-content").forEach(x=>x.classList.remove("active"));b.classList.add("active");document.getElementById(id).classList.add("active");}
 
-const ipts=[];const tC=[{x:-4,y:3},{x:3,y:-3},{x:0,y:-5}];const tN={zh:['T 細胞','B 細胞','Monocyte'],en:['T cell','B cell','Monocyte']};const bO=[{dx:-3,dy:1},{dx:3,dy:-1}];for(let b=0;b<2;b++)for(let t=0;t<3;t++)for(let i=0;i<50;i++){const c=tC[t];const ax=c.x+(Math.random()-0.5)*4,ay=c.y+(Math.random()-0.5)*4;ipts.push({bx:ax+bO[b].dx*2.5+(Math.random()-0.5)*1.5,by:ay+bO[b].dy*2.5+(Math.random()-0.5)*1.5,ax,ay,batch:b,type:t});}
-const bCols=['rgba(41,128,185,0.5)','rgba(192,57,43,0.5)'];const tCols=['rgba(26,107,90,0.5)','rgba(212,160,60,0.5)','rgba(142,68,173,0.5)'];
+// ============================================================
+// Integration strength slider — main NEW interactive
+// ============================================================
+// 2 batches × 3 cell types. Type 2 only exists in batch B (rare).
+// strength 0 = pure batch offset; strength 1 = all cells collapse to type centroid (over-corrected).
+function randn(){let u=0,v=0;while(u===0)u=Math.random();while(v===0)v=Math.random();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);}
+const strPts=[];
+const TYPE_CENTROIDS=[{x:-5,y:3},{x:4,y:-4},{x:0,y:6}]; // type 0, 1, 2(rare)
+const BATCH_OFFSET=[{dx:-3,dy:-1},{dx:3,dy:1}];
+for(let b=0;b<2;b++){
+  for(let t=0;t<3;t++){
+    // Type 2 ONLY in batch B (rare biology)
+    if(t===2 && b===0) continue;
+    const N = t===2 ? 25 : 60;  // rare type has fewer cells
+    for(let i=0;i<N;i++){
+      const c=TYPE_CENTROIDS[t];
+      const baseX=c.x+randn()*0.9, baseY=c.y+randn()*0.9;
+      strPts.push({tx:baseX,ty:baseY,bx:baseX+BATCH_OFFSET[b].dx,by:baseY+BATCH_OFFSET[b].dy,batch:b,type:t});
+    }
+  }
+}
+let strColorMode='batch';
+const BCOLS=['rgba(41,128,185,0.55)','rgba(192,57,43,0.55)'];
+const TCOLS=['rgba(26,107,90,0.55)','rgba(212,160,60,0.7)','rgba(142,68,173,0.7)'];
+const TNAMES={zh:['T 細胞','B 細胞','稀有細胞(僅 Batch B)'],en:['T cell','B cell','Rare cell (Batch B only)']};
+const BNAMES={zh:['Batch 1','Batch 2'],en:['Batch 1','Batch 2']};
+const strChart=new Chart(document.getElementById('strChart'),{
+  type:'scatter',data:{datasets:[]},
+  options:{responsive:true,maintainAspectRatio:false,animation:false,
+    scales:{x:{min:-12,max:12,title:{display:true,text:'UMAP 1',font:{size:10}},ticks:{font:{size:9}}},
+            y:{min:-10,max:12,title:{display:true,text:'UMAP 2',font:{size:10}},ticks:{font:{size:9}}}},
+    plugins:{legend:{position:'top',labels:{boxWidth:10,font:{size:10}}}}}
+});
+function updateStr(){
+  const s=+document.getElementById('sliderStr').value/100;
+  document.getElementById('valStr').textContent=s.toFixed(2);
+  // Interpolate cell positions: at s=0 fully batch-separated, at s=1 fully collapsed to type centroid
+  // But rare type 2 gets "absorbed" toward type 1 when s > 0.85 (over-correction)
+  const pts=strPts.map(p=>{
+    let tx=p.tx, ty=p.ty;
+    if(p.type===2 && s>0.85){
+      // over-correction: pull rare cells toward type 1 centroid
+      const pull=(s-0.85)/0.15;
+      tx = p.tx*(1-pull) + TYPE_CENTROIDS[1].x*pull;
+      ty = p.ty*(1-pull) + TYPE_CENTROIDS[1].y*pull;
+    }
+    return {
+      x:p.bx*(1-s) + tx*s,
+      y:p.by*(1-s) + ty*s,
+      batch:p.batch, type:p.type
+    };
+  });
+  const L=I18n.get();
+  let datasets;
+  if(strColorMode==='batch'){
+    const b0=[],b1=[]; pts.forEach(p=>{(p.batch===0?b0:b1).push({x:p.x,y:p.y});});
+    datasets=[{label:BNAMES[L][0],data:b0,backgroundColor:BCOLS[0],pointRadius:3},
+              {label:BNAMES[L][1],data:b1,backgroundColor:BCOLS[1],pointRadius:3}];
+  } else {
+    const g=[[],[],[]]; pts.forEach(p=>g[p.type].push({x:p.x,y:p.y}));
+    datasets=TNAMES[L].map((nm,i)=>({label:nm,data:g[i],backgroundColor:TCOLS[i],pointRadius:3}));
+  }
+  strChart.data.datasets=datasets; strChart.update('none');
+  // Stats
+  const mixZh=s<0.15?'未整合':s<0.4?'部分混合':s<0.7?'良好混合':'高度混合';
+  const mixEn=s<0.15?'unintegrated':s<0.4?'partial':s<0.7?'good':'strong';
+  const bioZh=s<0.85?'生物學保留':'⚠ 生物學遺失';
+  const bioEn=s<0.85?'biology kept':'⚠ biology lost';
+  const warnZh=s>0.85?'過度整合！':'';
+  const warnEn=s>0.85?'OVER-CORRECTION!':'';
+  document.getElementById('statMix').textContent=(L==='zh'?'Batch 混合：':'Batch mix: ')+(L==='zh'?mixZh:mixEn);
+  document.getElementById('statBio').textContent=(L==='zh'?'Biology：':'Biology: ')+(L==='zh'?bioZh:bioEn);
+  document.getElementById('statWarn').textContent=L==='zh'?warnZh:warnEn;
+  document.getElementById('statWarn').style.visibility = s>0.85 ? 'visible' : 'hidden';
+}
+function colorB(c){strColorMode=c;['batch','type'].forEach(k=>document.getElementById('btn-'+k).classList.toggle('active',k===c));updateStr();}
+document.getElementById('sliderStr').addEventListener('input',updateStr);
+
+// ============================================================
+// Before/After UMAP — secondary interactive
+// ============================================================
+const ipts=[];
+const tC=[{x:-4,y:3},{x:3,y:-3},{x:0,y:-5}];
+const tN={zh:['T 細胞','B 細胞','Monocyte'],en:['T cell','B cell','Monocyte']};
+const bO=[{dx:-3,dy:1},{dx:3,dy:-1}];
+for(let b=0;b<2;b++)for(let t=0;t<3;t++)for(let i=0;i<50;i++){
+  const c=tC[t];
+  const ax=c.x+(Math.random()-0.5)*4,ay=c.y+(Math.random()-0.5)*4;
+  ipts.push({bx:ax+bO[b].dx*2.5+(Math.random()-0.5)*1.5,by:ay+bO[b].dy*2.5+(Math.random()-0.5)*1.5,ax,ay,batch:b,type:t});
+}
+const bCols=['rgba(41,128,185,0.5)','rgba(192,57,43,0.5)'];
+const tCols=['rgba(26,107,90,0.5)','rgba(212,160,60,0.5)','rgba(142,68,173,0.5)'];
 let curM='before',curC='batch';
 const iChart=new Chart(document.getElementById('iChart'),{type:'scatter',data:{datasets:[]},options:{responsive:true,maintainAspectRatio:false,animation:false,scales:{x:{min:-14,max:14,title:{display:true,text:'UMAP 1'}},y:{min:-12,max:10,title:{display:true,text:'UMAP 2'}}},plugins:{legend:{position:'top'}}}});
-function upI(){const isB=curM==='before';const isBC=curC==='batch';const L=I18n.get();const ds_zh={bb:'<strong>整合前 × 批次：</strong>細胞按批次分開。',bt:'<strong>整合前 × 類型：</strong>同類型被拆散。',ab:'<strong>整合後 × 批次：</strong>兩批次混合。',at:'<strong>整合後 × 類型：</strong>同類型聚在一起。'};const ds_en={bb:'<strong>Before × Batch:</strong> Cells cluster by batch.',bt:'<strong>Before × Type:</strong> Same types split apart.',ab:'<strong>After × Batch:</strong> Batches mixed together.',at:'<strong>After × Type:</strong> Same types cluster together.'};const k=(isB?'b':'a')+(isBC?'b':'t');document.getElementById('iDesc').innerHTML=(L==='zh'?ds_zh:ds_en)[k];
-if(isBC){const b0=[],b1=[];ipts.forEach(p=>{(p.batch===0?b0:b1).push({x:isB?p.bx:p.ax,y:isB?p.by:p.ay});});iChart.data.datasets=[{label:'Batch 1',data:b0,backgroundColor:bCols[0],pointRadius:3},{label:'Batch 2',data:b1,backgroundColor:bCols[1],pointRadius:3}];}else{const g=[[],[],[]];ipts.forEach(p=>{g[p.type].push({x:isB?p.bx:p.ax,y:isB?p.by:p.ay});});iChart.data.datasets=(tN[L]||tN.en).map((nm,i)=>({label:nm,data:g[i],backgroundColor:tCols[i],pointRadius:3}));}iChart.update('none');}
+function upI(){
+  const isB=curM==='before';
+  const isBC=curC==='batch';
+  const L=I18n.get();
+  const ds_zh={bb:'<strong>整合前 × 批次：</strong>細胞按批次分開。',bt:'<strong>整合前 × 類型：</strong>同類型被拆散。',ab:'<strong>整合後 × 批次：</strong>兩批次混合。',at:'<strong>整合後 × 類型：</strong>同類型聚在一起。'};
+  const ds_en={bb:'<strong>Before × Batch:</strong> Cells cluster by batch.',bt:'<strong>Before × Type:</strong> Same types split apart.',ab:'<strong>After × Batch:</strong> Batches mixed together.',at:'<strong>After × Type:</strong> Same types cluster together.'};
+  const k=(isB?'b':'a')+(isBC?'b':'t');
+  document.getElementById('iDesc').innerHTML=(L==='zh'?ds_zh:ds_en)[k];
+  if(isBC){
+    const b0=[],b1=[];
+    ipts.forEach(p=>{(p.batch===0?b0:b1).push({x:isB?p.bx:p.ax,y:isB?p.by:p.ay});});
+    iChart.data.datasets=[{label:'Batch 1',data:b0,backgroundColor:bCols[0],pointRadius:3},
+                          {label:'Batch 2',data:b1,backgroundColor:bCols[1],pointRadius:3}];
+  } else {
+    const g=[[],[],[]];
+    ipts.forEach(p=>{g[p.type].push({x:isB?p.bx:p.ax,y:isB?p.by:p.ay});});
+    iChart.data.datasets=(tN[L]||tN.en).map((nm,i)=>({label:nm,data:g[i],backgroundColor:tCols[i],pointRadius:3}));
+  }
+  iChart.update('none');
+}
 function showI(m){curM=m;['before','after'].forEach(k=>document.getElementById('btn-'+k).classList.toggle('active',k===m));upI();}
-function colorB(c){curC=c;['batch','type'].forEach(k=>document.getElementById('btn-'+k).classList.toggle('active',k===c));upI();}
-document.addEventListener('langchange',upI);upI();
-const QF=window._QF||{};document.querySelectorAll(".quiz-q").forEach((q,qi)=>{const ans=+q.dataset.answer;q.querySelectorAll(".quiz-opt").forEach(o=>{o.addEventListener("click",()=>{if(q.classList.contains("answered"))return;q.classList.add("answered");const fb=document.getElementById("fb"+(qi+1));const ok=+o.dataset.idx===ans;o.classList.add(ok?"correct":"wrong");if(!ok)q.querySelectorAll(".quiz-opt")[ans].classList.add("correct");const L=I18n.get();fb.className="quiz-feedback show "+(ok?"correct-fb":"wrong-fb");fb.textContent=(ok?"✅ ":"❌ ")+(QF[L]&&QF[L]["q"+(qi+1)+"_"+(ok?"y":"n")]||"");});});});
-</script></body></html>
+function colorB2(c){curC=c;['batch2','type2'].forEach(k=>document.getElementById('btn-'+k).classList.toggle('active',k.replace('2','')===c));upI();}
+
+document.addEventListener('langchange',()=>{updateStr();upI();});
+updateStr();upI();
+
+// ============================================================
+// Quiz
+// ============================================================
+window._QF={
+ zh:{
+  q1_y:'這是典型的過度整合（over-correction）。應降低整合強度或改用 scANVI 等 label-aware 方法。',
+  q1_n:'答案是 B。整合不應抹去真正的生物學差異——這是 integration 最大的風險。',
+  q2_y:'DE 必須回到原始 RNA assay，並以 sample-level pseudo-bulk + DESeq2 進行。',
+  q2_n:'答案是 D。整合後的 corrected matrix 不能用於 DE，且須以 pseudo-bulk 處理 sample 層級。',
+  q3_y:'這是 batch-condition 完全混淆，無法用任何 integration 方法挽救。實驗設計應預先避免。',
+  q3_n:'答案是 C。混淆設計不可挽回；任何看似「整合成功」的結果都不可信。',
+  q4_y:'已完成 annotation 後 re-integrate 會打亂 cluster 結構，需要重新註釋。應改用 reference mapping。',
+  q4_n:'答案是 B。re-integration 是工作流程上的常見錯誤——時序很重要。'
+ },
+ en:{
+  q1_y:'Classic over-correction. Reduce integration strength or switch to label-aware methods like scANVI.',
+  q1_n:'Answer is B. Integration must not erase real biology — this is the biggest risk.',
+  q2_y:'DE must revert to the raw RNA assay and use sample-level pseudo-bulk + DESeq2.',
+  q2_n:'Answer is D. Corrected matrices are not for DE, and pseudo-bulk is needed at the sample level.',
+  q3_y:'This is full batch-condition confounding — no integration method can rescue it. Design ahead.',
+  q3_n:'Answer is C. Confounded designs are irrecoverable; any "successful integration" is illusory.',
+  q4_y:'Re-integrating after annotation scrambles clusters and forces re-annotation. Use reference mapping instead.',
+  q4_n:'Answer is B. Re-integration is a common workflow mistake — order matters.'
+ }
+};
+const QF=window._QF||{};
+document.querySelectorAll(".quiz-q").forEach((q,qi)=>{const ans=+q.dataset.answer;q.querySelectorAll(".quiz-opt").forEach(o=>{o.addEventListener("click",()=>{if(q.classList.contains("answered"))return;q.classList.add("answered");const fb=document.getElementById("fb"+(qi+1));const ok=+o.dataset.idx===ans;o.classList.add(ok?"correct":"wrong");if(!ok)q.querySelectorAll(".quiz-opt")[ans].classList.add("correct");const L=I18n.get();fb.className="quiz-feedback show "+(ok?"correct-fb":"wrong-fb");fb.textContent=(ok?"✅ ":"❌ ")+(QF[L]&&QF[L]["q"+(qi+1)+"_"+(ok?"y":"n")]||"");});});});
+</script>
+</body></html>

@@ -1,84 +1,660 @@
-<!DOCTYPE html><html lang="zh-Hant"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>differential-expression — scRNA-seq Tutorial</title><link rel="stylesheet" href="styles.css"></head><body>
-<nav class="top-nav"><div class="top-nav-inner"><a href="index.html" class="top-nav-brand"><span>🧬</span> <span data-zh="scRNA-seq 教學" data-en="scRNA-seq Tutorial">scRNA-seq 教學</span></a><ul class="top-nav-links"><li><a href="qc.html">QC</a></li><li><a href="normalization.html">Norm.</a></li><li><a href="variable-features.html">Features</a></li><li><a href="scaling.html">Scaling</a></li><li><a href="pca.html">PCA</a></li><li><a href="clustering.html">Clustering</a></li><li><a href="umap.html">UMAP</a></li><li><a href="annotation.html">Annot.</a></li><li><a href="differential-expression.html" class=active>DE</a></li><li><a href="integration.html">Integ.</a></li><li><a href="cellchat.html">CellChat</a></li><li><a href="trajectory.html">Traj.</a></li>
+<!DOCTYPE html><html lang="zh-Hant"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Step 9: Differential Expression — scRNA-seq Tutorial</title>
+<link rel="stylesheet" href="styles.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+</head><body>
+<nav class="top-nav"><div class="top-nav-inner">
+  <a href="index.html" class="top-nav-brand"><span>🧬</span> <span data-zh="scRNA-seq 教學" data-en="scRNA-seq Tutorial">scRNA-seq 教學</span></a>
+  <ul class="top-nav-links"><li><a href="qc.html">QC</a></li><li><a href="normalization.html">Norm.</a></li><li><a href="variable-features.html">Features</a></li><li><a href="scaling.html">Scaling</a></li><li><a href="pca.html">PCA</a></li><li><a href="clustering.html">Clustering</a></li><li><a href="umap.html">UMAP</a></li><li><a href="annotation.html">Annot.</a></li><li><a href="differential-expression.html" class="active">DE</a></li><li><a href="integration.html">Integ.</a></li><li><a href="cellchat.html">CellChat</a></li><li><a href="trajectory.html">Traj.</a></li>
     <li><a href="references/index.html" data-zh="📚 參考資料" data-en="📚 References">📚 參考資料</a></li>
-  </ul></div></nav><div class="progress-bar-container"><div class="progress-bar" id="progressBar"></div></div>
-<header class="page-hero"><div class="step-badge">STEP 9 / 9</div><h1 data-zh="差異表達分析 (Differential Expression)" data-en="Differential Expression (DE)">差異表達分析</h1><p class="subtitle" data-lang="zh">比較不同 cluster 或 condition 的基因表達差異，找出 markers 與疾病訊號。</p><p class="subtitle" data-lang="en">Compare gene expression differences between clusters or conditions to find markers and disease signals.</p></header><main class="content-wrap">
-<section class="section"><div class="section-label" data-zh="兩種應用" data-en="TWO USE CASES">兩種應用</div><h2 data-zh="一、DE 分析的兩大情境" data-en="I. Two Major DE Scenarios">一、兩大情境</h2>
-<div class="card-grid cols-2"><div class="card"><div class="card-icon">🏷️</div><h4 data-zh="找 Marker Genes" data-en="Find Marker Genes">找 Markers</h4><div data-lang="zh"><p>比較某個 cluster 與其餘所有細胞，找出該 cluster 的特異性基因。這是<strong>細胞註釋</strong>的基礎。</p></div><div data-lang="en"><p>Compare one cluster vs. all other cells to find cluster-specific genes. This is the foundation for <strong>cell annotation</strong>.</p></div></div>
-<div class="card"><div class="card-icon">⚗️</div><h4 data-zh="跨條件比較" data-en="Cross-condition Comparison">跨條件比較</h4><div data-lang="zh"><p>比較同一種細胞在不同實驗條件下（如疾病 vs 健康、藥物 vs 對照）的表達差異。這是<strong>挖掘疾病機制</strong>的核心。</p></div><div data-lang="en"><p>Compare the same cell type under different conditions (disease vs. healthy, drug vs. control). This is the core of <strong>disease mechanism discovery</strong>.</p></div></div></div></section>
+  </ul>
+</div></nav>
+<div class="progress-bar-container"><div class="progress-bar" id="progressBar"></div></div>
+<header class="page-hero"><div class="step-badge">STEP 9 / 9</div>
+<h1 data-zh="差異表達分析 (Differential Expression)" data-en="Differential Expression (DE)">差異表達分析</h1>
+<p class="subtitle" data-lang="zh">比較不同 cluster 或 condition 的基因表達差異，找出 markers 與疾病訊號。</p>
+<p class="subtitle" data-lang="en">Compare gene expression differences between clusters or conditions to find markers and disease signals.</p>
+</header>
+<main class="content-wrap">
 
-<section class="section"><div class="section-label" data-zh="互動模擬" data-en="INTERACTIVE">互動模擬</div><h2 data-zh="二、火山圖 (Volcano Plot) 模擬器" data-en="II. Volcano Plot Simulator">二、火山圖模擬器</h2>
-<div data-lang="zh"><p>調整 log2FC 和 p-value 閾值，觀察有多少基因被判定為顯著差異。紅色=上調，藍色=下調，灰色=不顯著。</p></div><div data-lang="en"><p>Adjust log2FC and p-value thresholds. Red = upregulated, blue = downregulated, gray = not significant.</p></div>
-<div class="interactive-panel"><div class="slider-group"><label>|log2FC| <span data-zh="閾值" data-en="threshold">閾值</span> <span id="valFC">0.5</span></label><input type="range" id="sliderFC" min="1" max="20" value="5" step="1"></div>
-<div class="slider-group"><label>-log10(p_adj) <span data-zh="閾值" data-en="threshold">閾值</span> <span id="valP">1.3</span></label><input type="range" id="sliderP" min="5" max="40" value="13" step="1"></div>
-<div class="sim-stats"><span class="sim-stat pass" id="statUp">—</span><span class="sim-stat fail" id="statDn">—</span><span class="sim-stat" id="statNS" style="background:var(--c-bg-alt);color:var(--c-ink-muted);">—</span></div>
-<div class="chart-container" style="height:340px;"><canvas id="volChart"></canvas></div></div></section>
-
-<section class="section"><div class="section-label" data-zh="方法比較" data-en="METHODS">方法比較</div><h2 data-zh="三、主要 DE 檢定方法" data-en="III. Major DE Methods">三、DE 方法</h2>
-<table class="comp-table"><thead><tr><th data-zh="方法" data-en="Method">方法</th><th data-zh="說明" data-en="Description">說明</th><th data-zh="適用" data-en="Best For">適用</th></tr></thead><tbody>
-<tr><td><strong>Wilcoxon</strong></td><td data-lang="zh">非參數秩次檢定，簡單穩健</td><td data-lang="zh">找 cluster markers（快速）</td><td data-lang="en">Non-parametric rank test, simple and robust</td><td data-lang="en">Finding cluster markers (fast)</td></tr>
-<tr><td><strong>MAST</strong></td><td data-lang="zh">專為 scRNA-seq 設計的 hurdle model，處理零膨脹</td><td data-lang="zh">跨條件比較（單樣本）</td><td data-lang="en">Hurdle model designed for scRNA-seq, handles zero-inflation</td><td data-lang="en">Cross-condition (single sample)</td></tr>
-<tr><td><strong>Pseudobulk + DESeq2</strong></td><td data-lang="zh">先聚合同一樣本的細胞，再用 bulk 方法分析</td><td data-lang="zh"><strong>跨條件（目前最佳實踐）</strong></td><td data-lang="en">Aggregate cells per sample first, then apply bulk methods</td><td data-lang="en"><strong>Cross-condition (current best practice)</strong></td></tr>
-</tbody></table>
-
-<div class="decision-tree"><h4>🌳 <span data-zh="該選哪種方法？" data-en="Which method?">該選哪種？</span></h4>
+<!-- ===== Section 1: Overview ===== -->
+<section class="section">
+<div class="section-label" data-zh="概覽" data-en="OVERVIEW">概覽</div>
+<h2 data-zh="一、單細胞 DE 的兩大情境與特殊挑戰" data-en="I. Two DE Scenarios & Single-Cell Challenges">一、scRNA-seq DE 的兩大情境</h2>
 <div data-lang="zh">
-<div class="dt-node"><span class="dt-q">情境1:</span><div>找 cluster markers（註釋用）<span class="dt-arrow">→</span> <strong>Wilcoxon</strong>，快速且夠用。</div></div>
-<div class="dt-node"><span class="dt-q">情境2:</span><div>跨條件比較，有多個生物重複 <span class="dt-arrow">→</span> <strong>Pseudobulk + DESeq2</strong>（目前最佳實踐）。</div></div>
-<div class="dt-node"><span class="dt-q">情境3:</span><div>跨條件比較，但只有 1 個樣本 <span class="dt-arrow">→</span> <strong>MAST</strong>，但統計效力有限。</div></div>
-</div><div data-lang="en">
-<div class="dt-node"><span class="dt-q">Case 1:</span><div>Find cluster markers (for annotation) <span class="dt-arrow">→</span> <strong>Wilcoxon</strong>, fast and sufficient.</div></div>
-<div class="dt-node"><span class="dt-q">Case 2:</span><div>Cross-condition with biological replicates <span class="dt-arrow">→</span> <strong>Pseudobulk + DESeq2</strong> (current best practice).</div></div>
-<div class="dt-node"><span class="dt-q">Case 3:</span><div>Cross-condition, single sample <span class="dt-arrow">→</span> <strong>MAST</strong>, but limited power.</div></div>
+<p>差異表達分析 (Differential Expression, DE) 是 scRNA-seq 從「描述細胞」走到「解釋機制」的橋樑。它有兩種完全不同的應用情境：</p>
+<ul style="margin:8px 0 0 20px;color:var(--c-ink-light);">
+<li><strong>① Cluster-vs-cluster DE</strong>：找出某個 cluster 相對其他細胞的特異性基因（marker genes），用於<strong>細胞註釋</strong>。</li>
+<li><strong>② Condition-vs-condition DE</strong>：比較<strong>同一細胞類型</strong>在不同實驗條件下（疾病 vs 健康、藥物 vs 對照、不同時間點）的表達差異，用於<strong>機制研究</strong>。</li>
+</ul>
+<p><strong>為什麼 scRNA-seq DE 與 bulk RNA-seq 完全不同？</strong>單細胞數據有三大特殊挑戰：</p>
+<ul style="margin:8px 0 0 20px;color:var(--c-ink-light);">
+<li><strong>① 零膨脹 (Zero Inflation)</strong>：技術性 dropout 加上低 UMI，使每個細胞有 80–95% 的基因偵測為 0。傳統 t-test、limma 假設常態分佈完全不成立。</li>
+<li><strong>② 龐大樣本量 (Inflated n)</strong>：一個樣本可能有上萬細胞。把每個細胞當獨立觀察會嚴重虛胖統計檢力，幾乎所有基因都會「顯著」。</li>
+<li><strong>③ 細胞間依存 (Pseudo-replication)</strong>：來自同一個體的細胞並非獨立——它們共享基因型、處理批次、技術變異。</li>
+</ul>
+<p>因此，scRNA-seq DE 不能直接套用 bulk 方法，需要特別設計的工具或策略。最重要的兩種策略是 <strong>per-cell DE</strong>（Wilcoxon、MAST、LR）與 <strong>pseudo-bulk DE</strong>（DESeq2、edgeR、limma-voom）。</p>
+</div>
+<div data-lang="en">
+<p>Differential expression (DE) is the bridge from "describing cells" to "explaining mechanism" in scRNA-seq. It serves two distinct scenarios:</p>
+<ul style="margin:8px 0 0 20px;color:var(--c-ink-light);">
+<li><strong>① Cluster-vs-cluster DE</strong>: find cluster-specific genes (markers) for <strong>cell annotation</strong>.</li>
+<li><strong>② Condition-vs-condition DE</strong>: compare the <strong>same cell type</strong> across conditions (disease vs healthy, drug vs control, timepoints) for <strong>mechanistic studies</strong>.</li>
+</ul>
+<p><strong>Why is scRNA-seq DE completely different from bulk RNA-seq?</strong> Three unique challenges:</p>
+<ul style="margin:8px 0 0 20px;color:var(--c-ink-light);">
+<li><strong>① Zero inflation</strong>: technical dropouts and low UMI give 80–95% zeros per cell. Classical assumptions of t-test / limma break down.</li>
+<li><strong>② Inflated n</strong>: a sample can contain 10,000+ cells. Treating each as independent dramatically inflates statistical power — virtually every gene becomes "significant."</li>
+<li><strong>③ Cellular pseudo-replication</strong>: cells from the same donor are NOT independent — they share genotype, batch, technical variation.</li>
+</ul>
+<p>scRNA-seq DE cannot apply bulk methods directly. Two key strategies dominate: <strong>per-cell DE</strong> (Wilcoxon, MAST, LR) and <strong>pseudo-bulk DE</strong> (DESeq2, edgeR, limma-voom).</p>
+</div>
+<div class="callout tip"><span class="callout-icon">💡</span><div>
+<span data-lang="zh"><strong>核心原則：</strong>不同情境用不同工具。<br>① 找 markers → Wilcoxon 即可。<br>② 跨條件比較 + 多個生物重複 → <strong>pseudo-bulk + DESeq2</strong>（目前最佳實踐，Squair et al. 2021 證實）。<br>③ 只有單樣本 → MAST 或 Wilcoxon，但統計效力有限，結論需保守。</span>
+<span data-lang="en"><strong>Core principle:</strong> different scenarios, different tools.<br>① Find markers → Wilcoxon works.<br>② Cross-condition with biological replicates → <strong>pseudo-bulk + DESeq2</strong> (current best practice, Squair et al. 2021).<br>③ Single-sample only → MAST or Wilcoxon, but power is limited — conclusions must be conservative.</span>
 </div></div>
+</section>
 
-<div class="callout danger"><span class="callout-icon">🚨</span><div>
-<span data-lang="zh"><strong>常見嚴重錯誤：</strong>直接用 <code>FindMarkers</code> 做跨條件比較（把每個細胞當獨立觀察值）。這會嚴重<strong>膨脹樣本量</strong>，產生大量假陽性。同一個體的所有細胞並非獨立觀察——正確做法是先做 <strong>pseudobulk 聚合</strong>，以生物重複為分析單位。</span>
-<span data-lang="en"><strong>Critical common error:</strong> Using <code>FindMarkers</code> directly for cross-condition comparison (treating each cell as independent). This severely <strong>inflates sample size</strong>, producing many false positives. Cells from the same individual are NOT independent — use <strong>pseudobulk aggregation</strong> with biological replicates as the analysis unit.</span>
-</div></div></section>
+<!-- ===== Section 2: Three Test Methods ===== -->
+<section class="section">
+<div class="section-label" data-zh="三大檢定方法" data-en="THREE METHOD FAMILIES">三大檢定方法</div>
+<h2 data-zh="二、三大檢定方法家族" data-en="II. Three Families of DE Tests">二、三大檢定方法家族</h2>
 
-<section class="section"><div class="section-label" data-zh="程式碼" data-en="CODE">程式碼</div><h2 data-zh="四、實作範例" data-en="IV. Code Examples">四、實作範例</h2>
-<div class="code-tabs"><div class="code-tab-btns"><button class="code-tab-btn active" onclick="switchTab(this,'r1')">R / Seurat</button><button class="code-tab-btn" onclick="switchTab(this,'py1')">Python / Scanpy</button></div>
-<div class="code-tab-content active" id="r1"><pre><span class="comment"># 情境 1：找 Cluster 0 的 markers</span>
-cl0_markers &lt;- <span class="func">FindMarkers</span>(pbmc, ident.1 = <span class="num">0</span>, only.pos = <span class="kw">TRUE</span>)
+<div class="card-grid cols-3">
+<div class="card"><div class="card-icon">📊</div><h4 data-zh="① Wilcoxon Rank-Sum" data-en="① Wilcoxon Rank-Sum">① Wilcoxon Rank-Sum</h4>
+<div data-lang="zh"><p><strong>假設：</strong>無分佈假設（非參數）。比較兩組秩次。</p>
+<p><strong>優點：</strong>對 outlier 與分佈形狀不敏感、計算極快、Seurat <code>FindMarkers</code> 預設方法。</p>
+<p><strong>缺點：</strong>無法調整 covariate（年齡、性別、批次）；無法處理生物重複的層級結構。</p>
+<p><strong>適用：</strong>cluster markers、初步探索。</p></div>
+<div data-lang="en"><p><strong>Assumption:</strong> distribution-free (non-parametric). Compares ranks.</p>
+<p><strong>Pros:</strong> robust to outliers, very fast, Seurat <code>FindMarkers</code> default.</p>
+<p><strong>Cons:</strong> cannot adjust covariates (age, sex, batch); does not handle hierarchical replication.</p>
+<p><strong>Use:</strong> cluster markers, exploratory work.</p></div>
+</div>
+<div class="card"><div class="card-icon">🪝</div><h4 data-zh="② MAST (Hurdle GLM)" data-en="② MAST (Hurdle GLM)">② MAST (Hurdle GLM)</h4>
+<div data-lang="zh"><p><strong>假設：</strong>表達量服從「<strong>是否表達 (Bernoulli)</strong> + <strong>表達量 (Gaussian)</strong>」的雙階段模型（hurdle）。專為單細胞零膨脹設計。</p>
+<p><strong>優點：</strong>能加入 covariate（如 cellular detection rate、批次）；明確分離零值與非零值的訊號。</p>
+<p><strong>缺點：</strong>運算較慢；仍是 per-cell 模型，依然有 pseudo-replication 風險。</p>
+<p><strong>適用：</strong>單樣本內跨條件比較；需要控制 covariate 時。</p></div>
+<div data-lang="en"><p><strong>Assumption:</strong> hurdle model — a Bernoulli for "is expressed" + Gaussian for expression level. Designed for single-cell zero inflation.</p>
+<p><strong>Pros:</strong> can add covariates (CDR, batch); explicitly separates zero vs non-zero signals.</p>
+<p><strong>Cons:</strong> slower; still a per-cell model — pseudo-replication risk remains.</p>
+<p><strong>Use:</strong> within-sample cross-condition; when covariate adjustment is needed.</p></div>
+</div>
+<div class="card"><div class="card-icon">🧮</div><h4 data-zh="③ Pseudo-bulk + DESeq2 / edgeR" data-en="③ Pseudo-bulk + DESeq2 / edgeR">③ Pseudo-bulk + DESeq2 / edgeR</h4>
+<div data-lang="zh"><p><strong>假設：</strong>先把每個 sample × cell type 的 UMI 加總成一個「假性 bulk」樣本，再用標準 bulk RNA-seq 方法（負二項分佈）分析。</p>
+<p><strong>優點：</strong>正確處理生物重複；嚴格控制 false positive；可加入完整設計矩陣（age、sex、batch）。</p>
+<p><strong>缺點：</strong>需要至少 3 個生物重複；單樣本不可用；會喪失細胞層級的細微訊號。</p>
+<p><strong>適用：</strong>跨條件比較且<strong>有多個生物重複</strong>——這是目前 scRNA-seq DE 的<strong>最佳實踐</strong>。</p></div>
+<div data-lang="en"><p><strong>Assumption:</strong> aggregate UMIs per sample × cell type into "pseudo-bulk" samples, then apply standard bulk RNA-seq methods (negative binomial).</p>
+<p><strong>Pros:</strong> correctly handles biological replication; strict FDR control; supports full design matrix (age, sex, batch).</p>
+<p><strong>Cons:</strong> needs ≥3 biological replicates; not usable for single-sample; loses cell-level fine signals.</p>
+<p><strong>Use:</strong> cross-condition with <strong>biological replicates</strong> — the current <strong>best practice</strong>.</p></div>
+</div>
+</div>
+</section>
 
-<span class="comment"># 情境 2：Pseudobulk 跨條件比較（正確做法）</span>
-pseudo &lt;- <span class="func">AggregateExpression</span>(pbmc,
-  group.by = <span class="func">c</span>(<span class="str">"cell_type"</span>, <span class="str">"sample_id"</span>),
-  return.seurat = <span class="kw">TRUE</span>)
-de &lt;- <span class="func">FindMarkers</span>(pseudo,
-  ident.1 = <span class="str">"disease"</span>, ident.2 = <span class="str">"control"</span>,
-  test.use = <span class="str">"DESeq2"</span>)
+<!-- ===== Section 3: Pseudo-bulk Deep Dive ===== -->
+<section class="section">
+<div class="section-label" data-zh="Pseudo-bulk" data-en="PSEUDO-BULK">Pseudo-bulk</div>
+<h2 data-zh="三、Pseudo-bulk 為什麼是金標準？" data-en="III. Why Pseudo-bulk Is the Gold Standard">三、Pseudo-bulk 深入</h2>
+<div data-lang="zh">
+<p>2018 年 Soneson & Robinson 在 <em>Nature Methods</em> 系統比較了 36 種 DE 方法，發現<strong>傳統 per-cell 方法在跨條件 DE 時 false discovery 嚴重失控</strong>。隨後 Squair et al. 2021（<em>Nature Communications</em>, "Confronting false discoveries in single-cell differential expression"）進一步指出：</p>
+<ul style="margin:8px 0 0 20px;color:var(--c-ink-light);">
+<li>把每個細胞當獨立樣本的 Wilcoxon / MAST / t-test，會將真正的<strong>樣本層級變異</strong>當成統計效力，產生大量 false positives。</li>
+<li>當每個條件有多個生物重複時，<strong>把同一條件中所有細胞的 UMI 加總（pseudo-bulk）</strong>，再用 DESeq2 / edgeR / limma-voom 分析，控制偽陽性的能力遠優於 per-cell 方法。</li>
+<li>這個結論在多個 benchmark（包括 muscat 框架）上都得到驗證。</li>
+</ul>
+<h4 style="margin-top:14px;">📐 Pseudo-bulk 工作流</h4>
+<ol style="margin:8px 0 0 20px;color:var(--c-ink-light);">
+<li><strong>分組</strong>：對每個 cell type 分別處理。</li>
+<li><strong>聚合</strong>：對該 cell type 內，每個 sample 的細胞 UMI 直接相加，得到 <code>genes × samples</code> 的矩陣。</li>
+<li><strong>過濾</strong>：移除細胞數 &lt; 10 的 sample × cell type 組合（樣本量太小）。</li>
+<li><strong>標準化</strong>：DESeq2 的 size factor 或 edgeR 的 TMM。</li>
+<li><strong>檢定</strong>：標準 bulk DE（負二項 GLM + Wald / LRT）。</li>
+</ol>
+</div>
+<div data-lang="en">
+<p>In 2018, Soneson & Robinson (<em>Nature Methods</em>) systematically compared 36 DE methods and found that <strong>traditional per-cell methods have catastrophically inflated FDR for cross-condition DE</strong>. Squair et al. 2021 (<em>Nature Communications</em>, "Confronting false discoveries in single-cell differential expression") sharpened the conclusion:</p>
+<ul style="margin:8px 0 0 20px;color:var(--c-ink-light);">
+<li>Per-cell Wilcoxon / MAST / t-test confuse <strong>sample-level variation</strong> with statistical power, generating many false positives.</li>
+<li>With biological replicates per condition, <strong>aggregating UMIs across cells per sample (pseudo-bulk)</strong> then running DESeq2 / edgeR / limma-voom controls false discoveries far better than per-cell methods.</li>
+<li>This holds across multiple benchmarks (including the muscat framework).</li>
+</ul>
+<h4 style="margin-top:14px;">📐 Pseudo-bulk workflow</h4>
+<ol style="margin:8px 0 0 20px;color:var(--c-ink-light);">
+<li><strong>Stratify</strong>: process each cell type separately.</li>
+<li><strong>Aggregate</strong>: sum UMIs across cells within each sample for that cell type → <code>genes × samples</code> matrix.</li>
+<li><strong>Filter</strong>: drop sample × cell-type combinations with &lt;10 cells.</li>
+<li><strong>Normalise</strong>: DESeq2 size factors or edgeR TMM.</li>
+<li><strong>Test</strong>: standard bulk DE (negative binomial GLM with Wald / LRT).</li>
+</ol>
+</div>
 
-<span class="comment"># 火山圖</span>
+<div class="callout warn"><span class="callout-icon">⚠️</span><div>
+<span data-lang="zh"><strong>關鍵警告：</strong>Pseudo-bulk 不是萬靈丹——它<strong>必須有真正的生物重複</strong>。如果你的「重複」其實是同一個體的技術重複（同一血液樣本分兩管定序），這仍然是 pseudo-replication。生物重複必須代表獨立的生物學單位（不同個體、不同小鼠）。一般建議每組至少 3 個生物重複，最好 5 個以上。</span>
+<span data-lang="en"><strong>Critical warning:</strong> Pseudo-bulk is no panacea — it <strong>requires true biological replicates</strong>. If your "replicates" are technical splits of the same individual (one blood sample split into two), this is still pseudo-replication. Biological replicates must represent independent units (different individuals, different mice). At least 3 per group is the floor; 5+ is preferable.</span>
+</div></div>
+</section>
+
+<!-- ===== Section 4: Method Comparison Table ===== -->
+<section class="section">
+<div class="section-label" data-zh="方法比較" data-en="COMPARISON">方法比較</div>
+<h2 data-zh="四、主要 DE 方法總比較" data-en="IV. Comprehensive DE Method Comparison">四、方法完整比較</h2>
+<table class="comp-table">
+<thead><tr>
+<th data-zh="方法" data-en="Method">方法</th>
+<th data-zh="假設" data-en="Assumption">假設</th>
+<th data-zh="速度" data-en="Speed">速度</th>
+<th data-zh="FDR 控制" data-en="FDR control">FDR</th>
+<th data-zh="推薦用途" data-en="Recommended">推薦用途</th>
+</tr></thead>
+<tbody>
+<tr><td><strong>Wilcoxon</strong></td>
+<td data-lang="zh">非參數秩次</td>
+<td>⚡⚡⚡</td>
+<td data-lang="zh">cluster markers 良好；跨條件偏鬆</td>
+<td data-lang="zh"><strong>找 markers（首選）</strong></td>
+<td data-lang="en">Non-parametric rank</td><td data-lang="en">Good for markers; loose for cross-condition</td><td data-lang="en"><strong>Marker discovery (first choice)</strong></td>
+</tr>
+<tr><td><strong>t-test</strong></td>
+<td data-lang="zh">假設常態分佈</td>
+<td>⚡⚡⚡</td>
+<td data-lang="zh">差（scRNA-seq 違反假設）</td>
+<td data-lang="zh">不建議用於 scRNA-seq</td>
+<td data-lang="en">Gaussian distribution</td><td data-lang="en">Poor (assumption violated)</td><td data-lang="en">Not recommended for scRNA-seq</td>
+</tr>
+<tr><td><strong>LR (Logistic Regression)</strong></td>
+<td data-lang="zh">表達/不表達的 logistic 回歸</td>
+<td>⚡⚡</td>
+<td data-lang="zh">中等；可加 covariate</td>
+<td data-lang="zh">需控制單一 covariate</td>
+<td data-lang="en">Logistic on expressed/not</td><td data-lang="en">Moderate; covariate-friendly</td><td data-lang="en">Need to control a single covariate</td>
+</tr>
+<tr><td><strong>MAST (hurdle GLM)</strong></td>
+<td data-lang="zh">雙階段（Bernoulli + Gaussian）</td>
+<td>⚡</td>
+<td data-lang="zh">較好，可調 CDR、批次</td>
+<td data-lang="zh">單樣本跨條件；複雜 covariate</td>
+<td data-lang="en">Two-stage (Bernoulli + Gaussian)</td><td data-lang="en">Better; can adjust CDR/batch</td><td data-lang="en">Single-sample cross-condition; complex covariates</td>
+</tr>
+<tr><td><strong>negbinom</strong></td>
+<td data-lang="zh">負二項分佈</td>
+<td>⚡</td>
+<td data-lang="zh">中等</td>
+<td data-lang="zh">UMI raw counts</td>
+<td data-lang="en">Negative binomial</td><td data-lang="en">Moderate</td><td data-lang="en">UMI raw counts</td>
+</tr>
+<tr><td><strong>DESeq2 / edgeR pseudo-bulk</strong></td>
+<td data-lang="zh">負二項；以 sample 為單位</td>
+<td>⚡⚡</td>
+<td data-lang="zh"><strong>最佳</strong></td>
+<td data-lang="zh"><strong>跨條件比較（金標準）</strong></td>
+<td data-lang="en">Negative binomial at sample level</td><td data-lang="en"><strong>Best</strong></td><td data-lang="en"><strong>Cross-condition (gold standard)</strong></td>
+</tr>
+</tbody></table>
+</section>
+
+<!-- ===== Section 5: Interactive — Sample Size vs Significance ===== -->
+<section class="section">
+<div class="section-label" data-zh="互動模擬" data-en="INTERACTIVE">互動模擬</div>
+<h2 data-zh="五、樣本量 × 效應大小 × 重複數 模擬" data-en="V. Sample Size × Effect Size × Replicates Simulator">五、樣本量 × 效應 模擬器</h2>
+<div data-lang="zh"><p>調整三個關鍵參數，觀察 per-cell vs pseudo-bulk 在同一資料上產生的<strong>顯著基因數</strong>差異。注意：當「重複數」減少而「細胞數」很高時，per-cell 會大量產生 false positives（顯著基因暴增），但 pseudo-bulk 仍保持合理。</p></div>
+<div data-lang="en"><p>Adjust three key parameters and watch the number of <strong>significant genes</strong> diverge between per-cell vs pseudo-bulk. Note: when replicates shrink but cells stay high, per-cell explodes with false positives; pseudo-bulk stays sane.</p></div>
+
+<div class="interactive-panel">
+<div class="slider-group"><label><span data-zh="每樣本細胞數 (Cells per sample)" data-en="Cells per sample">每樣本細胞數</span> <span id="valCells">2000</span></label>
+<input type="range" id="sliderCells" min="100" max="10000" value="2000" step="100"></div>
+<div class="slider-group"><label><span data-zh="生物重複數 (Replicates per group)" data-en="Replicates per group">生物重複數</span> <span id="valReps">3</span></label>
+<input type="range" id="sliderReps" min="2" max="10" value="3" step="1"></div>
+<div class="slider-group"><label><span data-zh="效應大小 (log2FC)" data-en="Effect size (log2FC)">效應大小</span> <span id="valEff">1.0</span></label>
+<input type="range" id="sliderEff" min="0" max="30" value="10" step="1"></div>
+<div class="sim-stats">
+  <span class="sim-stat fail" id="statPerCell">—</span>
+  <span class="sim-stat pass" id="statPseudo">—</span>
+  <span class="sim-stat" id="statTrue" style="background:#eaf4fb;color:#1c4f80;">—</span>
+</div>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px;margin-top:14px;">
+  <div><div style="font-size:.82rem;font-weight:600;text-align:center;margin-bottom:4px;color:var(--c-ink-light);"><span data-zh="① Per-cell Volcano（false positive 暴增）" data-en="① Per-cell volcano (FP explosion)">① Per-cell Volcano</span></div><div class="chart-container" style="height:280px;"><canvas id="volPerCell"></canvas></div></div>
+  <div><div style="font-size:.82rem;font-weight:600;text-align:center;margin-bottom:4px;color:var(--c-ink-light);"><span data-zh="② Pseudo-bulk Volcano（受控）" data-en="② Pseudo-bulk volcano (controlled)">② Pseudo-bulk Volcano</span></div><div class="chart-container" style="height:280px;"><canvas id="volPseudo"></canvas></div></div>
+</div>
+<p style="font-size:.78rem;color:var(--c-ink-muted);text-align:center;margin-top:8px;">
+<span data-zh="紅 = 上調、藍 = 下調、灰 = 不顯著；門檻 |log2FC| ≥ 0.5、-log10(adj-p) ≥ 1.3。" data-en="Red = up, blue = down, grey = NS; thresholds |log2FC| ≥ 0.5, -log10(adj-p) ≥ 1.3.">紅 = 上調、藍 = 下調、灰 = NS；|log2FC| ≥ 0.5、-log10(adj-p) ≥ 1.3</span></p>
+</div>
+
+<div class="callout warn"><span class="callout-icon">⚠️</span><div>
+<span data-lang="zh"><strong>觀察重點：</strong>① 把 cells 拉到 10000、reps 設 2 時，per-cell 會輸出極多 false positives；② 同樣參數下，pseudo-bulk 結果接近「真正的 ground truth」；③ 當 reps 增加時，pseudo-bulk 的檢力會逐漸接近 per-cell——這證明<strong>真正的統計效力來自生物重複數，而非細胞數</strong>。</span>
+<span data-lang="en"><strong>Key takeaways:</strong> ① At 10k cells + 2 reps, per-cell hands you a huge false-positive pile; ② Pseudo-bulk stays near ground truth under the same parameters; ③ As replicates grow, pseudo-bulk power approaches per-cell — proving <strong>true power comes from biological replicates, not from cell count</strong>.</span>
+</div></div>
+</section>
+
+<!-- ===== Section 6: Volcano Threshold Simulator ===== -->
+<section class="section">
+<div class="section-label" data-zh="火山圖門檻" data-en="VOLCANO THRESHOLDS">火山圖門檻</div>
+<h2 data-zh="六、Volcano Plot 門檻探索" data-en="VI. Volcano Plot Threshold Tuner">六、Volcano 門檻探索</h2>
+<div data-lang="zh"><p>調整 log2FC 和 p-value 閾值，觀察有多少基因被判定為顯著。試著模擬「太鬆」（找太多）vs「太嚴」（漏掉真正的）兩種極端。</p></div>
+<div data-lang="en"><p>Tune log2FC and p-value thresholds and watch significant counts change. Compare "too loose" (too many) vs "too strict" (miss real hits).</p></div>
+<div class="interactive-panel">
+<div class="slider-group"><label>|log2FC| <span data-zh="閾值" data-en="threshold">閾值</span> <span id="valFC">0.5</span></label><input type="range" id="sliderFC" min="1" max="20" value="5" step="1"></div>
+<div class="slider-group"><label>-log10(p_adj) <span data-zh="閾值" data-en="threshold">閾值</span> <span id="valP">1.3</span></label><input type="range" id="sliderP" min="5" max="40" value="13" step="1"></div>
+<div class="sim-stats">
+  <span class="sim-stat pass" id="statUp">—</span>
+  <span class="sim-stat fail" id="statDn">—</span>
+  <span class="sim-stat" id="statNS" style="background:var(--c-bg-alt);color:var(--c-ink-muted);">—</span>
+</div>
+<div class="chart-container" style="height:340px;"><canvas id="volChart"></canvas></div>
+</div>
+</section>
+
+<!-- ===== Section 7: Code ===== -->
+<section class="section">
+<div class="section-label" data-zh="程式碼" data-en="CODE">程式碼</div>
+<h2 data-zh="七、Seurat / Scanpy DE 實作" data-en="VII. Code: Seurat & Scanpy">七、實作範例</h2>
+<div class="code-tabs">
+<div class="code-tab-btns">
+<button class="code-tab-btn active" onclick="switchTab(this,'r1')">R / Seurat (Wilcoxon)</button>
+<button class="code-tab-btn" onclick="switchTab(this,'r2')">R / MAST</button>
+<button class="code-tab-btn" onclick="switchTab(this,'r3')">R / Pseudo-bulk + DESeq2</button>
+<button class="code-tab-btn" onclick="switchTab(this,'py1')">Python / Scanpy</button>
+<button class="code-tab-btn" onclick="switchTab(this,'py2')">Python / pertpy</button>
+</div>
+
+<div class="code-tab-content active" id="r1"><pre><span class="comment"># ===== Wilcoxon (Seurat 預設) — 找 cluster markers =====</span>
+<span class="func">library</span>(Seurat)
+
+<span class="comment"># 找 cluster 0 vs 其餘的 markers</span>
+cl0_markers &lt;- <span class="func">FindMarkers</span>(pbmc,
+  ident.1         = <span class="num">0</span>,
+  test.use        = <span class="str">"wilcox"</span>,
+  only.pos        = <span class="kw">TRUE</span>,
+  min.pct         = <span class="num">0.25</span>,
+  logfc.threshold = <span class="num">0.25</span>)
+
+<span class="comment"># 一次找所有 cluster 的 markers</span>
+all_markers &lt;- <span class="func">FindAllMarkers</span>(pbmc, only.pos = <span class="kw">TRUE</span>)
+
+<span class="comment"># 過濾 + 排序</span>
+top &lt;- all_markers <span class="kw">%&gt;%</span>
+  <span class="func">filter</span>(p_val_adj &lt; <span class="num">0.05</span>) <span class="kw">%&gt;%</span>
+  <span class="func">group_by</span>(cluster) <span class="kw">%&gt;%</span>
+  <span class="func">slice_max</span>(avg_log2FC, n = <span class="num">10</span>)</pre></div>
+
+<div class="code-tab-content" id="r2"><pre><span class="comment"># ===== MAST — 單樣本內跨條件比較 =====</span>
+<span class="func">library</span>(Seurat); <span class="func">library</span>(MAST)
+
+<span class="comment"># 在 CD4 T cell 中比較 disease vs control</span>
+cd4 &lt;- <span class="func">subset</span>(pbmc, cell_type == <span class="str">"CD4 T"</span>)
+<span class="func">Idents</span>(cd4) &lt;- <span class="str">"condition"</span>   <span class="comment"># 切換 ident 為條件</span>
+
+de &lt;- <span class="func">FindMarkers</span>(cd4,
+  ident.1         = <span class="str">"disease"</span>,
+  ident.2         = <span class="str">"control"</span>,
+  test.use        = <span class="str">"MAST"</span>,
+  latent.vars     = <span class="func">c</span>(<span class="str">"nCount_RNA"</span>),  <span class="comment"># CDR adjustment</span>
+  logfc.threshold = <span class="num">0.1</span>)
+
+<span class="comment"># 視覺化（火山圖）</span>
 <span class="func">library</span>(EnhancedVolcano)
-<span class="func">EnhancedVolcano</span>(de, lab = <span class="func">rownames</span>(de), x = <span class="str">"avg_log2FC"</span>, y = <span class="str">"p_val_adj"</span>)</pre></div>
-<div class="code-tab-content" id="py1"><pre><span class="comment"># 情境 1：找各 cluster markers</span>
-sc.tl.rank_genes_groups(adata, groupby=<span class="str">"leiden"</span>, method=<span class="str">"wilcoxon"</span>)
-sc.pl.rank_genes_groups(adata, n_genes=<span class="num">10</span>)
+<span class="func">EnhancedVolcano</span>(de,
+  lab = <span class="func">rownames</span>(de),
+  x = <span class="str">"avg_log2FC"</span>, y = <span class="str">"p_val_adj"</span>,
+  pCutoff = <span class="num">0.05</span>, FCcutoff = <span class="num">0.5</span>)</pre></div>
 
-<span class="comment"># 情境 2：Pseudobulk（推薦用 decoupler）</span>
+<div class="code-tab-content" id="r3"><pre><span class="comment"># ===== Pseudo-bulk + DESeq2 — 金標準跨條件 DE =====</span>
+<span class="func">library</span>(Seurat); <span class="func">library</span>(DESeq2)
+
+<span class="comment"># Step 1: 對每個 sample × cell_type 聚合 UMI</span>
+pseudo &lt;- <span class="func">AggregateExpression</span>(pbmc,
+  group.by    = <span class="func">c</span>(<span class="str">"cell_type"</span>, <span class="str">"sample_id"</span>),
+  assays      = <span class="str">"RNA"</span>,
+  slot        = <span class="str">"counts"</span>,
+  return.seurat = <span class="kw">FALSE</span>)
+
+<span class="comment"># 取 CD4 T 的 pseudobulk 矩陣</span>
+cd4_bulk &lt;- pseudo$RNA[, <span class="func">grep</span>(<span class="str">"CD4 T_"</span>, <span class="func">colnames</span>(pseudo$RNA))]
+
+<span class="comment"># Step 2: 建立 metadata + DESeq2 物件</span>
+meta &lt;- <span class="func">data.frame</span>(
+  row.names = <span class="func">colnames</span>(cd4_bulk),
+  condition = <span class="kw">ifelse</span>(<span class="func">grepl</span>(<span class="str">"D"</span>, <span class="func">colnames</span>(cd4_bulk)), <span class="str">"disease"</span>, <span class="str">"control"</span>),
+  sex       = <span class="kw">c</span>(...)  <span class="comment"># 若有 covariate</span>
+)
+dds &lt;- <span class="func">DESeqDataSetFromMatrix</span>(
+  countData = cd4_bulk,
+  colData   = meta,
+  design    = ~ sex + condition)
+
+<span class="comment"># Step 3: 過濾低表達（pseudobulk 後仍需要）</span>
+keep &lt;- <span class="func">rowSums</span>(<span class="func">counts</span>(dds) &gt;= <span class="num">10</span>) &gt;= <span class="num">3</span>
+dds &lt;- dds[keep, ]
+
+<span class="comment"># Step 4: 跑 DESeq2 標準流程</span>
+dds &lt;- <span class="func">DESeq</span>(dds)
+res &lt;- <span class="func">results</span>(dds, contrast = <span class="func">c</span>(<span class="str">"condition"</span>, <span class="str">"disease"</span>, <span class="str">"control"</span>))
+<span class="func">summary</span>(res)
+res_sig &lt;- <span class="func">subset</span>(res, padj &lt; <span class="num">0.05</span> &amp; <span class="func">abs</span>(log2FoldChange) &gt; <span class="num">0.5</span>)</pre></div>
+
+<div class="code-tab-content" id="py1"><pre><span class="comment"># ===== Scanpy: Wilcoxon for marker genes =====</span>
+<span class="kw">import</span> scanpy <span class="kw">as</span> sc
+
+<span class="comment"># 找所有 cluster 的 markers</span>
+sc.tl.rank_genes_groups(
+  adata,
+  groupby=<span class="str">"leiden"</span>,
+  method=<span class="str">"wilcoxon"</span>,
+  use_raw=<span class="kw">False</span>,
+  pts=<span class="kw">True</span>)
+
+<span class="comment"># 視覺化</span>
+sc.pl.rank_genes_groups(adata, n_genes=<span class="num">15</span>)
+sc.pl.rank_genes_groups_dotplot(adata, n_genes=<span class="num">5</span>)
+sc.pl.rank_genes_groups_heatmap(adata, n_genes=<span class="num">5</span>)
+
+<span class="comment"># 取得 DataFrame</span>
+df = sc.get.rank_genes_groups_df(adata, group=<span class="str">"0"</span>)
+df = df[(df.pvals_adj &lt; <span class="num">0.05</span>) &amp; (df.logfoldchanges &gt; <span class="num">0.5</span>)]
+
+<span class="comment"># 跨條件比較（不建議直接用，僅作示範）</span>
+sc.tl.rank_genes_groups(
+  adata[adata.obs.cell_type == <span class="str">"CD4 T"</span>],
+  groupby=<span class="str">"condition"</span>,
+  reference=<span class="str">"control"</span>,
+  method=<span class="str">"wilcoxon"</span>)</pre></div>
+
+<div class="code-tab-content" id="py2"><pre><span class="comment"># ===== pertpy: Pseudo-bulk in Python =====</span>
+<span class="kw">import</span> pertpy <span class="kw">as</span> pt
+<span class="kw">import</span> scanpy <span class="kw">as</span> sc
 <span class="kw">import</span> decoupler <span class="kw">as</span> dc
-pdata = dc.get_pseudobulk(adata, sample_col=<span class="str">"sample_id"</span>,
-  groups_col=<span class="str">"cell_type"</span>, min_cells=<span class="num">10</span>)
-dc.deseq2(pdata, design=<span class="str">"~condition"</span>)</pre></div></div></section>
 
-<section class="quiz-section"><h3>📝 <span data-zh="自我檢測" data-en="Self-Check">自我檢測</span></h3>
-<div class="quiz-q" data-answer="2"><p data-lang="zh">跨條件比較為何不應直接對所有單細胞做檢定？</p><p data-lang="en">Why shouldn't you test all individual cells for cross-condition DE?</p><div class="quiz-options">
+<span class="comment"># Step 1: 聚合成 pseudo-bulk AnnData</span>
+pdata = dc.get_pseudobulk(
+  adata,
+  sample_col=<span class="str">"sample_id"</span>,
+  groups_col=<span class="str">"cell_type"</span>,
+  layer=<span class="str">"counts"</span>,
+  mode=<span class="str">"sum"</span>,
+  min_cells=<span class="num">10</span>,
+  min_counts=<span class="num">1000</span>)
+
+<span class="comment"># Step 2: 篩選 CD4 T 並建立 DESeq2 物件</span>
+cd4_pdata = pdata[pdata.obs.cell_type == <span class="str">"CD4 T"</span>].copy()
+
+<span class="comment"># Step 3: 用 pertpy 的 PyDESeq2 wrapper</span>
+dds = pt.tl.PyDESeq2(
+  adata=cd4_pdata,
+  design_factors=[<span class="str">"sex"</span>, <span class="str">"condition"</span>],
+  refit_cooks=<span class="kw">True</span>)
+dds.fit()
+results = dds.test_contrasts(
+  contrast=[<span class="str">"condition"</span>, <span class="str">"disease"</span>, <span class="str">"control"</span>])
+
+<span class="comment"># Step 4: 顯著基因</span>
+sig = results[(results.padj &lt; <span class="num">0.05</span>) &amp;
+              (results.log2FoldChange.abs() &gt; <span class="num">0.5</span>)]</pre></div>
+</div>
+</section>
+
+<!-- ===== Section 8: Decision Tree ===== -->
+<section class="section">
+<div class="section-label" data-zh="決策引導" data-en="DECISION GUIDE">決策引導</div>
+<h2 data-zh="八、DE 方法選擇決策樹" data-en="VIII. DE Method Decision Tree">八、決策樹</h2>
+<div class="decision-tree">
+<h4>🌳 <span data-zh="該選哪種方法？" data-en="Which method?">該選哪種方法？</span></h4>
+<div data-lang="zh">
+<div class="dt-node"><span class="dt-q">情境 1:</span><div>找 cluster markers（為了註釋）<span class="dt-arrow">→</span> <strong>Wilcoxon</strong>（Seurat <code>FindAllMarkers</code> 預設）。快、夠用、廣為接受。</div></div>
+<div class="dt-node"><span class="dt-q">情境 2:</span><div>跨條件比較，有 <strong>≥ 3 個生物重複/組</strong>？<span class="dt-arrow">→</span> <strong>Pseudo-bulk + DESeq2</strong>（金標準，FDR 控制最好）。</div></div>
+<div class="dt-node"><span class="dt-q">情境 3:</span><div>跨條件比較，但只有 1-2 個樣本/組？<span class="dt-arrow">→</span> <strong>MAST</strong>（可加 CDR、批次 covariate），但須明確標註統計效力有限、結論需保守。</div></div>
+<div class="dt-node"><span class="dt-q">情境 4:</span><div>需控制連續 covariate（如年齡、病程）？<span class="dt-arrow">→</span> Pseudo-bulk + DESeq2（design = ~ age + condition），或 MAST 的 latent.vars。</div></div>
+<div class="dt-node"><span class="dt-q">情境 5:</span><div>細胞數極大（&gt;100k）且只想初步看大方向？<span class="dt-arrow">→</span> Wilcoxon 配合嚴格 logFC + adj-p 門檻，再用 pseudo-bulk 對重點 genes 驗證。</div></div>
+</div>
+<div data-lang="en">
+<div class="dt-node"><span class="dt-q">Case 1:</span><div>Cluster markers (for annotation)<span class="dt-arrow">→</span> <strong>Wilcoxon</strong> (Seurat <code>FindAllMarkers</code> default). Fast, sufficient, widely accepted.</div></div>
+<div class="dt-node"><span class="dt-q">Case 2:</span><div>Cross-condition with <strong>≥ 3 biological replicates per group</strong>?<span class="dt-arrow">→</span> <strong>Pseudo-bulk + DESeq2</strong> (gold standard, best FDR control).</div></div>
+<div class="dt-node"><span class="dt-q">Case 3:</span><div>Cross-condition with only 1-2 samples per group?<span class="dt-arrow">→</span> <strong>MAST</strong> (with CDR / batch covariates), but flag the limited power and keep conclusions conservative.</div></div>
+<div class="dt-node"><span class="dt-q">Case 4:</span><div>Need to adjust continuous covariates (age, disease stage)?<span class="dt-arrow">→</span> Pseudo-bulk + DESeq2 (design = ~ age + condition) or MAST latent.vars.</div></div>
+<div class="dt-node"><span class="dt-q">Case 5:</span><div>Massive cell count (&gt;100k) for a quick scan?<span class="dt-arrow">→</span> Wilcoxon with strict logFC + adj-p thresholds, then validate top hits with pseudo-bulk.</div></div>
+</div>
+</div>
+</section>
+
+<!-- ===== Section 9: Best Practices ===== -->
+<section class="section">
+<div class="section-label" data-zh="最佳實務" data-en="BEST PRACTICES">最佳實務</div>
+<h2 data-zh="九、DE 分析最佳實務" data-en="IX. DE Best Practices">九、最佳實務</h2>
+<div class="card-grid cols-2">
+<div class="card"><h4>✅ <span data-zh="同時報 logFC + adj-p + pct" data-en="Report logFC + adj-p + pct">同時報 logFC + adj-p + pct</span></h4>
+<div data-lang="zh"><p>只看 p-value 容易被大樣本量誤導。<strong>logFC ≥ 0.5</strong> 才有生物學意義，<strong>pct.1 / pct.2</strong> 確認該基因確實在多數細胞中表達——三者一起才是嚴謹的 marker。</p></div>
+<div data-lang="en"><p>p-value alone is misled by large n. <strong>logFC ≥ 0.5</strong> for biological meaning, plus <strong>pct.1 / pct.2</strong> showing the gene is actually expressed in most cells — all three matter.</p></div>
+</div>
+<div class="card"><h4>✅ <span data-zh="設定 min.pct & logfc.threshold" data-en="Set min.pct & logfc.threshold">用 min.pct 預過濾</span></h4>
+<div data-lang="zh"><p>Seurat <code>FindMarkers</code> 預設 <code>min.pct = 0.1</code>、<code>logfc.threshold = 0.25</code>。這預過濾掉「兩組幾乎都不表達」的基因，<strong>大幅減少 multiple testing 負擔</strong>，提升真陽性訊號比。</p></div>
+<div data-lang="en"><p>Seurat's <code>FindMarkers</code> defaults: <code>min.pct = 0.1</code>, <code>logfc.threshold = 0.25</code>. These pre-filter genes barely expressed in either group, <strong>cutting multiple-testing burden</strong> and boosting signal-to-noise.</p></div>
+</div>
+<div class="card"><h4>✅ <span data-zh="生物重複才是檢力來源" data-en="Power = replicates">重複數 > 細胞數</span></h4>
+<div data-lang="zh"><p>跨條件 DE 的<strong>真正統計效力來自生物重複數</strong>，不是細胞數。3 個樣本 × 1000 細胞 ≫ 1 個樣本 × 100,000 細胞。實驗設計時優先增加重複。</p></div>
+<div data-lang="en"><p>For cross-condition DE, <strong>real statistical power comes from biological replicates</strong>, not cell count. 3 samples × 1000 cells ≫ 1 sample × 100,000 cells. Plan experiments accordingly.</p></div>
+</div>
+<div class="card"><h4>✅ <span data-zh="人工驗證 top 結果" data-en="Sanity-check top hits">人工驗證 Top 結果</span></h4>
+<div data-lang="zh"><p>Top 10-20 markers 一定要用 <code>VlnPlot</code> 或 <code>FeaturePlot</code> 視覺確認分佈合理（不是只有少數細胞拉抬均值），並查文獻是否符合生物學預期。</p></div>
+<div data-lang="en"><p>Always inspect top 10-20 markers with <code>VlnPlot</code> or <code>FeaturePlot</code> for sensible distribution (not just a few outlier cells inflating the mean) and check against literature.</p></div>
+</div>
+<div class="card"><h4>✅ <span data-zh="檢查 batch / sample 來源" data-en="Inspect batch / sample">分群來自批次嗎？</span></h4>
+<div data-lang="zh"><p>跨條件 DE 前，務必檢查同一條件的多個樣本是否在 UMAP 上混合良好。若一個樣本獨佔某 cluster，pseudobulk 結果其實是「樣本效應」而非「條件效應」。</p></div>
+<div data-lang="en"><p>Before cross-condition DE, verify samples from the same condition mix well on UMAP. If one sample dominates a cluster, your pseudo-bulk result is actually a "sample effect" not a "condition effect".</p></div>
+</div>
+<div class="card"><h4>✅ <span data-zh="處理 ambient RNA" data-en="Handle ambient RNA">移除環境 RNA 污染</span></h4>
+<div data-lang="zh"><p>環境 RNA（如組織 lysis 釋放的 ALB）會在所有 cluster 都呈現「表達」。先用 SoupX 或 CellBender 清理，避免將高豐度污染基因誤判為跨類型 marker。</p></div>
+<div data-lang="en"><p>Ambient RNA (e.g., ALB leaked from lysed hepatocytes) appears expressed in every cluster. Clean with SoupX or CellBender first to avoid mis-calling abundant contaminants as universal markers.</p></div>
+</div>
+</div>
+</section>
+
+<!-- ===== Section 10: Pitfalls ===== -->
+<section class="section">
+<div class="section-label" data-zh="常見陷阱" data-en="PITFALLS">常見陷阱</div>
+<h2 data-zh="十、常見陷阱與 Troubleshooting" data-en="X. Common Pitfalls & Troubleshooting">十、常見陷阱</h2>
+
+<div class="card">
+<h4>🚨 <span data-zh="陷阱 1：把細胞當獨立重複" data-en="Pitfall 1: Cells as replicates">陷阱 1：把細胞當獨立重複</span></h4>
+<div data-lang="zh"><p>這是 scRNA-seq DE 最嚴重也最常見的錯誤——直接拿 1 個疾病樣本 vs 1 個健康樣本的所有細胞跑 <code>FindMarkers</code>。所謂的「2,000 vs 2,000 細胞」其實只代表<strong>各 1 個體</strong>，但 Wilcoxon 把它們當 4,000 個獨立樣本，p-value 嚴重灌水，幾乎所有基因都「顯著」。<strong>對策：</strong>必須有生物重複，並用 pseudo-bulk。</p></div>
+<div data-lang="en"><p>The single most serious and most common scRNA-seq DE mistake — running <code>FindMarkers</code> directly on 1 disease sample vs 1 healthy sample. "2,000 vs 2,000 cells" actually means <strong>1 vs 1 individual</strong>, but Wilcoxon treats them as 4,000 independent samples, severely inflating p-values — almost every gene becomes "significant." <strong>Mitigation:</strong> biological replicates + pseudo-bulk.</p></div>
+</div>
+
+<div class="card">
+<h4>🚨 <span data-zh="陷阱 2：小 cluster 的 DE 不可靠" data-en="Pitfall 2: Small clusters unreliable">陷阱 2：小 cluster 的 p-value 不可靠</span></h4>
+<div data-lang="zh"><p>cluster 細胞數 &lt; 10 時，無論用哪種方法都沒有統計檢力，且容易被 1-2 個 outlier 細胞主導。pseudo-bulk 中如果某 sample × cell_type 細胞數 &lt; 10，DESeq2 也會給出失真結果。<strong>對策：</strong>刪除 &lt; 10 細胞的 cluster 或合併到鄰近 cluster；pseudo-bulk 前過濾 <code>min_cells = 10</code>。</p></div>
+<div data-lang="en"><p>For clusters &lt;10 cells, no method has power, and 1-2 outlier cells can dominate. In pseudo-bulk, any sample × cell-type combo with &lt;10 cells also gives DESeq2 garbage. <strong>Mitigation:</strong> drop or merge tiny clusters; set <code>min_cells = 10</code> when building pseudo-bulk.</p></div>
+</div>
+
+<div class="card">
+<h4>🚨 <span data-zh="陷阱 3：批次與條件混淆" data-en="Pitfall 3: Batch confounded with condition">陷阱 3：批次與條件完全混淆</span></h4>
+<div data-lang="zh"><p>若所有疾病樣本在 batch A 跑、所有對照在 batch B 跑，DE 結果<strong>無法區分「疾病效應」與「批次效應」</strong>——這是不可挽回的實驗設計缺陷。<strong>對策：</strong>實驗設計時務必混合（每個 batch 含 disease + control）；分析前用 <code>table(sample, condition, batch)</code> 檢查。若已混淆，須在論文中明確聲明 limitation。</p></div>
+<div data-lang="en"><p>If all disease samples run in batch A and all controls in batch B, DE results <strong>cannot disentangle "disease effect" from "batch effect"</strong> — an unfixable design flaw. <strong>Mitigation:</strong> at design time, ensure every batch contains both disease and control; check with <code>table(sample, condition, batch)</code> before analysis. If confounded, declare it as a limitation.</p></div>
+</div>
+
+<div class="card">
+<h4>🚨 <span data-zh="陷阱 4：環境 RNA 污染產生假 marker" data-en="Pitfall 4: Ambient RNA false markers">陷阱 4：環境 RNA 偽 marker</span></h4>
+<div data-lang="zh"><p>在肝臟、腦等富含高豐度基因（ALB、MBP）的組織，這些基因會「污染」所有液滴，導致它們在每個 cluster 都「表達」並以 marker 身分出現。<strong>對策：</strong>在 QC 時用 SoupX / CellBender 清理；若 marker 出現在多個本應無關的 cluster，警覺其為環境 RNA。</p></div>
+<div data-lang="en"><p>In tissues with abundant lineage genes (ALB in liver, MBP in brain), these genes contaminate all droplets, appearing "expressed" in every cluster and showing up as markers. <strong>Mitigation:</strong> clean with SoupX / CellBender during QC; if a "marker" appears across unrelated clusters, suspect ambient RNA.</p></div>
+</div>
+
+<div class="card">
+<h4>🚨 <span data-zh="陷阱 5：以為 adj-p &lt; 0.05 就代表生物學意義" data-en="Pitfall 5: adj-p &lt; 0.05 ≠ biology">陷阱 5：adj-p &lt; 0.05 ≠ 生物學顯著</span></h4>
+<div data-lang="zh"><p>在 100,000 細胞的數據中，p-value 會非常小，但可能 logFC 只有 0.1（生物上幾乎沒差別）。<strong>對策：</strong>同時設 <strong>|log2FC| ≥ 0.5</strong>（甚至 1.0）+ <strong>pct.1 &gt; 0.25</strong>。Volcano plot 上同時看 x（FC）與 y（-log10 p）兩軸。</p></div>
+<div data-lang="en"><p>With 100,000 cells, p-values can be vanishingly small even when logFC ≈ 0.1 (biologically irrelevant). <strong>Mitigation:</strong> require <strong>|log2FC| ≥ 0.5</strong> (or 1.0) + <strong>pct.1 &gt; 0.25</strong>. On volcano plots, evaluate both x (FC) and y (-log10 p).</p></div>
+</div>
+</section>
+
+<!-- ===== Section 11: Quiz ===== -->
+<section class="quiz-section">
+<h3>📝 <span data-zh="自我檢測" data-en="Self-Check">自我檢測</span></h3>
+
+<div class="quiz-q" data-answer="2">
+<p data-lang="zh">1. 跨條件比較為何不應直接對所有單細胞做檢定？</p>
+<p data-lang="en">1. Why shouldn't you test all individual cells for cross-condition DE?</p>
+<div class="quiz-options">
 <div class="quiz-opt" data-idx="0"><span data-lang="zh">A. 計算太慢</span><span data-lang="en">A. Too slow computationally</span></div>
 <div class="quiz-opt" data-idx="1"><span data-lang="zh">B. 無法處理零值</span><span data-lang="en">B. Can't handle zeros</span></div>
-<div class="quiz-opt" data-idx="2"><span data-lang="zh">C. 會把同一個體的多個細胞當獨立觀察，膨脹樣本量導致假陽性</span><span data-lang="en">C. Treats cells from same individual as independent, inflating sample size and false positives</span></div>
-<div class="quiz-opt" data-idx="3"><span data-lang="zh">D. Seurat 不支援此功能</span><span data-lang="en">D. Not supported by Seurat</span></div></div><div class="quiz-feedback" id="fb1"></div></div></section>
-<nav class="page-nav"><a href="annotation.html"><span class="nav-dir" data-zh="← 上一步" data-en="← Previous">← 上一步</span><span class="nav-title" data-zh="Step 8：Annotation" data-en="Step 8: Annotation">Step 8：Annotation</span></a><a href="integration.html"><span class="nav-dir" data-zh="下一步 →" data-en="Next →">下一步 →</span><span class="nav-title" data-zh="Integration" data-en="Integration">Integration</span></a></nav></main>
+<div class="quiz-opt" data-idx="2"><span data-lang="zh">C. 把同一個體的多個細胞當獨立觀察，膨脹樣本量，產生大量假陽性</span><span data-lang="en">C. Treats cells from same individual as independent, inflating sample size and false positives</span></div>
+<div class="quiz-opt" data-idx="3"><span data-lang="zh">D. Seurat 不支援此功能</span><span data-lang="en">D. Not supported by Seurat</span></div>
+</div><div class="quiz-feedback" id="fb1"></div>
+</div>
+
+<div class="quiz-q" data-answer="1">
+<p data-lang="zh">2. 你有 6 個 disease + 6 個 control 樣本，想找 CD4 T cell 在疾病中的差異基因。最佳方法？</p>
+<p data-lang="en">2. You have 6 disease + 6 control samples and want DEGs in CD4 T cells. Best method?</p>
+<div class="quiz-options">
+<div class="quiz-opt" data-idx="0"><span data-lang="zh">A. 把所有 CD4 T 細胞合併，跑 Wilcoxon</span><span data-lang="en">A. Pool all CD4 T cells and run Wilcoxon</span></div>
+<div class="quiz-opt" data-idx="1"><span data-lang="zh">B. 對 CD4 T 做 sample-level pseudo-bulk，再用 DESeq2</span><span data-lang="en">B. Pseudo-bulk CD4 T per sample, then DESeq2</span></div>
+<div class="quiz-opt" data-idx="2"><span data-lang="zh">C. 對每個細胞跑 t-test</span><span data-lang="en">C. Run t-test on every cell</span></div>
+<div class="quiz-opt" data-idx="3"><span data-lang="zh">D. 只看 logFC，不看 p-value</span><span data-lang="en">D. Only look at logFC, ignore p-value</span></div>
+</div><div class="quiz-feedback" id="fb2"></div>
+</div>
+
+<div class="quiz-q" data-answer="2">
+<p data-lang="zh">3. 你的 cluster 14 只有 8 個細胞，DE 結果顯示有 200 個顯著基因。下列何者最可能？</p>
+<p data-lang="en">3. Cluster 14 has only 8 cells but DE reports 200 significant genes. Most likely?</p>
+<div class="quiz-options">
+<div class="quiz-opt" data-idx="0"><span data-lang="zh">A. 這是真正的稀有細胞，發現了新標誌</span><span data-lang="en">A. Genuine rare cell type with novel markers</span></div>
+<div class="quiz-opt" data-idx="1"><span data-lang="zh">B. 應該降低 logFC 門檻找更多</span><span data-lang="en">B. Lower the logFC threshold to find more</span></div>
+<div class="quiz-opt" data-idx="2"><span data-lang="zh">C. 細胞數太少，p-value 不可靠，可能是 1-2 個 outlier 主導</span><span data-lang="en">C. Too few cells; p-values unreliable, likely dominated by 1-2 outliers</span></div>
+<div class="quiz-opt" data-idx="3"><span data-lang="zh">D. 直接接受結果</span><span data-lang="en">D. Accept the results as-is</span></div>
+</div><div class="quiz-feedback" id="fb3"></div>
+</div>
+
+<div class="quiz-q" data-answer="3">
+<p data-lang="zh">4. 關於肝臟 scRNA-seq 中 ALB 出現在多個 cluster 都「表達」的現象，最可能的解釋與處理是？</p>
+<p data-lang="en">4. In liver scRNA-seq, ALB appears "expressed" across many clusters. Most likely cause and fix?</p>
+<div class="quiz-options">
+<div class="quiz-opt" data-idx="0"><span data-lang="zh">A. ALB 是萬用 marker，所有細胞都有</span><span data-lang="en">A. ALB is a universal marker present in all cells</span></div>
+<div class="quiz-opt" data-idx="1"><span data-lang="zh">B. 提高 p-value 門檻就能解決</span><span data-lang="en">B. Raise the p-value threshold to fix it</span></div>
+<div class="quiz-opt" data-idx="2"><span data-lang="zh">C. 重新聚類即可</span><span data-lang="en">C. Just re-cluster</span></div>
+<div class="quiz-opt" data-idx="3"><span data-lang="zh">D. 環境 RNA 污染（soup），用 SoupX / CellBender 清理</span><span data-lang="en">D. Ambient RNA contamination; clean with SoupX / CellBender</span></div>
+</div><div class="quiz-feedback" id="fb4"></div>
+</div>
+</section>
+
+<nav class="page-nav">
+<a href="annotation.html"><span class="nav-dir" data-zh="← 上一步" data-en="← Previous">← 上一步</span><span class="nav-title" data-zh="Step 8：Annotation" data-en="Step 8: Annotation">Step 8：Annotation</span></a>
+<a href="integration.html"><span class="nav-dir" data-zh="下一步 →" data-en="Next →">下一步 →</span><span class="nav-title" data-zh="Integration 整合" data-en="Integration">Integration</span></a>
+</nav>
+</main>
 <footer class="site-footer">© Charlene — scRNA-seq Interactive Tutorial</footer>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script><script src="i18n.js"></script><script>
+<script src="i18n.js"></script>
+<script>
 window.addEventListener("scroll",()=>{const h=document.documentElement;document.getElementById("progressBar").style.width=(h.scrollTop/(h.scrollHeight-h.clientHeight))*100+"%";});
 function switchTab(b,id){const p=b.closest(".code-tabs");p.querySelectorAll(".code-tab-btn").forEach(x=>x.classList.remove("active"));p.querySelectorAll(".code-tab-content").forEach(x=>x.classList.remove("active"));b.classList.add("active");document.getElementById(id).classList.add("active");}
 
+// =============== Sample size simulator ===============
+// Simulate ~300 genes. 50 are "true" DE (with positive effect), rest are null.
+// per-cell tests treat every cell as independent (degrees of freedom = total cells),
+// pseudo-bulk treats one sample as a unit (degrees of freedom = replicates).
+function randn(){let u=0,v=0;while(u===0)u=Math.random();while(v===0)v=Math.random();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);}
+const N_GENES=300;
+const TRUE_DE=60;
+const trueGenes=Array.from({length:N_GENES},(_,i)=>i<TRUE_DE);
+function simulateRun(cellsPerSample,reps,effect){
+  const perCellPts=[], pseudoPts=[];
+  for(let i=0;i<N_GENES;i++){
+    const trueFC = trueGenes[i] ? effect : 0;
+    // Per-cell: observed FC + small noise, but pvalue inflated by huge n
+    const cellN = cellsPerSample * reps * 2;
+    const fcCell = trueFC + randn()*0.18;
+    // -log10 p approximated as |fc| * sqrt(n)/k for non-null; for null, random ~ exp(small)
+    const pvCell = (trueGenes[i] ? Math.abs(fcCell) : 0.05+Math.abs(randn())*0.2) * Math.sqrt(cellN)/22 + Math.abs(randn())*0.4;
+    perCellPts.push({x:fcCell,y:Math.max(0,pvCell),tg:trueGenes[i]});
+    // Pseudo-bulk: noise larger because n = reps, effect-size constant
+    const fcBulk = trueFC + randn()*0.35;
+    const pvBulk = (trueGenes[i] ? Math.abs(fcBulk) : 0.05+Math.abs(randn())*0.2) * Math.sqrt(reps)*0.7 + Math.abs(randn())*0.45;
+    pseudoPts.push({x:fcBulk,y:Math.max(0,pvBulk),tg:trueGenes[i]});
+  }
+  return {perCellPts,pseudoPts};
+}
+function classify(pt){const FC=0.5,P=1.3;if(pt.y<P) return 'ns'; if(pt.x>=FC) return 'up'; if(pt.x<=-FC) return 'dn'; return 'ns';}
+function makeVol(canvasId){
+  return new Chart(document.getElementById(canvasId),{type:'scatter',data:{datasets:[
+    {label:'Up',data:[],backgroundColor:'rgba(192,57,43,0.55)',pointRadius:3},
+    {label:'Down',data:[],backgroundColor:'rgba(41,128,185,0.55)',pointRadius:3},
+    {label:'NS',data:[],backgroundColor:'rgba(180,180,170,0.35)',pointRadius:2.3}
+  ]},options:{responsive:true,maintainAspectRatio:false,animation:false,
+    scales:{x:{min:-3,max:3,title:{display:true,text:'log2FC',font:{size:10}},ticks:{font:{size:9}}},
+            y:{min:0,max:8,title:{display:true,text:'-log10(p_adj)',font:{size:10}},ticks:{font:{size:9}}}},
+    plugins:{legend:{position:'top',labels:{boxWidth:10,font:{size:10}}}}}});
+}
+const volPerCell=makeVol('volPerCell');
+const volPseudo=makeVol('volPseudo');
+function updateSim(){
+  const cells=+document.getElementById('sliderCells').value;
+  const reps=+document.getElementById('sliderReps').value;
+  const eff=+document.getElementById('sliderEff').value/10;
+  document.getElementById('valCells').textContent=cells;
+  document.getElementById('valReps').textContent=reps;
+  document.getElementById('valEff').textContent=eff.toFixed(1);
+  const sim=simulateRun(cells,reps,eff);
+  function split(pts){const u=[],d=[],ns=[];pts.forEach(p=>{const c=classify(p);(c==='up'?u:c==='dn'?d:ns).push({x:p.x,y:p.y});});return {u,d,ns};}
+  const a=split(sim.perCellPts), b=split(sim.pseudoPts);
+  volPerCell.data.datasets[0].data=a.u;volPerCell.data.datasets[1].data=a.d;volPerCell.data.datasets[2].data=a.ns;
+  volPseudo.data.datasets[0].data=b.u;volPseudo.data.datasets[1].data=b.d;volPseudo.data.datasets[2].data=b.ns;
+  volPerCell.update('none');volPseudo.update('none');
+  const L=I18n.get();
+  document.getElementById('statPerCell').textContent=(L==='zh'?'Per-cell 顯著: ':'Per-cell sig: ')+(a.u.length+a.d.length);
+  document.getElementById('statPseudo').textContent=(L==='zh'?'Pseudo-bulk 顯著: ':'Pseudo-bulk sig: ')+(b.u.length+b.d.length);
+  document.getElementById('statTrue').textContent=(L==='zh'?'真實 DE 基因數: ':'True DE: ')+TRUE_DE;
+}
+['sliderCells','sliderReps','sliderEff'].forEach(id=>document.getElementById(id).addEventListener('input',updateSim));
+
+// =============== Volcano threshold simulator ===============
 const vG=[];for(let i=0;i<500;i++){const fc=(Math.random()-0.5)*6;vG.push({fc,pv:Math.random()*5+Math.abs(fc)*Math.random()*2});}
-const volChart=new Chart(document.getElementById('volChart'),{type:'scatter',data:{datasets:[{label:'Up',data:[],backgroundColor:'rgba(192,57,43,0.5)',pointRadius:3},{label:'Down',data:[],backgroundColor:'rgba(41,128,185,0.5)',pointRadius:3},{label:'NS',data:[],backgroundColor:'rgba(180,180,170,0.3)',pointRadius:2.5}]},options:{responsive:true,maintainAspectRatio:false,animation:false,scales:{x:{min:-4,max:4,title:{display:true,text:'log2FC'}},y:{min:0,max:8,title:{display:true,text:'-log10(p_adj)'}}},plugins:{legend:{position:'top'}}}});
-function upVol(){const fcT=+document.getElementById('sliderFC').value/10,pT=+document.getElementById('sliderP').value/10;document.getElementById('valFC').textContent=fcT.toFixed(1);document.getElementById('valP').textContent=pT.toFixed(1);const u=[],d=[],ns=[];vG.forEach(g=>{const pt={x:g.fc,y:g.pv};if(g.pv>=pT&&g.fc>=fcT)u.push(pt);else if(g.pv>=pT&&g.fc<=-fcT)d.push(pt);else ns.push(pt);});const L=I18n.get();const ul=L==='zh'?'上調':'Up',dl=L==='zh'?'下調':'Down',nl=L==='zh'?'不顯著':'NS';document.getElementById('statUp').textContent=ul+': '+u.length;document.getElementById('statDn').textContent=dl+': '+d.length;document.getElementById('statNS').textContent=nl+': '+ns.length;volChart.data.datasets[0].data=u;volChart.data.datasets[1].data=d;volChart.data.datasets[2].data=ns;volChart.data.datasets[0].label=ul;volChart.data.datasets[1].label=dl;volChart.data.datasets[2].label=nl;volChart.update('none');}
-['sliderFC','sliderP'].forEach(id=>document.getElementById(id).addEventListener('input',upVol));document.addEventListener('langchange',upVol);upVol();
-window._QF={zh:{q1_y:'同一個體的細胞並非獨立觀察值，必須先做 pseudobulk 聚合，以生物重複為分析單位。',q1_n:'答案是 C。這是 scRNA-seq DE 分析中最常見也最嚴重的統計陷阱。'},en:{q1_y:'Cells from the same individual are not independent observations. Must pseudobulk-aggregate first, using biological replicates as the unit of analysis.',q1_n:'Answer is C. This is the most common and serious statistical pitfall in scRNA-seq DE.'}};
-const QF=window._QF||{};document.querySelectorAll(".quiz-q").forEach((q,qi)=>{const ans=+q.dataset.answer;q.querySelectorAll(".quiz-opt").forEach(o=>{o.addEventListener("click",()=>{if(q.classList.contains("answered"))return;q.classList.add("answered");const fb=document.getElementById("fb"+(qi+1));const ok=+o.dataset.idx===ans;o.classList.add(ok?"correct":"wrong");if(!ok)q.querySelectorAll(".quiz-opt")[ans].classList.add("correct");const L=I18n.get();fb.className="quiz-feedback show "+(ok?"correct-fb":"wrong-fb");fb.textContent=(ok?"✅ ":"❌ ")+(QF[L]&&QF[L]["q"+(qi+1)+"_"+(ok?"y":"n")]||"");});});});
-</script></body></html>
+const volChart=new Chart(document.getElementById('volChart'),{type:'scatter',data:{datasets:[
+  {label:'Up',data:[],backgroundColor:'rgba(192,57,43,0.5)',pointRadius:3},
+  {label:'Down',data:[],backgroundColor:'rgba(41,128,185,0.5)',pointRadius:3},
+  {label:'NS',data:[],backgroundColor:'rgba(180,180,170,0.3)',pointRadius:2.5}
+]},options:{responsive:true,maintainAspectRatio:false,animation:false,
+  scales:{x:{min:-4,max:4,title:{display:true,text:'log2FC'}},y:{min:0,max:8,title:{display:true,text:'-log10(p_adj)'}}},
+  plugins:{legend:{position:'top'}}}});
+function upVol(){
+  const fcT=+document.getElementById('sliderFC').value/10;
+  const pT=+document.getElementById('sliderP').value/10;
+  document.getElementById('valFC').textContent=fcT.toFixed(1);
+  document.getElementById('valP').textContent=pT.toFixed(1);
+  const u=[],d=[],ns=[];
+  vG.forEach(g=>{const pt={x:g.fc,y:g.pv};if(g.pv>=pT&&g.fc>=fcT)u.push(pt);else if(g.pv>=pT&&g.fc<=-fcT)d.push(pt);else ns.push(pt);});
+  const L=I18n.get();const ul=L==='zh'?'上調':'Up',dl=L==='zh'?'下調':'Down',nl=L==='zh'?'不顯著':'NS';
+  document.getElementById('statUp').textContent=ul+': '+u.length;
+  document.getElementById('statDn').textContent=dl+': '+d.length;
+  document.getElementById('statNS').textContent=nl+': '+ns.length;
+  volChart.data.datasets[0].data=u;volChart.data.datasets[1].data=d;volChart.data.datasets[2].data=ns;
+  volChart.data.datasets[0].label=ul;volChart.data.datasets[1].label=dl;volChart.data.datasets[2].label=nl;
+  volChart.update('none');
+}
+['sliderFC','sliderP'].forEach(id=>document.getElementById(id).addEventListener('input',upVol));
+document.addEventListener('langchange',()=>{upVol();updateSim();});
+upVol();updateSim();
+
+// =============== Quiz ===============
+window._QF={
+ zh:{
+  q1_y:'同一個體的細胞並非獨立觀察值，必須先做 pseudobulk 聚合，以生物重複為分析單位。',
+  q1_n:'答案是 C。這是 scRNA-seq DE 分析中最常見也最嚴重的統計陷阱。',
+  q2_y:'多個生物重複時，pseudo-bulk + DESeq2 是目前 benchmark 上 FDR 控制最好的方法。',
+  q2_n:'答案是 B。Squair 2021 等多項 benchmark 證實 pseudo-bulk 是金標準。',
+  q3_y:'細胞數 < 10 的 cluster 沒有統計檢力，且容易被 outlier 主導，p-value 不可靠。',
+  q3_n:'答案是 C。應合併或排除小 cluster 後再做 DE。',
+  q4_y:'環境 RNA（soup）在富含高豐度基因的組織中很常見，需要 SoupX 或 CellBender 在 QC 階段清理。',
+  q4_n:'答案是 D。看到一個基因「處處表達」應該想到環境 RNA 污染。'
+ },
+ en:{
+  q1_y:'Cells from the same individual are not independent observations. Pseudo-bulk first; biological replicates are the unit of analysis.',
+  q1_n:'Answer is C. This is the most common and serious statistical pitfall in scRNA-seq DE.',
+  q2_y:'With biological replicates, pseudo-bulk + DESeq2 has the best FDR control on current benchmarks.',
+  q2_n:'Answer is B. Squair 2021 and other benchmarks established pseudo-bulk as the gold standard.',
+  q3_y:'Clusters with <10 cells have no statistical power and are easily driven by outliers — p-values are unreliable.',
+  q3_n:'Answer is C. Merge or exclude tiny clusters before DE.',
+  q4_y:'Ambient RNA (soup) is common in tissues with abundant lineage genes — clean with SoupX or CellBender during QC.',
+  q4_n:'Answer is D. A gene "expressed everywhere" should immediately raise ambient RNA suspicion.'
+ }
+};
+const QF=window._QF||{};
+document.querySelectorAll(".quiz-q").forEach((q,qi)=>{const ans=+q.dataset.answer;q.querySelectorAll(".quiz-opt").forEach(o=>{o.addEventListener("click",()=>{if(q.classList.contains("answered"))return;q.classList.add("answered");const fb=document.getElementById("fb"+(qi+1));const ok=+o.dataset.idx===ans;o.classList.add(ok?"correct":"wrong");if(!ok)q.querySelectorAll(".quiz-opt")[ans].classList.add("correct");const L=I18n.get();fb.className="quiz-feedback show "+(ok?"correct-fb":"wrong-fb");fb.textContent=(ok?"✅ ":"❌ ")+(QF[L]&&QF[L]["q"+(qi+1)+"_"+(ok?"y":"n")]||"");});});});
+</script>
+</body></html>

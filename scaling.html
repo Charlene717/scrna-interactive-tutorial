@@ -1,40 +1,392 @@
-<!DOCTYPE html><html lang="zh-Hant"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>scaling — scRNA-seq Tutorial</title><link rel="stylesheet" href="styles.css"></head><body>
-<nav class="top-nav"><div class="top-nav-inner"><a href="index.html" class="top-nav-brand"><span>🧬</span> <span data-zh="scRNA-seq 教學" data-en="scRNA-seq Tutorial">scRNA-seq 教學</span></a><ul class="top-nav-links"><li><a href="qc.html">QC</a></li><li><a href="normalization.html">Norm.</a></li><li><a href="variable-features.html">Features</a></li><li><a href="scaling.html" class=active>Scaling</a></li><li><a href="pca.html">PCA</a></li><li><a href="clustering.html">Clustering</a></li><li><a href="umap.html">UMAP</a></li><li><a href="annotation.html">Annot.</a></li><li><a href="differential-expression.html">DE</a></li><li><a href="integration.html">Integ.</a></li><li><a href="cellchat.html">CellChat</a></li><li><a href="trajectory.html">Traj.</a></li>
+<!DOCTYPE html><html lang="zh-Hant"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Step 4: Scaling — scRNA-seq Tutorial</title><link rel="stylesheet" href="styles.css"><script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script></head><body>
+<nav class="top-nav"><div class="top-nav-inner"><a href="index.html" class="top-nav-brand"><span>🧬</span> <span data-zh="scRNA-seq 教學" data-en="scRNA-seq Tutorial">scRNA-seq 教學</span></a><ul class="top-nav-links"><li><a href="qc.html">QC</a></li><li><a href="normalization.html">Norm.</a></li><li><a href="variable-features.html">Features</a></li><li><a href="scaling.html" class="active">Scaling</a></li><li><a href="pca.html">PCA</a></li><li><a href="clustering.html">Clustering</a></li><li><a href="umap.html">UMAP</a></li><li><a href="annotation.html">Annot.</a></li><li><a href="differential-expression.html">DE</a></li><li><a href="integration.html">Integ.</a></li><li><a href="cellchat.html">CellChat</a></li><li><a href="trajectory.html">Traj.</a></li>
     <li><a href="references/index.html" data-zh="📚 參考資料" data-en="📚 References">📚 參考資料</a></li>
   </ul></div></nav><div class="progress-bar-container"><div class="progress-bar" id="progressBar"></div></div>
-<header class="page-hero"><div class="step-badge">STEP 4 / 9</div><h1 data-zh="縮放 (Scaling)" data-en="Scaling">縮放 (Scaling)</h1><p class="subtitle" data-lang="zh">對基因進行 Z-score 標準化，讓每個基因在 PCA 中擁有平等的「發言權」。</p><p class="subtitle" data-lang="en">Z-score normalization gives every gene equal "voice" in PCA analysis.</p></header><main class="content-wrap">
-<section class="section"><div class="section-label" data-zh="核心概念" data-en="CONCEPT">核心概念</div><h2 data-zh="Scaling 在做什麼？" data-en="What does Scaling do?">Scaling 在做什麼？</h2>
-<div data-lang="zh"><p>經過 Normalization 後，不同基因的表達值範圍仍然差異極大——某些高表達結構蛋白基因可能是低表達轉錄因子的數百倍。如果直接送入 PCA，主成分將被高表達基因主導。</p><p><strong>Scaling 的解法：</strong>對每個基因執行 Z-score 標準化——減去平均值、除以標準差。這樣每個基因均值為 0、方差為 1，不論原始表達高低，都在同一個尺度上競爭。</p></div>
-<div data-lang="en"><p>After normalization, different genes still have vastly different expression ranges — some structural genes may be hundreds of times higher than transcription factors. Feeding this directly into PCA would let high-expression genes dominate.</p><p><strong>Scaling solution:</strong> Z-score each gene — subtract mean, divide by std. This makes every gene mean=0, variance=1, putting all genes on equal footing regardless of original expression level.</p></div>
-<div class="card-grid cols-2"><div class="card"><h4 data-zh="📐 數學公式" data-en="📐 Formula">📐 公式</h4><p style="font-family:var(--font-mono);text-align:center;padding:12px;font-size:1.1rem;">z = (x − μ) / σ</p><div data-lang="zh"><p>x = 某細胞某基因的表達值<br>μ = 該基因在所有細胞的平均值<br>σ = 該基因在所有細胞的標準差</p></div><div data-lang="en"><p>x = expression value of gene in a cell<br>μ = mean of that gene across all cells<br>σ = standard deviation across all cells</p></div></div>
-<div class="card"><h4 data-zh="⚠️ 與 Normalization 的差異" data-en="⚠️ Difference from Normalization">⚠️ 差異</h4><div data-lang="zh"><p><strong>Normalization</strong> 是「跨基因」操作——校正每個<em>細胞</em>的定序深度。<br><strong>Scaling</strong> 是「跨細胞」操作——讓每個<em>基因</em>在相近尺度上。<br>兩者互補，不可混淆。</p></div><div data-lang="en"><p><strong>Normalization</strong> works "across genes" — corrects each <em>cell's</em> sequencing depth.<br><strong>Scaling</strong> works "across cells" — equalizes each <em>gene's</em> scale.<br>They are complementary, not interchangeable.</p></div></div></div></section>
-<section class="section"><div class="section-label" data-zh="互動模擬" data-en="INTERACTIVE">互動模擬</div><h2 data-zh="Scaling 前後的比較" data-en="Before vs. After Scaling">Scaling 前後</h2>
-<div class="interactive-panel"><div class="toggle-row"><button class="toggle-btn active" id="btn-before" onclick="showS('before')"><span data-zh="Scaling 前" data-en="Before">Scaling 前</span></button><button class="toggle-btn" id="btn-after" onclick="showS('after')"><span data-zh="Scaling 後" data-en="After">Scaling 後</span></button></div>
-<div id="sDesc" style="font-size:.92rem;color:var(--c-ink-light);margin-bottom:12px;"></div><div class="chart-container" style="height:280px;"><canvas id="sChart"></canvas></div></div></section>
-<section class="section"><div class="section-label" data-zh="進階" data-en="ADVANCED">進階</div><h2 data-zh="可選：回歸技術變數" data-en="Optional: Regressing Out Variables">回歸技術變數</h2>
-<div data-lang="zh"><p>在 Scaling 步驟中可額外「回歸掉」不想要的變異來源，如粒線體比例、細胞週期分數、定序批次。</p></div><div data-lang="en"><p>During Scaling, you can optionally "regress out" unwanted variation sources: MT%, cell cycle scores, sequencing batch.</p></div>
-<div class="callout warn"><span class="callout-icon">⚠️</span><div><span data-lang="zh"><strong>謹慎使用。</strong>過度回歸可能移除真正的生物學訊號。例如研究細胞週期就不應回歸掉細胞週期分數。只回歸確定是純技術噪音的變數。</span><span data-lang="en"><strong>Use with caution.</strong> Over-regression may remove real biology. Don't regress cell cycle if studying it. Only regress variables confirmed as purely technical noise.</span></div></div></section>
-<section class="section"><div class="section-label" data-zh="程式碼" data-en="CODE">程式碼</div><h2 data-zh="實作範例" data-en="Code Examples">實作範例</h2>
+<header class="page-hero"><div class="step-badge">STEP 4 / 9</div>
+<h1 data-zh="縮放 (Scaling)" data-en="Scaling">縮放 (Scaling)</h1>
+<p class="subtitle" data-lang="zh">對基因進行 Z-score 標準化，讓每個基因在 PCA 中擁有平等的「發言權」。</p>
+<p class="subtitle" data-lang="en">Z-score normalization gives every gene equal "voice" in PCA analysis.</p></header>
+<main class="content-wrap">
+
+<!-- ===== Section 1: Why Scale ===== -->
+<section class="section"><div class="section-label" data-zh="概覽" data-en="OVERVIEW">概覽</div>
+<h2 data-zh="一、為什麼要 Scaling？" data-en="I. Why Scaling?">一、為什麼要 Scaling？</h2>
+<div data-lang="zh">
+<p>經過 Normalization 之後，不同基因的<strong>表達範圍仍差異極大</strong>——某些結構/核醣體基因可能均值仍在 5–8 區間，而轉錄因子或 marker 可能均值僅 0.1–0.5。如果直接送 PCA，前幾個主成分將被「高表達 + 高方差」的少數基因主導，<strong>真正帶有細胞型別訊號的 marker 基因被淹沒</strong>。</p>
+<p><strong>Scaling 在做什麼？</strong>對<strong>每一個基因</strong>做 Z-score 標準化（減均值、除以標準差），讓所有基因均值 0、變異數 1 的同一尺度上競爭。這樣 PCA 才是真正計算<strong>「協方差結構」</strong>，而不是「誰最亮」。</p>
+<p><strong>類比：</strong>想像你在比較 100 位歌手的「音域變化」。如果有人用日語唱、有人用英語唱、聲量還相差 10 倍，光看絕對音量比較不公平。先把每個人的音量都標準化（均值 0、變異 1）後再比「相對音域形狀」，才能找出歌唱風格的真實差異。Scaling 就是 PCA 的「音量標準化」。</p>
+</div>
+<div data-lang="en">
+<p>After Normalization, different genes still have <strong>vastly different expression ranges</strong> — some structural/ribosomal genes have means of 5–8, while transcription factors or markers may average 0.1–0.5. Feeding this into PCA directly lets the first few PCs be dominated by a few "bright + variable" genes, while <strong>real cell-type markers are buried</strong>.</p>
+<p><strong>What does Scaling do?</strong> Z-score each <strong>gene</strong> (subtract mean, divide by SD), placing all genes on the same scale: mean 0, variance 1. Now PCA truly captures <strong>covariance structure</strong>, not "which gene is brightest".</p>
+<p><strong>Analogy:</strong> Imagine comparing 100 singers' "range variation". If some sing in Japanese, some in English, with volumes differing 10×, absolute-volume comparison is unfair. First normalize everyone's volume (mean 0, var 1), then compare "relative pitch shape" — that's how you find real singing-style differences. Scaling is PCA's volume normalization.</p>
+</div>
+
+<div class="card-grid cols-2">
+<div class="card"><h4>📐 <span data-zh="數學公式" data-en="Formula">數學公式</span></h4>
+<p style="font-family:var(--font-mono);text-align:center;padding:12px;font-size:1.15rem;">z<sub>ij</sub> = (x<sub>ij</sub> − μ<sub>i</sub>) / σ<sub>i</sub></p>
+<div data-lang="zh"><p>x<sub>ij</sub> = 第 i 個基因在第 j 個細胞的 log-normalized 表達<br>μ<sub>i</sub>, σ<sub>i</sub> = 該基因跨所有細胞的均值與標準差<br><strong>注意：</strong>是「對基因」做 Z-score，不是對細胞。</p></div>
+<div data-lang="en"><p>x<sub>ij</sub> = log-normalized expression of gene i in cell j<br>μ<sub>i</sub>, σ<sub>i</sub> = mean and SD across all cells for that gene<br><strong>Note:</strong> Z-score is per-gene, not per-cell.</p></div></div>
+
+<div class="card"><h4>🆚 <span data-zh="與 Normalization 差異" data-en="Difference from Normalization">與 Normalization 差異</span></h4>
+<div data-lang="zh"><p><strong>Normalization：</strong>「跨基因」操作——校正每個<em>細胞</em>的深度。<br><strong>Scaling：</strong>「跨細胞」操作——讓每個<em>基因</em>同尺度。<br>兩者<strong>方向正交</strong>、互補不可替代。</p></div>
+<div data-lang="en"><p><strong>Normalization:</strong> "across genes" — corrects each <em>cell's</em> depth.<br><strong>Scaling:</strong> "across cells" — equalizes each <em>gene's</em> scale.<br>They are <strong>orthogonal</strong> and complementary.</p></div></div>
+</div>
+</section>
+
+<!-- ===== Section 2: Math ===== -->
+<section class="section"><div class="section-label" data-zh="數學細節" data-en="MATH">數學細節</div>
+<h2 data-zh="二、為什麼 PCA 之前一定要中心化？" data-en="II. Why must PCA be preceded by mean-centering?">二、為什麼 PCA 之前一定要中心化？</h2>
+<div data-lang="zh">
+<p>PCA 找的是<strong>變異最大的方向</strong>，數學上是<strong>協方差矩陣的特徵向量</strong>。協方差定義是 cov(X, Y) = E[(X − μ<sub>X</sub>)(Y − μ<sub>Y</sub>)]——<strong>必須先減均值</strong>，否則計算出來的不是「變異」而是「原點偏離量」，PC1 會直接指向資料雲的「重心」方向，不帶任何結構訊息。</p>
+<p>除均值還要除 SD 的原因：若不除，<strong>variance 大的基因會自動贏</strong>——而 variance 又跟 mean 高度相關（單細胞數據）。Scaling 把兩者都歸一化，留下的才是「不同細胞之間誰一起高、誰一起低」的結構訊號。</p>
+<p style="font-family:var(--font-mono);font-size:.9rem;background:var(--c-bg-alt);padding:10px;border-radius:6px;margin-top:8px;">
+PCA before scaling: 第一個 PC ≈ 高均值高方差基因的方向（無生物意義）<br>
+PCA after scaling: 第一個 PC ≈ 細胞型別 / 狀態間的最大協變方向 ✓
+</p>
+<p><strong>Seurat 的選擇：</strong>預設只 scale <strong>HVG</strong>（節省時間 + 記憶體），存於 <code>scale.data</code>。視覺化 heatmap 若想看 non-HVG，需顯式指定 <code>features=...</code> 重新 scale 才有完整 scale.data。</p>
+<p><strong>Scanpy：</strong><code>sc.pp.scale()</code> 對 .X 全部基因做 in-place 標準化，並支援 <code>max_value=10</code> 把極端值 clip 到 ±10（避免 outlier 主導 PCA）。</p>
+</div>
+<div data-lang="en">
+<p>PCA finds <strong>directions of maximum variance</strong>, mathematically the eigenvectors of the covariance matrix. Covariance is cov(X, Y) = E[(X − μ<sub>X</sub>)(Y − μ<sub>Y</sub>)] — <strong>mean must be subtracted</strong>; otherwise we compute "deviation from origin" rather than variance, and PC1 just points at the data cloud's centroid with no structural information.</p>
+<p>Why also divide by SD: without it, <strong>genes with larger variance automatically win</strong> — and variance correlates strongly with mean in single-cell data. Scaling normalizes both, leaving only the "who-co-varies-with-whom" structural signal.</p>
+<p style="font-family:var(--font-mono);font-size:.9rem;background:var(--c-bg-alt);padding:10px;border-radius:6px;margin-top:8px;">
+PCA before scaling: PC1 ≈ direction of high-mean high-variance genes (no biology)<br>
+PCA after scaling: PC1 ≈ largest covariation between cell types / states ✓
+</p>
+<p><strong>Seurat default:</strong> only scales <strong>HVG</strong> (saves time + memory), stored in <code>scale.data</code>. To view non-HVG in heatmaps, explicitly pass <code>features=...</code> to re-scale and produce a complete scale.data.</p>
+<p><strong>Scanpy:</strong> <code>sc.pp.scale()</code> standardizes all genes in <code>.X</code> in place; supports <code>max_value=10</code> to clip extreme values to ±10 (prevents outliers from dominating PCA).</p>
+</div>
+
+<div class="callout tip"><span class="callout-icon">💡</span><div>
+<span data-lang="zh"><strong>記憶口訣：</strong>Normalization 校正「行（細胞）」、Scaling 校正「列（基因）」、Regression 校正「特定變數」。三者方向正交，可同時使用但不要弄混順序：<strong>normalize → HVG → scale (+ regress) → PCA</strong>。</span>
+<span data-lang="en"><strong>Mnemonic:</strong> Normalization corrects "rows (cells)", Scaling corrects "columns (genes)", Regression corrects "specific variables". Orthogonal — can be combined but never mix the order: <strong>normalize → HVG → scale (+ regress) → PCA</strong>.</span>
+</div></div>
+
+</section>
+
+<!-- ===== Section 3: ScaleData details ===== -->
+<section class="section"><div class="section-label" data-zh="細節" data-en="DETAILS">細節</div>
+<h2 data-zh="三、ScaleData 的關鍵參數" data-en="III. ScaleData Key Parameters">三、ScaleData 細節</h2>
+
+<table class="comp-table"><thead><tr>
+<th data-zh="參數" data-en="Parameter">參數</th>
+<th data-zh="預設" data-en="Default">預設</th>
+<th data-zh="作用" data-en="Effect">作用</th>
+<th data-zh="何時調整" data-en="When to change">何時調整</th>
+</tr></thead><tbody>
+<tr><td><code>features</code></td>
+<td>VariableFeatures(obj)</td>
+<td data-lang="zh">指定要 scale 的基因</td>
+<td data-lang="zh">畫 heatmap 看 non-HVG 時改 <code>features=all.genes</code></td>
+<td data-lang="en">Genes to scale</td>
+<td data-lang="en">For heatmap of non-HVG: pass <code>features=all.genes</code></td></tr>
+
+<tr><td><code>vars.to.regress</code></td>
+<td>NULL</td>
+<td data-lang="zh">在 scale 時迴歸掉指定變數</td>
+<td data-lang="zh">想移除 percent.mt、cell cycle、batch 影響時</td>
+<td data-lang="en">Variables regressed out during scaling</td>
+<td data-lang="en">When removing percent.mt, cell cycle, batch effects</td></tr>
+
+<tr><td><code>split.by</code></td>
+<td>NULL</td>
+<td data-lang="zh">按某 metadata 分組各自 scale</td>
+<td data-lang="zh">有極大 batch 差異時可分組</td>
+<td data-lang="en">Scale per group of metadata</td>
+<td data-lang="en">Use when large batch differences exist</td></tr>
+
+<tr><td><code>do.scale</code> / <code>do.center</code></td>
+<td>TRUE / TRUE</td>
+<td data-lang="zh">是否除 SD / 是否減均值</td>
+<td data-lang="zh">通常不改；可用於 debugging</td>
+<td data-lang="en">Whether to /SD and to subtract mean</td>
+<td data-lang="en">Usually keep TRUE; for debugging only</td></tr>
+
+<tr><td><code>scale.max</code></td>
+<td>10</td>
+<td data-lang="zh">Z-score 上限 clip</td>
+<td data-lang="zh">極稀疏資料可降到 6–8</td>
+<td data-lang="en">Z-score clip ceiling</td>
+<td data-lang="en">Lower to 6–8 for very sparse data</td></tr>
+</tbody></table>
+
+<div class="card-grid cols-2" style="margin-top:14px;">
+<div class="card"><h4>🩻 <span data-zh="HVG only vs. all genes" data-en="HVG only vs. all genes">HVG only vs. 全基因</span></h4>
+<div data-lang="zh"><p><strong>HVG only（預設）：</strong>足夠跑 PCA / Clustering / UMAP，省 80% 記憶體與時間。<br><strong>全基因：</strong>畫 DoHeatmap 想看 non-HVG marker、或想跑 FeaturePlot 顯示 scaled value 時才需要。</p></div>
+<div data-lang="en"><p><strong>HVG only (default):</strong> Sufficient for PCA / Clustering / UMAP; saves 80% memory and time.<br><strong>All genes:</strong> Needed only when DoHeatmap shows non-HVG markers or FeaturePlot needs scaled values.</p></div></div>
+
+<div class="card"><h4>🔧 <span data-zh="regress 哪些變數？" data-en="Which vars to regress?">回歸哪些變數？</span></h4>
+<div data-lang="zh"><p><strong>常見回歸：</strong>percent.mt（死細胞影響）、nCount_RNA（深度殘餘）。<br><strong>視研究目的：</strong>S.Score / G2M.Score（不研究週期才回歸）、batch（建議改用 Integration）。<br><strong>不要回歸：</strong>nFeature_RNA（與 nCount 高度相關）。</p></div>
+<div data-lang="en"><p><strong>Common:</strong> percent.mt (dead-cell influence), nCount_RNA (residual depth).<br><strong>Study-dependent:</strong> S.Score / G2M.Score (only if not studying cycle); batch (Integration is better).<br><strong>Don't regress:</strong> nFeature_RNA (highly correlated with nCount).</p></div></div>
+</div>
+</section>
+
+<!-- ===== Section 4: Interactive ===== -->
+<section class="section"><div class="section-label" data-zh="互動模擬" data-en="INTERACTIVE">互動模擬</div>
+<h2 data-zh="四、Scaling 對 PCA 的視覺效果" data-en="IV. Visual Effect on PCA">四、互動：Scaling 對 PCA 的視覺效果</h2>
+<div data-lang="zh"><p>下方第一個互動展示<strong>單一基因 scaling 前後的分佈差異</strong>；第二個是<strong>兩基因 PCA 模擬器</strong>——拖動「Gene A : Gene B 變異比例」滑桿，觀察 PC1 從「被 high-variance 基因主導」到「scaling 後平衡」的轉變。</p></div>
+<div data-lang="en"><p>The first interactive shows <strong>per-gene distribution before and after scaling</strong>; the second is a <strong>two-gene PCA simulator</strong> — drag the "Gene A vs. Gene B variance ratio" slider to watch PC1 shift from "dominated by high-variance gene" (pre-scale) to "balanced" (post-scale).</p></div>
+
+<div class="interactive-panel">
+<div class="toggle-row">
+<button class="toggle-btn active" id="btn-before" onclick="showS('before')"><span data-zh="Scaling 前" data-en="Before">Scaling 前</span></button>
+<button class="toggle-btn" id="btn-after" onclick="showS('after')"><span data-zh="Scaling 後" data-en="After">Scaling 後</span></button>
+</div>
+<div id="sDesc" style="font-size:.92rem;color:var(--c-ink-light);margin-bottom:12px;"></div>
+<div class="chart-container" style="height:260px;"><canvas id="sChart"></canvas></div>
+</div>
+
+<div class="interactive-panel" style="margin-top:18px;">
+<div style="font-size:.92rem;color:var(--c-ink-light);margin-bottom:6px;"><span data-zh="② 兩基因 PCA 模擬器：拖動滑桿觀察 high-variance 基因如何「綁架」PC1" data-en="② Two-gene PCA simulator: see how a high-variance gene 'hijacks' PC1">② 兩基因 PCA 模擬器</span></div>
+<div class="slider-group"><label><span data-zh="Gene A : Gene B 變異比例" data-en="Gene A : Gene B variance ratio">A : B 變異比例</span> <span id="valSd">5.0×</span></label><input type="range" id="sliderSd" min="10" max="100" value="50" step="2"></div>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px;margin-top:14px;">
+  <div><div style="font-size:.82rem;font-weight:600;text-align:center;margin-bottom:4px;color:var(--c-ink-light);"><span data-zh="① Scaling 前：兩基因散佈 + PC1 方向" data-en="① Before scale: 2-gene scatter + PC1">① Scale 前</span></div><div class="chart-container" style="height:240px;"><canvas id="pcaBefore"></canvas></div></div>
+  <div><div style="font-size:.82rem;font-weight:600;text-align:center;margin-bottom:4px;color:var(--c-ink-light);"><span data-zh="② Scaling 後：兩基因散佈 + PC1 方向" data-en="② After scale: 2-gene scatter + PC1">② Scale 後</span></div><div class="chart-container" style="height:240px;"><canvas id="pcaAfter"></canvas></div></div>
+</div>
+<p style="font-size:.78rem;color:var(--c-ink-muted);text-align:center;margin-top:6px;"><span data-zh="紅 = 細胞群 1；藍 = 細胞群 2；黑線 = PC1 方向。Scaling 前 PC1 沿 Gene A 軸；Scaling 後 PC1 真正區隔兩群。" data-en="Red = cell group 1; blue = cell group 2; black line = PC1 direction. Pre-scale: PC1 follows Gene A. Post-scale: PC1 truly separates groups.">紅藍 = 兩細胞群；黑線 = PC1。Scale 前 PC1 沿高變異基因軸；Scale 後 PC1 區隔兩群。</span></p>
+</div>
+</section>
+
+<!-- ===== Section 5: Code ===== -->
+<section class="section"><div class="section-label" data-zh="程式碼" data-en="CODE">程式碼</div>
+<h2 data-zh="五、實作範例" data-en="V. Code Examples">五、實作範例</h2>
 <div class="code-tabs"><div class="code-tab-btns"><button class="code-tab-btn active" onclick="switchTab(this,'r1')">R / Seurat</button><button class="code-tab-btn" onclick="switchTab(this,'py1')">Python / Scanpy</button></div>
-<div class="code-tab-content active" id="r1"><pre><span class="comment"># 基本 Scaling</span>
+
+<div class="code-tab-content active" id="r1"><pre><span class="comment"># ===== Seurat: 三種常見寫法 =====</span>
+
+<span class="comment"># A. 最基本：scale 預設 HVG</span>
 pbmc &lt;- <span class="func">ScaleData</span>(pbmc)
-<span class="comment"># 進階：回歸 MT% 和細胞週期</span>
-pbmc &lt;- <span class="func">ScaleData</span>(pbmc, vars.to.regress = <span class="func">c</span>(<span class="str">"percent.mt"</span>, <span class="str">"S.Score"</span>, <span class="str">"G2M.Score"</span>))
-<span class="comment"># 注意：若使用 SCTransform，此步驟已自動完成</span></pre></div>
-<div class="code-tab-content" id="py1"><pre>sc.pp.scale(adata, max_value=<span class="num">10</span>)
-<span class="comment"># 進階：回歸</span>
-sc.pp.regress_out(adata, [<span class="str">"pct_counts_mt"</span>])
-sc.pp.scale(adata, max_value=<span class="num">10</span>)</pre></div></div>
-<div class="callout tip"><span class="callout-icon">💡</span><div><span data-lang="zh"><strong>SCTransform 使用者注意：</strong>SCTransform 的輸出已等同完成 Normalization + Feature Selection + Scaling，可直接跳到 PCA。</span><span data-lang="en"><strong>SCTransform users:</strong> SCTransform output already includes Normalization + Feature Selection + Scaling. Skip directly to PCA.</span></div></div></section>
-<nav class="page-nav"><a href="variable-features.html"><span class="nav-dir" data-zh="← 上一步" data-en="← Previous">← 上一步</span><span class="nav-title" data-zh="Step 3：HVG" data-en="Step 3: HVG">Step 3：HVG</span></a><a href="pca.html"><span class="nav-dir" data-zh="下一步 →" data-en="Next →">下一步 →</span><span class="nav-title" data-zh="Step 5：PCA" data-en="Step 5: PCA">Step 5：PCA</span></a></nav></main>
+<span class="comment"># 結果存於 pbmc[["RNA"]]@scale.data</span>
+
+<span class="comment"># B. 想 heatmap 看全基因：scale 全部</span>
+all.genes &lt;- <span class="func">rownames</span>(pbmc)
+pbmc &lt;- <span class="func">ScaleData</span>(pbmc, features = all.genes)
+
+<span class="comment"># C. 進階：回歸技術變數</span>
+pbmc &lt;- <span class="func">CellCycleScoring</span>(pbmc, s.features = s.genes, g2m.features = g2m.genes)
+pbmc &lt;- <span class="func">ScaleData</span>(pbmc,
+  vars.to.regress = <span class="func">c</span>(<span class="str">"percent.mt"</span>, <span class="str">"S.Score"</span>, <span class="str">"G2M.Score"</span>),
+  features = <span class="func">VariableFeatures</span>(pbmc))
+
+<span class="comment"># 確認 scale.data 的尺度</span>
+<span class="func">apply</span>(<span class="func">GetAssayData</span>(pbmc, <span class="str">"scale.data"</span>)[<span class="num">1</span>:<span class="num">5</span>,], <span class="num">1</span>, mean)  <span class="comment"># 應接近 0</span>
+<span class="func">apply</span>(<span class="func">GetAssayData</span>(pbmc, <span class="str">"scale.data"</span>)[<span class="num">1</span>:<span class="num">5</span>,], <span class="num">1</span>, sd)    <span class="comment"># 應接近 1</span>
+
+<span class="comment"># ⚠ 使用 SCTransform 者不需再呼叫 ScaleData——SCT@scale.data 已存在</span></pre></div>
+
+<div class="code-tab-content" id="py1"><pre><span class="kw">import</span> scanpy <span class="kw">as</span> sc
+
+<span class="comment"># ===== Scanpy: 三種常見寫法 =====</span>
+
+<span class="comment"># A. 最基本：clip 至 ±10 防 outlier</span>
+sc.pp.scale(adata, max_value=<span class="num">10</span>)
+
+<span class="comment"># B. 進階：先 regress_out，再 scale</span>
+sc.pp.regress_out(adata, [<span class="str">"pct_counts_mt"</span>, <span class="str">"total_counts"</span>])
+sc.pp.scale(adata, max_value=<span class="num">10</span>)
+
+<span class="comment"># C. 細胞週期回歸（可選）</span>
+sc.tl.score_genes_cell_cycle(adata,
+    s_genes=s_genes, g2m_genes=g2m_genes)
+sc.pp.regress_out(adata, [<span class="str">"S_score"</span>, <span class="str">"G2M_score"</span>])
+sc.pp.scale(adata, max_value=<span class="num">10</span>)
+
+<span class="comment"># 驗證</span>
+<span class="kw">import</span> numpy <span class="kw">as</span> np
+np.mean(adata.X, axis=<span class="num">0</span>)[:<span class="num">5</span>]   <span class="comment"># ≈ 0</span>
+np.std(adata.X, axis=<span class="num">0</span>)[:<span class="num">5</span>]    <span class="comment"># ≈ 1</span>
+
+<span class="comment"># ⚠ scale 之後一定要先 PCA，不要再做 normalize/log</span>
+sc.tl.pca(adata, n_comps=<span class="num">50</span>)</pre></div>
+</div>
+</section>
+
+<!-- ===== Section 6: Best Practices ===== -->
+<section class="section"><div class="section-label" data-zh="最佳實務" data-en="BEST PRACTICES">最佳實務</div>
+<h2 data-zh="六、最佳實務" data-en="VI. Best Practices">六、最佳實務</h2>
+<div class="card-grid cols-2">
+
+<div class="card"><h4>🎚️ <span data-zh="max_value clip 用 10" data-en="Set max_value=10">max_value=10</span></h4>
+<div data-lang="zh"><p>把 Z-score 超過 ±10 的值 clip 掉。避免極少數細胞 outlier（&gt; 50 SD）綁架 PCA。Seurat <code>scale.max=10</code>、Scanpy <code>max_value=10</code> 皆為公認標準。</p></div>
+<div data-lang="en"><p>Clip Z-scores beyond ±10. Prevents a tiny outlier (&gt; 50 SD) from hijacking PCA. Both Seurat <code>scale.max=10</code> and Scanpy <code>max_value=10</code> are standard.</p></div></div>
+
+<div class="card"><h4>🛑 <span data-zh="整合前不要 scale" data-en="Don't scale before integration">整合前不要 scale</span></h4>
+<div data-lang="zh"><p>Harmony / RPCA / scVI 流程中，scaling 通常在整合<strong>之後</strong>進行，或由整合演算法內部完成（scVI 在隱空間直接消除批次）。預先 scale 會固化批次差異。</p></div>
+<div data-lang="en"><p>For Harmony / RPCA / scVI workflows, scaling typically happens <strong>after</strong> integration, or is handled internally (scVI removes batch in latent space). Pre-scaling locks in batch differences.</p></div></div>
+
+<div class="card"><h4>🧬 <span data-zh="細胞週期：研究目的決定" data-en="Cell cycle: study-driven">細胞週期看研究目的</span></h4>
+<div data-lang="zh"><p>研究發育、分化、增殖細胞群：<strong>不要</strong>回歸週期分數；它們本身就是生物學主軸。研究組織異質性、罕見細胞型別：可回歸以避免 cluster 按週期切分。</p></div>
+<div data-lang="en"><p>Studying development, differentiation, proliferation: <strong>don't</strong> regress cycle scores — they are biological axes. Studying tissue heterogeneity, rare types: regress to avoid clusters split by cycle.</p></div></div>
+
+<div class="card"><h4>💾 <span data-zh="記憶體爆炸怎麼辦" data-en="Memory blowup mitigation">記憶體不足對策</span></h4>
+<div data-lang="zh"><p>scale.data 是 dense matrix，10 萬細胞 × 2 萬基因約 15 GB。對策：(1) 預設 HVG only；(2) Seurat v5 用 BPCells on-disk；(3) 改用 Scanpy + dask。</p></div>
+<div data-lang="en"><p>scale.data is dense; 100k cells × 20k genes ≈ 15 GB. Mitigation: (1) HVG only by default; (2) Seurat v5 BPCells on-disk; (3) Scanpy + dask.</p></div></div>
+
+<div class="card"><h4>📈 <span data-zh="驗證 scale 是否成功" data-en="Validate scaling">驗證 scale</span></h4>
+<div data-lang="zh"><p>挑 5 個基因檢查 row mean ≈ 0、row sd ≈ 1。若不符通常代表 scale 沒跑或被覆蓋。Seurat 也提供 <code>rowMeans</code> 視覺化。</p></div>
+<div data-lang="en"><p>Check row mean ≈ 0 and row SD ≈ 1 on 5 genes. Mismatch usually means scaling wasn't run or was overwritten. Seurat offers <code>rowMeans</code> for visualization.</p></div></div>
+
+<div class="card"><h4>🚦 <span data-zh="SCTransform 流程的差異" data-en="SCTransform workflow">SCTransform 流程</span></h4>
+<div data-lang="zh"><p>SCTransform 已內建 scaling（產出 Pearson residuals），<strong>不要再呼叫 ScaleData</strong>。直接 <code>RunPCA</code>。若 RNA assay 也想用 DE，請另外切回去做 NormalizeData，不需 scale。</p></div>
+<div data-lang="en"><p>SCTransform builds in scaling (Pearson residuals). <strong>Do not call ScaleData</strong>; go directly to <code>RunPCA</code>. For RNA-assay DE, switch back and run NormalizeData; no scaling needed.</p></div></div>
+
+</div>
+</section>
+
+<!-- ===== Section 7: Pitfalls ===== -->
+<section class="section"><div class="section-label" data-zh="常見陷阱" data-en="PITFALLS">陷阱</div>
+<h2 data-zh="七、常見陷阱與 Troubleshooting" data-en="VII. Common Pitfalls & Troubleshooting">七、常見陷阱</h2>
+
+<div class="callout warn"><span class="callout-icon">⚠️</span><div>
+<div data-lang="zh"><strong>Scaling 階段最常見的 5 個錯誤：</strong><br>① <strong>忘了 scale 就跑 PCA</strong>——Seurat <code>RunPCA</code> 會警告並只用未 scaled 數據，Scanpy <code>sc.tl.pca</code> 卻不會警告，直接得到「PC1 = library size」的災難結果。<br>② <strong>vars.to.regress 把生物訊號回歸掉</strong>——研究 T cell exhaustion 卻回歸了 G2M.Score。<br>③ <strong>SCTransform 後又呼叫 ScaleData</strong>——雙重 scale 把 Pearson residual 進一步壓縮，分群崩潰。<br>④ <strong>整合前 scale</strong>——固化批次差異，Harmony 拉不開。<br>⑤ <strong>scale.data 找不到（在重新讀 RDS 後）</strong>——scale.data 不被 saveRDS 完整保留，需重跑 ScaleData。</div>
+<div data-lang="en"><strong>Top 5 Scaling-stage mistakes:</strong><br>① <strong>Running PCA without scaling</strong> — Seurat <code>RunPCA</code> warns and falls back; Scanpy <code>sc.tl.pca</code> doesn't warn and silently gives the disaster "PC1 = library size".<br>② <strong>vars.to.regress wipes biological signal</strong> — studying T-cell exhaustion but regressing G2M.Score.<br>③ <strong>ScaleData after SCTransform</strong> — double scaling compresses Pearson residuals further; clustering breaks.<br>④ <strong>Scaling before integration</strong> — bakes in batch effects; Harmony can't separate.<br>⑤ <strong>scale.data missing after re-loading RDS</strong> — scale.data isn't fully preserved by saveRDS; re-run ScaleData.</div>
+</div></div>
+
+<div class="card-grid cols-2">
+
+<div class="card"><h4>🚨 <span data-zh="Scanpy: PC1 = total_counts" data-en="Scanpy: PC1 = total_counts">Scanpy PC1=深度</span></h4>
+<div data-lang="zh"><p><strong>原因：</strong>未跑 <code>sc.pp.scale()</code> 或順序錯誤。<br><strong>修正：</strong>確保流程是 normalize → log1p → HVG → scale → PCA。檢查 <code>adata.X</code> 的 row means 是否約等 0。</p></div>
+<div data-lang="en"><p><strong>Cause:</strong> <code>sc.pp.scale()</code> not called or wrong order.<br><strong>Fix:</strong> Ensure order: normalize → log1p → HVG → scale → PCA. Check <code>adata.X</code> row means ≈ 0.</p></div></div>
+
+<div class="card"><h4>🚨 <span data-zh="回歸後 cluster 數驟減" data-en="Clusters collapse after regress_out">回歸後 cluster 變少</span></h4>
+<div data-lang="zh"><p><strong>原因：</strong>vars.to.regress 把生物變異一起移除（最常見是錯回歸 cell cycle）。<br><strong>修正：</strong>移除該變數重試；或先 PCA 不回歸看清楚分群，再決定要不要回歸。</p></div>
+<div data-lang="en"><p><strong>Cause:</strong> vars.to.regress removed biological variance (often cell cycle).<br><strong>Fix:</strong> Remove that variable; or PCA without regression first, then decide if regression is needed.</p></div></div>
+
+<div class="card"><h4>🚨 <span data-zh="Seurat：scale.data 找不到 gene" data-en="Seurat: gene not in scale.data">scale.data 缺基因</span></h4>
+<div data-lang="zh"><p><strong>原因：</strong>預設只 scale HVG，DoHeatmap 想看非 HVG marker 會報空白。<br><strong>修正：</strong><code>ScaleData(obj, features=rownames(obj))</code> 跑一次（記憶體允許下）。</p></div>
+<div data-lang="en"><p><strong>Cause:</strong> Default scales only HVG; DoHeatmap on non-HVG markers gives blanks.<br><strong>Fix:</strong> Run <code>ScaleData(obj, features=rownames(obj))</code> once (memory permitting).</p></div></div>
+
+<div class="card"><h4>🚨 <span data-zh="SCT assay 找不到 scale.data" data-en="SCT scale.data missing">SCT scale.data 不見</span></h4>
+<div data-lang="zh"><p><strong>原因：</strong>SCTransform 預設只在 var.features 上產 scale.data。<br><strong>修正：</strong>顯式 <code>SCTransform(..., return.only.var.genes=FALSE)</code>，但會大幅增加記憶體。</p></div>
+<div data-lang="en"><p><strong>Cause:</strong> SCTransform produces scale.data only for var.features by default.<br><strong>Fix:</strong> Pass <code>return.only.var.genes=FALSE</code>; memory usage will spike.</p></div></div>
+
+<div class="card"><h4>🚨 <span data-zh="ScaleData 跑超慢" data-en="ScaleData very slow">ScaleData 很慢</span></h4>
+<div data-lang="zh"><p><strong>原因：</strong>vars.to.regress 啟用後使用 linear model，大樣本極耗時。<br><strong>修正：</strong>(1) Seurat 設 <code>model.use='linear'</code> 已最快；(2) 不要對全基因加回歸；(3) 改用 SCTransform 內建回歸。</p></div>
+<div data-lang="en"><p><strong>Cause:</strong> vars.to.regress runs linear models — slow on large data.<br><strong>Fix:</strong> (1) <code>model.use='linear'</code> is already fastest; (2) don't regress on all genes; (3) use SCTransform's built-in regression instead.</p></div></div>
+
+<div class="card"><h4>🚨 <span data-zh="二次讀檔 scale.data 為空" data-en="scale.data empty after reload">重讀檔 scale.data 空</span></h4>
+<div data-lang="zh"><p><strong>原因：</strong>有些 saveRDS 工具或 conversion 流程不保留 dense scale.data。<br><strong>修正：</strong>讀檔後重跑 <code>ScaleData()</code>，或改存 .qs 格式（qs::qsave 較完整）。</p></div>
+<div data-lang="en"><p><strong>Cause:</strong> Some saveRDS or conversion flows drop dense scale.data.<br><strong>Fix:</strong> Re-run <code>ScaleData()</code> after reload, or use qs::qsave for fuller preservation.</p></div></div>
+
+</div>
+</section>
+
+<!-- ===== Quiz ===== -->
+<section class="quiz-section"><h3>📝 <span data-zh="自我檢測" data-en="Self-Check">自我檢測</span></h3>
+<div class="quiz-q" data-answer="1"><p data-lang="zh">1. 為什麼 PCA 之前要做 Z-score scaling？</p><p data-lang="en">1. Why do Z-score scaling before PCA?</p>
+<div class="quiz-options">
+<div class="quiz-opt" data-idx="0"><span data-lang="zh">A. 把所有值縮到 [0, 1]</span><span data-lang="en">A. Squash all values into [0,1]</span></div>
+<div class="quiz-opt" data-idx="1"><span data-lang="zh">B. 讓每個基因均值 0、變異 1，避免 high-mean/high-var 基因主導 PC</span><span data-lang="en">B. Make every gene mean=0, var=1 to prevent high-mean/high-variance genes from dominating PCs</span></div>
+<div class="quiz-opt" data-idx="2"><span data-lang="zh">C. 讓基因表達服從常態</span><span data-lang="en">C. Make gene expression normal-distributed</span></div>
+<div class="quiz-opt" data-idx="3"><span data-lang="zh">D. 移除批次效應</span><span data-lang="en">D. Remove batch effects</span></div>
+</div><div class="quiz-feedback" id="fb1"></div></div>
+
+<div class="quiz-q" data-answer="2"><p data-lang="zh">2. 研究 T cell exhaustion 與分化軌跡時，最不該回歸的變數是？</p><p data-lang="en">2. When studying T-cell exhaustion / differentiation trajectory, which variable should NOT be regressed out?</p>
+<div class="quiz-options">
+<div class="quiz-opt" data-idx="0"><span data-lang="zh">A. percent.mt</span><span data-lang="en">A. percent.mt</span></div>
+<div class="quiz-opt" data-idx="1"><span data-lang="zh">B. nCount_RNA</span><span data-lang="en">B. nCount_RNA</span></div>
+<div class="quiz-opt" data-idx="2"><span data-lang="zh">C. S.Score / G2M.Score（細胞週期分數）</span><span data-lang="en">C. S.Score / G2M.Score (cell cycle)</span></div>
+<div class="quiz-opt" data-idx="3"><span data-lang="zh">D. 全部都該回歸</span><span data-lang="en">D. Regress out all of them</span></div>
+</div><div class="quiz-feedback" id="fb2"></div></div>
+
+<div class="quiz-q" data-answer="0"><p data-lang="zh">3. 跑完 SCTransform 後，正確的 PCA 流程是？</p><p data-lang="en">3. After SCTransform, what's the correct PCA workflow?</p>
+<div class="quiz-options">
+<div class="quiz-opt" data-idx="0"><span data-lang="zh">A. 直接 RunPCA()——SCT 已內建 scaling</span><span data-lang="en">A. Run RunPCA() directly — SCT has built-in scaling</span></div>
+<div class="quiz-opt" data-idx="1"><span data-lang="zh">B. 再跑一次 ScaleData() 再 RunPCA()</span><span data-lang="en">B. Re-run ScaleData() then RunPCA()</span></div>
+<div class="quiz-opt" data-idx="2"><span data-lang="zh">C. 先 NormalizeData() 再 RunPCA()</span><span data-lang="en">C. Run NormalizeData() then RunPCA()</span></div>
+<div class="quiz-opt" data-idx="3"><span data-lang="zh">D. 跳過 PCA 直接 UMAP</span><span data-lang="en">D. Skip PCA, go straight to UMAP</span></div>
+</div><div class="quiz-feedback" id="fb3"></div></div>
+</section>
+
+<nav class="page-nav"><a href="variable-features.html"><span class="nav-dir" data-zh="← 上一步" data-en="← Previous">← 上一步</span><span class="nav-title" data-zh="Step 3：HVG" data-en="Step 3: HVG">Step 3：HVG</span></a><a href="pca.html"><span class="nav-dir" data-zh="下一步 →" data-en="Next →">下一步 →</span><span class="nav-title" data-zh="Step 5：PCA" data-en="Step 5: PCA">Step 5：PCA</span></a></nav>
+</main>
 <footer class="site-footer">© Charlene — scRNA-seq Interactive Tutorial</footer>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script><script src="i18n.js"></script><script>
+<script src="i18n.js"></script>
+<script>
 window.addEventListener("scroll",()=>{const h=document.documentElement;document.getElementById("progressBar").style.width=(h.scrollTop/(h.scrollHeight-h.clientHeight))*100+"%";});
 function switchTab(b,id){const p=b.closest(".code-tabs");p.querySelectorAll(".code-tab-btn").forEach(x=>x.classList.remove("active"));p.querySelectorAll(".code-tab-content").forEach(x=>x.classList.remove("active"));b.classList.add("active");document.getElementById(id).classList.add("active");}
 
+// === Bar chart: before vs. after ===
 const sd={before:{labels:['MALAT1','FTL','RPL13','CD3D','IL7R','GZMB','FOXP3','BCL11B'],data:[8.2,6.1,5.5,2.8,1.9,0.8,0.3,0.1],color:'rgba(192,57,43,0.6)'},after:{labels:['MALAT1','FTL','RPL13','CD3D','IL7R','GZMB','FOXP3','BCL11B'],data:[1.8,1.2,0.9,0.4,-0.2,-0.8,-1.3,-1.8],color:'rgba(26,107,90,0.6)'}};
-const sChart=new Chart(document.getElementById('sChart'),{type:'bar',data:{labels:sd.before.labels,datasets:[{data:sd.before.data,backgroundColor:sd.before.color,borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,animation:false,indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{title:{display:true,text:'Expression'}}}}});
-let curS='before';function showS(k){curS=k;['before','after'].forEach(x=>document.getElementById('btn-'+x).classList.toggle('active',x===k));const d=sd[k];const L=I18n.get();document.getElementById('sDesc').innerHTML=L==='zh'?(k==='before'?'<strong>Scaling 前：</strong>高表達基因（如 MALAT1）主導整體方差，低表達基因的訊號被壓縮。':'<strong>Scaling 後：</strong>所有基因被拉到相近尺度（均值 0、方差 1），低表達基因的訊號得以保留。'):(k==='before'?'<strong>Before:</strong> High-expression genes (MALAT1) dominate variance; low-expression signals compressed.':'<strong>After:</strong> All genes at comparable scale (mean=0, var=1); low-expression signals preserved.');sChart.data.labels=d.labels;sChart.data.datasets[0].data=d.data;sChart.data.datasets[0].backgroundColor=d.color;sChart.update('none');}
-document.addEventListener('langchange',()=>showS(curS));showS('before');
-const QF=window._QF||{};document.querySelectorAll(".quiz-q").forEach((q,qi)=>{const ans=+q.dataset.answer;q.querySelectorAll(".quiz-opt").forEach(o=>{o.addEventListener("click",()=>{if(q.classList.contains("answered"))return;q.classList.add("answered");const fb=document.getElementById("fb"+(qi+1));const ok=+o.dataset.idx===ans;o.classList.add(ok?"correct":"wrong");if(!ok)q.querySelectorAll(".quiz-opt")[ans].classList.add("correct");const L=I18n.get();fb.className="quiz-feedback show "+(ok?"correct-fb":"wrong-fb");fb.textContent=(ok?"✅ ":"❌ ")+(QF[L]&&QF[L]["q"+(qi+1)+"_"+(ok?"y":"n")]||"");});});});
+const sChart=new Chart(document.getElementById('sChart'),{type:'bar',data:{labels:sd.before.labels,datasets:[{data:sd.before.data,backgroundColor:sd.before.color,borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,animation:false,indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{title:{display:true,text:'Expression value'}}}}});
+let curS='before';
+function showS(k){curS=k;['before','after'].forEach(x=>document.getElementById('btn-'+x).classList.toggle('active',x===k));const d=sd[k];const L=I18n.get();document.getElementById('sDesc').innerHTML=L==='zh'?(k==='before'?'<strong>Scaling 前：</strong>高表達基因（如 MALAT1）的值大幅超過其他；它們的方差絕對值也最大，PCA 會「優先」聽它們說話。':'<strong>Scaling 後：</strong>所有基因被拉到相近尺度（均值 0、方差 1）；低表達 marker（FOXP3、BCL11B）也能在 PC 中發揮影響力。'):(k==='before'?'<strong>Before:</strong> High-expression genes (MALAT1) dwarf others; their absolute variance is largest, so PCA "listens" to them first.':'<strong>After:</strong> All genes at comparable scale (mean=0, var=1); low-expression markers (FOXP3, BCL11B) can also influence PCs.');sChart.data.labels=d.labels;sChart.data.datasets[0].data=d.data;sChart.data.datasets[0].backgroundColor=d.color;sChart.update('none');}
+
+// === Two-gene PCA simulator ===
+function randn(){let u=0,v=0;while(u===0)u=Math.random();while(v===0)v=Math.random();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);}
+function pca2(points){
+  const n=points.length;
+  let mx=0,my=0;points.forEach(p=>{mx+=p.x;my+=p.y;});mx/=n;my/=n;
+  let cxx=0,cyy=0,cxy=0;
+  points.forEach(p=>{const dx=p.x-mx,dy=p.y-my;cxx+=dx*dx;cyy+=dy*dy;cxy+=dx*dy;});
+  cxx/=n;cyy/=n;cxy/=n;
+  // Eigen of 2x2 symmetric [[cxx,cxy],[cxy,cyy]]
+  const tr=cxx+cyy,det=cxx*cyy-cxy*cxy;
+  const lam=tr/2+Math.sqrt(Math.max(0,tr*tr/4-det));
+  // Eigenvector for lam
+  let vx=cxy,vy=lam-cxx;
+  if(Math.abs(vx)+Math.abs(vy)<1e-9){vx=1;vy=0;}
+  const len=Math.sqrt(vx*vx+vy*vy);vx/=len;vy/=len;
+  return {mx,my,vx,vy};
+}
+function buildPcaChart(canvasId,xLab,yLab){
+  return new Chart(document.getElementById(canvasId),{type:'scatter',data:{datasets:[
+    {label:'Group 1',data:[],backgroundColor:'rgba(192,57,43,0.55)',pointRadius:2.5},
+    {label:'Group 2',data:[],backgroundColor:'rgba(41,128,185,0.55)',pointRadius:2.5},
+    {label:'PC1',data:[],type:'line',borderColor:'rgba(20,20,20,0.85)',backgroundColor:'transparent',borderWidth:2,pointRadius:0,showLine:true}
+  ]},options:{responsive:true,maintainAspectRatio:false,animation:false,plugins:{legend:{display:false}},scales:{x:{title:{display:true,text:xLab,font:{size:9}},ticks:{font:{size:8}}},y:{title:{display:true,text:yLab,font:{size:9}},ticks:{font:{size:8}}}}}});
+}
+const pcaBefore=buildPcaChart('pcaBefore','Gene A (high variance)','Gene B (low variance)');
+const pcaAfter=buildPcaChart('pcaAfter','Gene A (scaled)','Gene B (scaled)');
+
+function updatePCA(){
+  const ratio=+document.getElementById('sliderSd').value/10; // 1.0 - 10.0
+  document.getElementById('valSd').textContent=ratio.toFixed(1)+'×';
+  // Two groups separated mainly by Gene B (which is the "true biology")
+  const g1=[],g2=[];
+  for(let i=0;i<150;i++){
+    g1.push({x:5+ratio*randn(),y:0.5+0.4*randn()}); // Gene A high noise, Gene B low mean
+    g2.push({x:5+ratio*randn(),y:2.5+0.4*randn()}); // Gene B distinguishes the two
+  }
+  // Before scaling: raw values
+  const before=g1.concat(g2);
+  // After scaling: z-score per gene (column)
+  function zscore(arr,key){
+    const m=arr.reduce((s,p)=>s+p[key],0)/arr.length;
+    const sd=Math.sqrt(arr.reduce((s,p)=>s+(p[key]-m)*(p[key]-m),0)/arr.length);
+    return arr.map(p=>{const c={...p};c[key]=(p[key]-m)/sd;return c;});
+  }
+  let all=before.slice();
+  all=zscore(all,'x');all=zscore(all,'y');
+  const af1=all.slice(0,150),af2=all.slice(150);
+
+  // PC1 directions
+  const pBef=pca2(before),pAft=pca2(all);
+  function pcLine(p,xRng){const L=xRng;return [{x:p.mx-L*p.vx,y:p.my-L*p.vy},{x:p.mx+L*p.vx,y:p.my+L*p.vy}];}
+
+  pcaBefore.data.datasets[0].data=g1;
+  pcaBefore.data.datasets[1].data=g2;
+  pcaBefore.data.datasets[2].data=pcLine(pBef,Math.max(3,ratio*2));
+  pcaBefore.update('none');
+  pcaAfter.data.datasets[0].data=af1;
+  pcaAfter.data.datasets[1].data=af2;
+  pcaAfter.data.datasets[2].data=pcLine(pAft,3);
+  pcaAfter.update('none');
+}
+document.getElementById('sliderSd').addEventListener('input',updatePCA);
+document.addEventListener('langchange',()=>{showS(curS);updatePCA();});
+showS('before');
+updatePCA();
+
+window._QF={
+  zh:{q1_y:'Z-score 後所有基因均值 0、變異 1；PCA 才能客觀計算協方差結構。',q1_n:'答案是 B。',
+      q2_y:'分化 / exhaustion 與細胞週期高度相關；回歸週期會把生物軸抹掉。',q2_n:'答案是 C。',
+      q3_y:'SCTransform 已內建 normalize+HVG+scaling，直接 RunPCA 即可。',q3_n:'答案是 A。'},
+  en:{q1_y:'After Z-score, every gene has mean=0/var=1, so PCA captures covariance structure fairly.',q1_n:'Answer is B.',
+      q2_y:'Differentiation/exhaustion correlate strongly with cell cycle; regressing cycle erases the biological axis.',q2_n:'Answer is C.',
+      q3_y:'SCTransform bundles normalize+HVG+scaling; go straight to RunPCA.',q3_n:'Answer is A.'}
+};
+const QF=window._QF;
+document.querySelectorAll(".quiz-q").forEach((q,qi)=>{const ans=+q.dataset.answer;q.querySelectorAll(".quiz-opt").forEach(o=>{o.addEventListener("click",()=>{if(q.classList.contains("answered"))return;q.classList.add("answered");const fb=document.getElementById("fb"+(qi+1));const ok=+o.dataset.idx===ans;o.classList.add(ok?"correct":"wrong");if(!ok)q.querySelectorAll(".quiz-opt")[ans].classList.add("correct");const L=I18n.get();fb.className="quiz-feedback show "+(ok?"correct-fb":"wrong-fb");fb.textContent=(ok?"✅ ":"❌ ")+(QF[L]&&QF[L]["q"+(qi+1)+"_"+(ok?"y":"n")]||"");});});});
 </script></body></html>

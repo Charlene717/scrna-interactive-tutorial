@@ -1,125 +1,608 @@
-<!DOCTYPE html><html lang="zh-Hant"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>annotation — scRNA-seq Tutorial</title><link rel="stylesheet" href="styles.css"></head><body>
-<nav class="top-nav"><div class="top-nav-inner"><a href="index.html" class="top-nav-brand"><span>🧬</span> <span data-zh="scRNA-seq 教學" data-en="scRNA-seq Tutorial">scRNA-seq 教學</span></a><ul class="top-nav-links"><li><a href="qc.html">QC</a></li><li><a href="normalization.html">Norm.</a></li><li><a href="variable-features.html">Features</a></li><li><a href="scaling.html">Scaling</a></li><li><a href="pca.html">PCA</a></li><li><a href="clustering.html">Clustering</a></li><li><a href="umap.html">UMAP</a></li><li><a href="annotation.html" class=active>Annot.</a></li><li><a href="differential-expression.html">DE</a></li><li><a href="integration.html">Integ.</a></li><li><a href="cellchat.html">CellChat</a></li><li><a href="trajectory.html">Traj.</a></li>
+<!DOCTYPE html><html lang="zh-Hant"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Step 8: Annotation — scRNA-seq Tutorial</title>
+<link rel="stylesheet" href="styles.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+</head><body>
+<nav class="top-nav"><div class="top-nav-inner">
+  <a href="index.html" class="top-nav-brand"><span>🧬</span> <span data-zh="scRNA-seq 教學" data-en="scRNA-seq Tutorial">scRNA-seq 教學</span></a>
+  <ul class="top-nav-links"><li><a href="qc.html">QC</a></li><li><a href="normalization.html">Norm.</a></li><li><a href="variable-features.html">Features</a></li><li><a href="scaling.html">Scaling</a></li><li><a href="pca.html">PCA</a></li><li><a href="clustering.html">Clustering</a></li><li><a href="umap.html">UMAP</a></li><li><a href="annotation.html" class="active">Annot.</a></li><li><a href="differential-expression.html">DE</a></li><li><a href="integration.html">Integ.</a></li><li><a href="cellchat.html">CellChat</a></li><li><a href="trajectory.html">Traj.</a></li>
     <li><a href="references/index.html" data-zh="📚 參考資料" data-en="📚 References">📚 參考資料</a></li>
-  </ul></div></nav><div class="progress-bar-container"><div class="progress-bar" id="progressBar"></div></div>
-<header class="page-hero"><div class="step-badge">STEP 8 / 9</div><h1 data-zh="細胞註釋 (Annotation)" data-en="Cell Annotation">細胞註釋 (Annotation)</h1><p class="subtitle" data-lang="zh">根據 marker genes、生物學背景與文獻資訊，為 cluster 指定細胞類型名稱。</p><p class="subtitle" data-lang="en">Assign cell type identities to clusters using marker genes, biological knowledge, and literature references.</p></header><main class="content-wrap">
-<section class="section"><div class="section-label" data-zh="核心概念" data-en="CONCEPT">核心概念</div><h2 data-zh="一、從 Cluster 到細胞類型" data-en="I. From Clusters to Cell Types">一、從 Cluster 到細胞類型</h2>
-<div data-lang="zh"><p>聚類只是一個<strong>數學上的分群</strong>，不會告訴你每個 cluster 是什麼細胞。註釋的任務就是結合已知的<strong>標誌基因 (Marker Genes)</strong>與領域知識，為每個 cluster 貼上生物學標籤。這是整個 scRNA-seq 分析中最需要生物學專業的步驟。</p></div>
-<div data-lang="en"><p>Clustering is purely a <strong>mathematical grouping</strong> — it doesn't tell you what cell type each cluster represents. Annotation combines known <strong>marker genes</strong> with domain expertise to assign biological labels. This is the step that requires the most biological expertise in the entire pipeline.</p></div></section>
+  </ul>
+</div></nav>
+<div class="progress-bar-container"><div class="progress-bar" id="progressBar"></div></div>
+<header class="page-hero"><div class="step-badge">STEP 8 / 9</div>
+<h1 data-zh="細胞註釋 (Cell Annotation)" data-en="Cell Annotation">細胞註釋 (Cell Annotation)</h1>
+<p class="subtitle" data-lang="zh">根據 marker genes、生物學背景與文獻資訊，為 cluster 指定細胞類型名稱。</p>
+<p class="subtitle" data-lang="en">Assign cell type identities to clusters using marker genes, biological knowledge, and literature references.</p>
+</header>
+<main class="content-wrap">
 
-<section class="section"><div class="section-label" data-zh="三種策略" data-en="THREE STRATEGIES">三種策略</div><h2 data-zh="二、註釋方法" data-en="II. Annotation Approaches">二、註釋方法</h2>
-<div class="workflow">
-<div class="workflow-step" data-step="1"><h4 data-zh="差異表達分析 (DEA) 找 Markers" data-en="Find Markers via DEA">差異表達找 Markers</h4>
-<div data-lang="zh"><p>比較目標 Cluster 與其他所有細胞，尋找表達量顯著升高的<strong>標誌基因</strong>。這些基因就是該 cluster 的「候選標誌」。然後與已知文獻中的 marker gene 列表比對，推斷細胞類型。</p></div>
-<div data-lang="en"><p>Compare a target cluster against all other cells to find significantly upregulated <strong>marker genes</strong>. These become the cluster's "candidate markers." Then match against known marker gene lists from literature to infer cell type.</p></div></div>
-<div class="workflow-step" data-step="2"><h4 data-zh="自動註釋工具 (Automated Annotation)" data-en="Automated Annotation Tools">自動註釋工具</h4>
-<div data-lang="zh"><p>使用演算法將你的聚類結果與<strong>高質量的參考數據集</strong>進行自動比對：</p>
-<ul style="margin:8px 0 0 20px;color:var(--c-ink-light);">
-<li><strong>SingleR</strong> (R) — 使用參考數據集的基因表達譜，逐一比對每個細胞</li>
-<li><strong>Azimuth</strong> (Seurat 生態系) — 基於 reference mapping，支援多種組織的預建模型</li>
-<li><strong>CellTypist</strong> (Python) — 基於機器學習分類器的自動化工具</li>
-<li><strong>scType</strong> (R) — 基於 marker gene 資料庫的自動註釋</li>
-</ul></div>
-<div data-lang="en"><p>Algorithms automatically compare your clusters against <strong>high-quality reference datasets</strong>:</p>
-<ul style="margin:8px 0 0 20px;color:var(--c-ink-light);">
-<li><strong>SingleR</strong> (R) — compares each cell's expression against reference profiles</li>
-<li><strong>Azimuth</strong> (Seurat ecosystem) — reference mapping with pre-built models for many tissues</li>
-<li><strong>CellTypist</strong> (Python) — ML classifier-based automated annotation</li>
-<li><strong>scType</strong> (R) — marker gene database-based annotation</li>
-</ul></div></div>
-<div class="workflow-step" data-step="3"><h4 data-zh="專家手動驗證（黃金標準）" data-en="Expert Manual Validation (Gold Standard)">專家手動驗證</h4>
-<div data-lang="zh"><p>由領域專家根據已知文獻中的標誌基因列表，<strong>逐一審查</strong>並確認演算法的分類結果。這一步<strong>不可省略</strong>——自動工具可能受參考數據集的品質和完整度影響，也可能無法辨識新的或罕見的細胞亞群。</p></div>
-<div data-lang="en"><p>Domain experts <strong>individually review and confirm</strong> algorithmic results using known marker gene lists from literature. This step is <strong>essential</strong> — automated tools may be limited by reference dataset quality/completeness and may fail to identify novel or rare subpopulations.</p></div></div></div></section>
-
-<section class="section"><div class="section-label" data-zh="互動模擬" data-en="INTERACTIVE">互動模擬</div><h2 data-zh="三、Dot Plot 互動探索器" data-en="III. Interactive Dot Plot Explorer">三、Dot Plot 探索器</h2>
-<div data-lang="zh"><p>選擇一個 cluster，觀察各 marker 基因的表達量。高表達的基因組合指向特定細胞類型——試著根據 marker pattern 判斷每個 cluster 的身份。</p></div>
-<div data-lang="en"><p>Select a cluster to view marker gene expression levels. The combination of highly expressed genes points to a specific cell type — try to identify each cluster's identity from its marker pattern.</p></div>
-<div class="interactive-panel"><div class="toggle-row">
-<button class="toggle-btn active" id="cl-0" onclick="showCl(0)">Cluster 0</button><button class="toggle-btn" id="cl-1" onclick="showCl(1)">Cluster 1</button><button class="toggle-btn" id="cl-2" onclick="showCl(2)">Cluster 2</button><button class="toggle-btn" id="cl-3" onclick="showCl(3)">Cluster 3</button><button class="toggle-btn" id="cl-4" onclick="showCl(4)">Cluster 4</button>
-</div><div id="clLabel" style="font-size:.95rem;font-weight:600;color:var(--c-accent-dark);margin-bottom:12px;"></div>
-<div class="chart-container" style="height:280px;"><canvas id="dotChart"></canvas></div>
-<p style="font-size:.82rem;color:var(--c-ink-muted);margin-top:8px;" data-lang="zh">長條高度 = 平均表達量 ｜ 根據 marker 基因的表達模式判斷細胞類型</p>
-<p style="font-size:.82rem;color:var(--c-ink-muted);margin-top:8px;" data-lang="en">Bar height = average expression | Identify cell type from the marker expression pattern</p></div></section>
-
-<section class="section"><div class="section-label" data-zh="常用 Markers" data-en="COMMON MARKERS">常用 Markers</div><h2 data-zh="四、PBMC 常見細胞類型標誌基因" data-en="IV. Common PBMC Cell Type Markers">四、PBMC 常見 Markers</h2>
-<table class="comp-table"><thead><tr><th data-zh="細胞類型" data-en="Cell Type">細胞類型</th><th>Marker Genes</th></tr></thead><tbody>
-<tr><td><strong>CD4+ T</strong></td><td>CD3D, CD3E, IL7R</td></tr>
-<tr><td><strong>CD8+ T</strong></td><td>CD3D, CD8A, CD8B</td></tr>
-<tr><td><strong>B cells</strong></td><td>MS4A1 (CD20), CD79A</td></tr>
-<tr><td><strong>NK</strong></td><td>GNLY, NKG7, KLRD1</td></tr>
-<tr><td><strong>CD14 Mono</strong></td><td>CD14, LYZ, S100A8</td></tr>
-<tr><td><strong>FCGR3A Mono</strong></td><td>FCGR3A, MS4A7</td></tr>
-<tr><td><strong>DC</strong></td><td>FCER1A, CST3</td></tr>
-<tr><td><strong>Platelet</strong></td><td>PPBP, PF4</td></tr>
-</tbody></table>
-<div class="callout warn"><span class="callout-icon">⚠️</span><div><span data-lang="zh">上表<strong>僅適用於人類 PBMC</strong>。不同物種、不同組織的 marker genes 完全不同，務必查閱相關文獻或使用 CellMarker、PanglaoDB 等資料庫。</span><span data-lang="en">This table is <strong>only for human PBMC</strong>. Marker genes differ entirely across species and tissues. Always consult relevant literature or databases like CellMarker, PanglaoDB.</span></div></div></section>
-
-<section class="section"><div class="section-label" data-zh="決策引導" data-en="DECISION">決策引導</div><h2 data-zh="五、該用手動還是自動？" data-en="V. Manual vs Automated?">五、手動 vs 自動</h2>
-<div class="decision-tree"><h4>🌳 <span data-zh="決策流程" data-en="Decision Tree">決策流程</span></h4>
+<!-- ===== Section 1: Overview ===== -->
+<section class="section">
+<div class="section-label" data-zh="概覽" data-en="OVERVIEW">概覽</div>
+<h2 data-zh="一、從 Cluster 到細胞身份" data-en="I. From Clusters to Cell Identities">一、從 Cluster 到細胞身份</h2>
 <div data-lang="zh">
-<div class="dt-node"><span class="dt-q">Q1:</span><div>你的組織有良好的公開參考數據集嗎？<span class="dt-arrow">→ 是 →</span> 使用 <strong>Azimuth / SingleR</strong> 做初步自動註釋，再手動驗證。</div></div>
-<div class="dt-node"><span class="dt-q">Q2:</span><div>沒有參考數據集？<span class="dt-arrow">→</span> 使用 <strong>DEA 找 markers + 文獻比對</strong>做純手動註釋。</div></div>
-<div class="dt-node"><span class="dt-q">Q3:</span><div>某些 cluster 的 markers 很混亂、不典型？<span class="dt-arrow">→</span> 考慮是否為 doublets、過度聚類、或真正的新亞群——可能需回頭調整 QC 或 resolution。</div></div>
+<p>聚類產生的 cluster 編號（0、1、2…）只是<strong>數學上的分群結果</strong>，本身並不告訴你每個群代表什麼細胞。<strong>細胞註釋 (Annotation)</strong> 的任務，是將這些抽象的數字標籤轉換成具有生物學意義的細胞類型名稱（如 CD4+ T cell、CD14 monocyte、basal epithelium 等）。</p>
+<p><strong>為什麼這是整個流程中最關鍵也最容易出錯的步驟？</strong>因為註釋結果直接決定了你後續所有生物學解讀的正確性。如果你錯把 NK 細胞當作 CD8+ T 細胞，那麼後續的細胞通訊分析、軌跡推斷、差異表現都會建立在錯誤的基礎上。</p>
+<p>目前有三大主流策略：</p>
+<ul style="margin:8px 0 0 20px;color:var(--c-ink-light);">
+<li><strong>① Marker-based 手動註釋</strong>：透過 <code>FindAllMarkers</code> 找出每個 cluster 的特異性基因，再對照文獻、CellMarker、PanglaoDB 等資料庫人工判斷</li>
+<li><strong>② Reference-based 自動註釋</strong>：使用 SingleR、scType、CellTypist、Azimuth 等工具，將你的數據與已建立的參考數據集做相似度比對</li>
+<li><strong>③ Label transfer（標籤遷移）</strong>：基於 Seurat anchors 或 scANVI，將參考數據集的細胞標籤「投影」到你的查詢數據</li>
+</ul>
 </div>
 <div data-lang="en">
-<div class="dt-node"><span class="dt-q">Q1:</span><div>Good public reference dataset for your tissue?<span class="dt-arrow">→ Yes →</span> Use <strong>Azimuth / SingleR</strong> for initial auto-annotation, then validate manually.</div></div>
-<div class="dt-node"><span class="dt-q">Q2:</span><div>No reference dataset?<span class="dt-arrow">→</span> Use <strong>DEA markers + literature comparison</strong> for pure manual annotation.</div></div>
-<div class="dt-node"><span class="dt-q">Q3:</span><div>Some clusters have messy/atypical markers?<span class="dt-arrow">→</span> Consider doublets, over-clustering, or genuine new subpopulations — may need to revisit QC or resolution.</div></div>
-</div></div></section>
+<p>The cluster numbers from clustering (0, 1, 2…) are merely <strong>mathematical groupings</strong> — they don't tell you what cell type each cluster represents. <strong>Cell annotation</strong> converts these abstract labels into biologically meaningful identities (CD4+ T cell, CD14 monocyte, basal epithelium, etc.).</p>
+<p><strong>Why is this the most critical and error-prone step?</strong> Because annotation results directly determine the correctness of all downstream biological interpretation. If you mislabel NK cells as CD8+ T cells, every subsequent cell-communication, trajectory, and DE analysis will be built on a flawed foundation.</p>
+<p>Three mainstream strategies dominate the field:</p>
+<ul style="margin:8px 0 0 20px;color:var(--c-ink-light);">
+<li><strong>① Marker-based manual annotation</strong>: Use <code>FindAllMarkers</code> to discover cluster-specific genes, then manually match against literature, CellMarker, PanglaoDB, etc.</li>
+<li><strong>② Reference-based automated annotation</strong>: Tools like SingleR, scType, CellTypist, Azimuth compare your data with curated reference datasets</li>
+<li><strong>③ Label transfer</strong>: Seurat anchors or scANVI project reference labels onto your query data</li>
+</ul>
+</div>
+<div class="callout tip"><span class="callout-icon">💡</span><div>
+<span data-lang="zh"><strong>黃金原則：</strong>絕對不要只依賴一種方法。最佳實踐是<strong>至少使用 2 種獨立方法</strong>（例如：SingleR 自動 + 手動 marker 驗證），看結果是否一致。若不一致，就要回頭檢查 marker 表達、QC、聚類解析度等可能原因。</span>
+<span data-lang="en"><strong>Golden rule:</strong> Never rely on a single method. Best practice uses <strong>at least 2 independent approaches</strong> (e.g., SingleR auto + manual marker validation) and checks for consistency. If they disagree, revisit marker expression, QC, and clustering resolution.</span>
+</div></div>
+</section>
 
-<section class="section"><div class="section-label" data-zh="程式碼" data-en="CODE">程式碼</div><h2 data-zh="六、實作範例" data-en="VI. Code Examples">六、實作範例</h2>
-<div class="code-tabs"><div class="code-tab-btns"><button class="code-tab-btn active" onclick="switchTab(this,'r1')">R / Seurat</button><button class="code-tab-btn" onclick="switchTab(this,'py1')">Python / Scanpy</button></div>
-<div class="code-tab-content active" id="r1"><pre><span class="comment"># 找每個 cluster 的 marker genes</span>
-markers &lt;- <span class="func">FindAllMarkers</span>(pbmc, only.pos = <span class="kw">TRUE</span>, min.pct = <span class="num">0.25</span>, logfc.threshold = <span class="num">0.25</span>)
-markers <span class="kw">%>%</span> <span class="func">group_by</span>(cluster) <span class="kw">%>%</span> <span class="func">slice_max</span>(avg_log2FC, n = <span class="num">5</span>)
+<!-- ===== Section 2: Three Strategies ===== -->
+<section class="section">
+<div class="section-label" data-zh="三大策略" data-en="THREE STRATEGIES">三大策略</div>
+<h2 data-zh="二、註釋方法的三大策略" data-en="II. Three Major Annotation Strategies">二、註釋方法的三大策略</h2>
+<div data-lang="zh"><p>每種策略各有適用情境與盲點，理解其底層邏輯才能在實務中靈活選擇。</p></div>
+<div data-lang="en"><p>Each strategy has its strengths and blind spots — understanding the underlying logic helps you pick the right one.</p></div>
 
-<span class="comment"># 視覺化驗證</span>
+<div class="card-grid cols-3">
+<div class="card"><div class="card-icon">🔬</div><h4 data-zh="① Marker-based 手動" data-en="① Marker-based Manual">① Marker-based 手動</h4>
+<div data-lang="zh"><p><strong>邏輯：</strong>對每個 cluster 跑差異表達分析（DEA），找出 top markers，再對照文獻判斷。</p>
+<p><strong>優點：</strong>對罕見細胞、新亞群最敏感；不依賴外部參考；可發現新生物學。</p>
+<p><strong>缺點：</strong>耗時、主觀；需要豐富領域知識；組織越陌生越困難。</p>
+<p><strong>典型工作流：</strong> <code>FindAllMarkers</code> → 取 top 5-10 markers → 比對 CellMarker / PanglaoDB → 由專家判斷。</p></div>
+<div data-lang="en"><p><strong>Logic:</strong> Run DEA for each cluster, get top markers, then judge identity from literature.</p>
+<p><strong>Pros:</strong> Most sensitive to rare populations and novel subtypes; no external reference needed; can find new biology.</p>
+<p><strong>Cons:</strong> Time-consuming, subjective; needs deep domain knowledge; difficult for unfamiliar tissues.</p>
+<p><strong>Typical flow:</strong> <code>FindAllMarkers</code> → top 5-10 markers → check CellMarker / PanglaoDB → expert call.</p></div>
+</div>
+
+<div class="card"><div class="card-icon">🤖</div><h4 data-zh="② Reference-based 自動" data-en="② Reference-based Auto">② Reference-based 自動</h4>
+<div data-lang="zh"><p><strong>邏輯：</strong>將每個細胞（或 cluster）的表達譜與大型參考數據集中的「典型細胞」做相似度比對，挑選最相似的標籤。</p>
+<p><strong>優點：</strong>快速、可重複、客觀；適合常見組織（PBMC、肺、腦皮層）。</p>
+<p><strong>缺點：</strong>受參考品質限制；若資料集中沒有的細胞（如腫瘤亞群）會被強制歸入錯誤類別。</p>
+<p><strong>代表工具：</strong>SingleR、scType、CellTypist、scClassify。</p></div>
+<div data-lang="en"><p><strong>Logic:</strong> Compare each cell (or cluster) profile to "canonical" cells in a large reference set and pick the most similar label.</p>
+<p><strong>Pros:</strong> Fast, reproducible, objective; great for common tissues (PBMC, lung, cortex).</p>
+<p><strong>Cons:</strong> Bounded by reference quality; cells absent from the reference (e.g., tumor subtypes) get forced into the wrong category.</p>
+<p><strong>Examples:</strong> SingleR, scType, CellTypist, scClassify.</p></div>
+</div>
+
+<div class="card"><div class="card-icon">🔗</div><h4 data-zh="③ Label transfer 遷移" data-en="③ Label Transfer">③ Label transfer 遷移</h4>
+<div data-lang="zh"><p><strong>邏輯：</strong>用一個帶標籤的參考數據集（query-reference 模型），透過 anchor / latent space 找出兩者的對應細胞，將標籤「遷移」到 query。</p>
+<p><strong>優點：</strong>能同時整合與標註；保留參考的細胞層級結構；適用於 atlas-style 比對。</p>
+<p><strong>缺點：</strong>需要高品質、結構良好的參考；對未見過的細胞類型仍有「強制歸類」風險。</p>
+<p><strong>代表工具：</strong>Seurat <code>FindTransferAnchors</code>、Azimuth、scANVI、scArches。</p></div>
+<div data-lang="en"><p><strong>Logic:</strong> Use a labeled reference, find anchor cells (or shared latent space) between query and reference, then transfer the labels.</p>
+<p><strong>Pros:</strong> Integrates and annotates simultaneously; preserves reference hierarchy; suits atlas-style mapping.</p>
+<p><strong>Cons:</strong> Needs a high-quality, well-structured reference; unseen cell types are still force-classified.</p>
+<p><strong>Examples:</strong> Seurat <code>FindTransferAnchors</code>, Azimuth, scANVI, scArches.</p></div>
+</div>
+</div>
+</section>
+
+<!-- ===== Section 3: Tool Comparison Table ===== -->
+<section class="section">
+<div class="section-label" data-zh="工具比較" data-en="TOOL COMPARISON">工具比較</div>
+<h2 data-zh="三、五大自動註釋工具比較" data-en="III. Comparing Five Automated Tools">三、自動註釋工具比較</h2>
+<div data-lang="zh"><p>下表整理主流工具的速度、輸入需求、輸出粒度與適用情境，幫助你快速選擇。</p></div>
+<div data-lang="en"><p>The table below summarises speed, input needs, output granularity, and use cases for the major tools.</p></div>
+
+<table class="comp-table">
+<thead><tr>
+<th data-zh="工具" data-en="Tool">工具</th>
+<th data-zh="語言" data-en="Language">語言</th>
+<th data-zh="速度" data-en="Speed">速度</th>
+<th data-zh="參考類型" data-en="Reference">參考</th>
+<th data-zh="輸出粒度" data-en="Granularity">粒度</th>
+<th data-zh="適用情境" data-en="Best for">適用</th>
+</tr></thead>
+<tbody>
+<tr><td><strong>SingleR</strong></td><td>R</td><td>⚡⚡</td>
+<td data-lang="zh">表達譜參考<br>(HPCA, BPE, ImmGen)</td>
+<td data-lang="zh">main / fine</td>
+<td data-lang="zh">最通用；多組織、跨物種</td>
+<td data-lang="en">Expression-profile ref<br>(HPCA, BPE, ImmGen)</td><td data-lang="en">main / fine</td><td data-lang="en">Most general; multi-tissue, cross-species</td>
+</tr>
+<tr><td><strong>scType</strong></td><td>R</td><td>⚡⚡⚡</td>
+<td data-lang="zh">marker 資料庫</td>
+<td data-lang="zh">cluster-level</td>
+<td data-lang="zh">輕量、無需參考矩陣</td>
+<td data-lang="en">Marker database</td><td data-lang="en">cluster-level</td><td data-lang="en">Lightweight; no expression matrix needed</td>
+</tr>
+<tr><td><strong>Azimuth</strong></td><td>R / web</td><td>⚡</td>
+<td data-lang="zh">預建 atlas<br>(PBMC, lung, kidney)</td>
+<td data-lang="zh">L1 → L3 階層</td>
+<td data-lang="zh">PBMC、肺、腎等指定組織</td>
+<td data-lang="en">Pre-built atlases<br>(PBMC, lung, kidney)</td><td data-lang="en">L1 → L3 hierarchy</td><td data-lang="en">PBMC, lung, kidney (specific tissues)</td>
+</tr>
+<tr><td><strong>CellTypist</strong></td><td>Python</td><td>⚡⚡</td>
+<td data-lang="zh">ML 分類器模型<br>(Immune_All, COVID 等)</td>
+<td data-lang="zh">low / high resolution</td>
+<td data-lang="zh">免疫細胞、新冠等專門模型</td>
+<td data-lang="en">ML classifier models<br>(Immune_All, COVID, etc.)</td><td data-lang="en">low / high resolution</td><td data-lang="en">Immune cells, COVID-specific models</td>
+</tr>
+<tr><td><strong>scANVI</strong></td><td>Python (GPU)</td><td>🐢</td>
+<td data-lang="zh">帶標籤之 AnnData</td>
+<td data-lang="zh">自訂 label</td>
+<td data-lang="zh">大型 atlas-style 整合+註釋</td>
+<td data-lang="en">Labeled AnnData</td><td data-lang="en">Custom labels</td><td data-lang="en">Atlas-style integration + annotation</td>
+</tr>
+</tbody></table>
+
+<div class="callout tip"><span class="callout-icon">💡</span><div>
+<span data-lang="zh"><strong>實務建議：</strong>第一輪用 <strong>SingleR + Azimuth</strong>（如果有對應組織）快速得到初步框架，再用 <strong>FindAllMarkers</strong> 提取每個 cluster 的 top 5-10 markers 做人工驗證。對於有特殊免疫亞群的研究，加做 <strong>CellTypist</strong> Immune_All_Low 模型，能補抓出 SingleR 漏掉的精細亞群。</span>
+<span data-lang="en"><strong>Practical recipe:</strong> First pass with <strong>SingleR + Azimuth</strong> (if your tissue is covered) for a quick framework, then run <strong>FindAllMarkers</strong> to pull top 5-10 markers per cluster for manual review. For studies of immune subsets, add <strong>CellTypist</strong>'s Immune_All_Low model to catch fine populations SingleR may miss.</span>
+</div></div>
+</section>
+
+<!-- ===== Section 4: Marker Databases ===== -->
+<section class="section">
+<div class="section-label" data-zh="Marker 資料庫" data-en="MARKER DBS">Marker 資料庫</div>
+<h2 data-zh="四、核心 Marker / 細胞類型資料庫" data-en="IV. Core Marker & Cell-Type Databases">四、Marker 資料庫</h2>
+<div data-lang="zh"><p>無論用哪種策略，最終都需要查閱權威的細胞類型 marker 資料庫。以下是公認的五大寶庫：</p></div>
+<div data-lang="en"><p>Whichever strategy you use, you'll need authoritative cell-type marker databases. The community relies on these five:</p></div>
+
+<div class="card-grid cols-2">
+<div class="card"><h4>📕 CellMarker 2.0</h4>
+<div data-lang="zh"><p>整理自 ~10,000 篇文獻，涵蓋 ~2,000 種人與小鼠細胞類型、~26,000 個 markers。提供搜尋介面，可按組織或細胞類型查詢。<br><strong>適用：</strong>需要文獻可追溯的 marker；想知道「ALB + AFP 在肝臟代表什麼細胞」這類問題。</p></div>
+<div data-lang="en"><p>Curated from ~10,000 papers, covers ~2,000 human and mouse cell types and ~26,000 markers. Searchable by tissue or cell type.<br><strong>Use for:</strong> Literature-traceable markers; questions like "what cell does ALB + AFP indicate in liver?"</p></div>
+</div>
+<div class="card"><h4>📗 PanglaoDB</h4>
+<div data-lang="zh"><p>提供完整的「細胞類型 → marker gene set」對應表，並已內建在 scType / sc-type 等工具中。對每個 marker 給予 sensitivity 與 specificity 分數。<br><strong>適用：</strong>scType 等基於 marker score 的自動工具；快速取得 cell-type gene signature。</p></div>
+<div data-lang="en"><p>Provides complete "cell-type → marker gene set" mappings, embedded in scType and similar tools. Each marker has sensitivity/specificity scores.<br><strong>Use for:</strong> Score-based auto tools like scType; rapid signature lookups.</p></div>
+</div>
+<div class="card"><h4>📘 Human Cell Atlas (HCA)</h4>
+<div data-lang="zh"><p>跨組織的人類細胞 atlas，提供下載完整 AnnData 物件。可作為 SingleR、scANVI 或 Azimuth 的參考數據集。<br><strong>適用：</strong>需要 atlas-level reference 做 label transfer 或整合。</p></div>
+<div data-lang="en"><p>Cross-tissue human cell atlas, full AnnData objects downloadable. Serves as a reference dataset for SingleR, scANVI, or Azimuth.<br><strong>Use for:</strong> Atlas-level reference for label transfer or integration.</p></div>
+</div>
+<div class="card"><h4>📙 Tabula Sapiens / Muris</h4>
+<div data-lang="zh"><p>由 CZ Biohub 主導，跨組織、跨技術（10x + Smart-seq2）的 human / mouse 多器官 atlas。標註細緻、品質高。<br><strong>適用：</strong>整器官層級的 reference；跨物種比較研究。</p></div>
+<div data-lang="en"><p>CZ Biohub-led, cross-tissue, cross-technology (10x + Smart-seq2) human/mouse atlas. Fine annotation, high quality.<br><strong>Use for:</strong> Organ-level references; cross-species comparison.</p></div>
+</div>
+<div class="card"><h4>📓 MSigDB Cell-Type Signatures (C8)</h4>
+<div data-lang="zh"><p>MSigDB 的 C8 子集合，收錄超過 800 個 cell-type signature gene sets。可直接用於 GSEA、UCell 或 AUCell 計算 module score。<br><strong>適用：</strong>用 signature score 補強單一 marker 的判斷。</p></div>
+<div data-lang="en"><p>MSigDB's C8 collection, 800+ cell-type signature gene sets. Plug into GSEA, UCell, or AUCell for module-level scoring.<br><strong>Use for:</strong> Reinforce single-marker calls with signature scores.</p></div>
+</div>
+<div class="card"><h4>📒 Allen Brain Atlas / Tabula Microcebus</h4>
+<div data-lang="zh"><p>專科 atlas，適合腦科學或非模式生物研究者。<br><strong>適用：</strong>小鼠/獼猴腦、靈長類比較研究等專門領域。</p></div>
+<div data-lang="en"><p>Specialty atlases for neuroscience or non-model organisms.<br><strong>Use for:</strong> Mouse/macaque brain, primate comparative studies, niche fields.</p></div>
+</div>
+</div>
+</section>
+
+<!-- ===== Section 5: Interactive Confidence Simulator ===== -->
+<section class="section">
+<div class="section-label" data-zh="互動模擬" data-en="INTERACTIVE">互動模擬</div>
+<h2 data-zh="五、註釋置信度模擬器" data-en="V. Annotation Confidence Simulator">五、註釋置信度模擬器</h2>
+<div data-lang="zh"><p>真實世界裡，marker 並非「全有或全無」——同一個 marker 可能在多種細胞中都有不同程度的表達，這就是 <strong>specificity</strong>（特異性）。當 marker specificity 低或資料雜訊高時，自動工具給出的<strong>置信度分數</strong>就會大幅下降，導致「ambiguous」的呼叫。</p><p>調整下方兩個滑桿觀察 5 個 cluster 的置信度分佈如何變化：</p></div>
+<div data-lang="en"><p>In the real world, markers are not "all-or-nothing." The same gene may be expressed at various levels across cell types — this is <strong>specificity</strong>. When marker specificity is low or noise is high, automated tools produce low <strong>confidence scores</strong>, leading to ambiguous calls.</p><p>Adjust the sliders below and watch the confidence distribution across 5 clusters change:</p></div>
+
+<div class="interactive-panel">
+<div class="slider-group"><label><span data-zh="Marker 特異性 (Specificity)" data-en="Marker specificity">Marker 特異性</span> <span id="valSpec">0.85</span></label>
+<input type="range" id="sliderSpec" min="30" max="98" value="85" step="1"></div>
+<div class="slider-group"><label><span data-zh="技術雜訊 (Noise)" data-en="Technical noise">技術雜訊</span> <span id="valNoise">0.15</span></label>
+<input type="range" id="sliderNoise" min="2" max="60" value="15" step="1"></div>
+<div class="sim-stats">
+  <span class="sim-stat pass" id="statConfHigh">—</span>
+  <span class="sim-stat" id="statConfMid" style="background:#f5d68a;color:#5a3a07;">—</span>
+  <span class="sim-stat fail" id="statConfLow">—</span>
+</div>
+<div class="chart-container" style="height:320px;"><canvas id="confChart"></canvas></div>
+<p style="font-size:.78rem;color:var(--c-ink-muted);text-align:center;margin-top:8px;">
+<span data-zh="每個 cluster 的長條 = 對「最佳猜測」的置信度（0-1）。綠色 ≥ 0.8 高置信；橘色 0.5-0.8 需驗證；紅色 &lt; 0.5 需謹慎處理。" data-en="Bar height = confidence in the top guess (0-1). Green ≥ 0.8 high; orange 0.5-0.8 verify; red &lt; 0.5 caution.">每 cluster 長條 = 對 top guess 的置信度。綠 ≥ 0.8 / 橘 0.5-0.8 / 紅 &lt; 0.5</span></p>
+</div>
+
+<div class="callout warn"><span class="callout-icon">⚠️</span><div>
+<span data-lang="zh"><strong>觀察重點：</strong>① specificity 從 0.9 降到 0.5 時，幾乎所有 cluster 都會從「高置信」掉到「需驗證」；② 即使 specificity 高，noise 過大也會造成置信度崩潰；③ 真實工具（如 SingleR）會給出每個細胞的 prediction score，務必檢視 <code>pruneScores</code> 標記為 ambiguous 的細胞。</span>
+<span data-lang="en"><strong>Key insights:</strong> ① Dropping specificity from 0.9 to 0.5 pushes nearly all clusters from "confident" to "verify"; ② Even with high specificity, excessive noise collapses confidence; ③ Real tools like SingleR provide per-cell prediction scores — always inspect cells flagged ambiguous by <code>pruneScores</code>.</span>
+</div></div>
+</section>
+
+<!-- ===== Section 6: Dot Plot Explorer ===== -->
+<section class="section">
+<div class="section-label" data-zh="Marker 探索" data-en="MARKER EXPLORER">Marker 探索</div>
+<h2 data-zh="六、PBMC Marker 表達探索器" data-en="VI. PBMC Marker Expression Explorer">六、PBMC Marker 探索器</h2>
+<div data-lang="zh"><p>切換不同 cluster，觀察各 marker 基因的表達量。透過 marker 組合判斷細胞類型——這正是手動註釋的核心過程。</p></div>
+<div data-lang="en"><p>Switch between clusters and inspect marker gene expression. Identifying cell type from marker combinations is the heart of manual annotation.</p></div>
+<div class="interactive-panel">
+<div class="toggle-row">
+<button class="toggle-btn active" id="cl-0" onclick="showCl(0)">Cluster 0</button>
+<button class="toggle-btn" id="cl-1" onclick="showCl(1)">Cluster 1</button>
+<button class="toggle-btn" id="cl-2" onclick="showCl(2)">Cluster 2</button>
+<button class="toggle-btn" id="cl-3" onclick="showCl(3)">Cluster 3</button>
+<button class="toggle-btn" id="cl-4" onclick="showCl(4)">Cluster 4</button>
+</div>
+<div id="clLabel" style="font-size:.95rem;font-weight:600;color:var(--c-accent-dark);margin-bottom:12px;"></div>
+<div class="chart-container" style="height:280px;"><canvas id="dotChart"></canvas></div>
+<p style="font-size:.82rem;color:var(--c-ink-muted);margin-top:8px;" data-lang="zh">長條高度 = 平均表達量；同時看到多個專一 markers ↑ 才是強證據。</p>
+<p style="font-size:.82rem;color:var(--c-ink-muted);margin-top:8px;" data-lang="en">Bar height = average expression; multiple specific markers ↑ = strong evidence.</p></div>
+</section>
+
+<!-- ===== Section 7: Common Markers Table ===== -->
+<section class="section">
+<div class="section-label" data-zh="常用 Markers" data-en="COMMON MARKERS">常用 Markers</div>
+<h2 data-zh="七、PBMC 與常見組織經典 Markers" data-en="VII. Canonical Markers for PBMC & Common Tissues">七、經典 Markers 速查</h2>
+<table class="comp-table"><thead><tr>
+<th data-zh="細胞類型" data-en="Cell Type">細胞類型</th>
+<th>Marker Genes</th>
+<th data-zh="備註" data-en="Notes">備註</th>
+</tr></thead><tbody>
+<tr><td><strong>CD4+ T</strong></td><td>CD3D, CD3E, IL7R, CD4</td><td data-lang="zh">IL7R 區分 naive/memory</td><td data-lang="en">IL7R discriminates naive/memory</td></tr>
+<tr><td><strong>CD8+ T</strong></td><td>CD3D, CD8A, CD8B, GZMK</td><td data-lang="zh">GZMK 提示 effector 狀態</td><td data-lang="en">GZMK suggests effector state</td></tr>
+<tr><td><strong>Treg</strong></td><td>FOXP3, IL2RA, IKZF2</td><td data-lang="zh">FOXP3 是金標準</td><td data-lang="en">FOXP3 is gold standard</td></tr>
+<tr><td><strong>B cells</strong></td><td>MS4A1 (CD20), CD79A, CD19</td><td data-lang="zh">MS4A1 不在漿細胞中表達</td><td data-lang="en">MS4A1 absent in plasma cells</td></tr>
+<tr><td><strong>Plasma cells</strong></td><td>MZB1, JCHAIN, XBP1, IGHG1</td><td data-lang="zh">已分化的 B 細胞</td><td data-lang="en">Differentiated B cells</td></tr>
+<tr><td><strong>NK</strong></td><td>GNLY, NKG7, KLRD1, NCAM1</td><td data-lang="zh">CD3D 應為陰性</td><td data-lang="en">CD3D should be negative</td></tr>
+<tr><td><strong>CD14 Mono</strong></td><td>CD14, LYZ, S100A8, S100A9</td><td data-lang="zh">經典單核球</td><td data-lang="en">Classical monocytes</td></tr>
+<tr><td><strong>FCGR3A Mono</strong></td><td>FCGR3A, MS4A7, CDKN1C</td><td data-lang="zh">非經典單核球</td><td data-lang="en">Non-classical monocytes</td></tr>
+<tr><td><strong>DC (cDC)</strong></td><td>FCER1A, CST3, CLEC10A</td><td data-lang="zh">conventional DC</td><td data-lang="en">Conventional DCs</td></tr>
+<tr><td><strong>pDC</strong></td><td>LILRA4, IRF7, TCF4</td><td data-lang="zh">plasmacytoid DC</td><td data-lang="en">Plasmacytoid DCs</td></tr>
+<tr><td><strong>Platelet</strong></td><td>PPBP, PF4, GP9</td><td data-lang="zh">血小板碎片</td><td data-lang="en">Platelet fragments</td></tr>
+<tr><td><strong>Erythrocyte</strong></td><td>HBB, HBA1, HBA2</td><td data-lang="zh">通常於 QC 被過濾</td><td data-lang="en">Usually filtered in QC</td></tr>
+</tbody></table>
+
+<div class="callout warn"><span class="callout-icon">⚠️</span><div>
+<span data-lang="zh"><strong>務必注意：</strong>上表<strong>僅適用於人類 PBMC</strong>。<br>① 不同物種（mouse 用 Cd3d、Cd4，鼠的 CD8 marker 與人類略異）；<br>② 不同組織（腦的 microglia 用 P2RY12、TMEM119；肝的 hepatocyte 用 ALB、AFP）；<br>③ 同一細胞在發育、活化、疾病狀態下 marker 也會變化。<br>研究新組織時務必查閱 CellMarker 2.0、PanglaoDB 等資料庫。</span>
+<span data-lang="en"><strong>Caution:</strong> This table only applies to <strong>human PBMC</strong>.<br>① Mouse uses different gene symbols (Cd3d, Cd4) and somewhat different CD8 markers;<br>② Different tissues need different markers (brain microglia: P2RY12, TMEM119; liver hepatocyte: ALB, AFP);<br>③ The same cell type may shift markers across development, activation, and disease.<br>For new tissues, always consult CellMarker 2.0, PanglaoDB, etc.</span>
+</div></div>
+</section>
+
+<!-- ===== Section 8: Decision Tree ===== -->
+<section class="section">
+<div class="section-label" data-zh="決策引導" data-en="DECISION GUIDE">決策引導</div>
+<h2 data-zh="八、該用手動還是自動？" data-en="VIII. Manual or Automated?">八、手動 vs 自動 決策</h2>
+<div class="decision-tree">
+<h4>🌳 <span data-zh="註釋策略決策流程" data-en="Annotation Strategy Decision Tree">註釋策略決策流程</span></h4>
+<div data-lang="zh">
+<div class="dt-node"><span class="dt-q">Q1:</span><div>你的組織有良好的公開參考數據集（如 PBMC、肺、腎、腦皮層）嗎？<span class="dt-arrow">→ 是 →</span> 使用 <strong>Azimuth / SingleR + HPCA</strong> 做初步自動註釋，再用 FindAllMarkers 手動驗證。</div></div>
+<div class="dt-node"><span class="dt-q">Q2:</span><div>沒有合適的參考？<span class="dt-arrow">→</span> 純手動：跑 <strong>FindAllMarkers</strong>，把每個 cluster 的 top markers 對照 CellMarker / PanglaoDB / 文獻判斷。</div></div>
+<div class="dt-node"><span class="dt-q">Q3:</span><div>某些 cluster 的 markers 很混亂、找不到典型對應？<span class="dt-arrow">→</span> 可能是 ① doublets、② over-clustering（解析度太高）、③ 真正的新亞群、或 ④ 過渡狀態。回頭調整 QC、resolution，或考慮跑 trajectory 分析。</div></div>
+<div class="dt-node"><span class="dt-q">Q4:</span><div>有疾病樣本 vs 健康樣本？<span class="dt-arrow">→</span> 先在健康樣本完成註釋，再用 <strong>label transfer</strong> 把標籤轉到疾病樣本，避免疾病細胞被強制歸入錯誤類別。</div></div>
+<div class="dt-node"><span class="dt-q">Q5:</span><div>跨物種（人類 vs 小鼠）？<span class="dt-arrow">→</span> 用 SingleR 並指定對應物種的 reference（如 ImmGen for mouse）；marker 名稱需轉換 ortholog（如 CD3D → Cd3d）。</div></div>
+</div>
+<div data-lang="en">
+<div class="dt-node"><span class="dt-q">Q1:</span><div>Good public reference for your tissue (PBMC, lung, kidney, cortex)?<span class="dt-arrow">→ Yes →</span> Use <strong>Azimuth / SingleR + HPCA</strong> for first pass, then FindAllMarkers for manual verification.</div></div>
+<div class="dt-node"><span class="dt-q">Q2:</span><div>No suitable reference?<span class="dt-arrow">→</span> Pure manual: run <strong>FindAllMarkers</strong>, match top markers per cluster against CellMarker / PanglaoDB / literature.</div></div>
+<div class="dt-node"><span class="dt-q">Q3:</span><div>Some clusters have messy/atypical markers?<span class="dt-arrow">→</span> Possible causes: ① doublets, ② over-clustering, ③ genuine new subpopulation, or ④ transitional state. Revisit QC, resolution, or run trajectory analysis.</div></div>
+<div class="dt-node"><span class="dt-q">Q4:</span><div>Disease vs healthy samples?<span class="dt-arrow">→</span> Annotate on healthy first, then <strong>label transfer</strong> to disease — avoids forcing disease cells into wrong classes.</div></div>
+<div class="dt-node"><span class="dt-q">Q5:</span><div>Cross-species (human vs mouse)?<span class="dt-arrow">→</span> Use SingleR with species-matched reference (ImmGen for mouse); convert ortholog names (CD3D → Cd3d).</div></div>
+</div>
+</div>
+</section>
+
+<!-- ===== Section 9: Code ===== -->
+<section class="section">
+<div class="section-label" data-zh="程式碼" data-en="CODE">程式碼</div>
+<h2 data-zh="九、Seurat / Scanpy 註釋實作" data-en="IX. Code: Seurat & Scanpy">九、實作範例</h2>
+<div class="code-tabs">
+<div class="code-tab-btns">
+<button class="code-tab-btn active" onclick="switchTab(this,'r1')">R / Seurat</button>
+<button class="code-tab-btn" onclick="switchTab(this,'r2')">R / SingleR + Azimuth</button>
+<button class="code-tab-btn" onclick="switchTab(this,'py1')">Python / Scanpy</button>
+<button class="code-tab-btn" onclick="switchTab(this,'py2')">Python / CellTypist</button>
+</div>
+
+<div class="code-tab-content active" id="r1"><pre><span class="comment"># ===== 手動 marker-based annotation (Seurat) =====</span>
+<span class="func">library</span>(Seurat); <span class="func">library</span>(dplyr)
+
+<span class="comment"># Step 1: 找每個 cluster 的 markers</span>
+markers &lt;- <span class="func">FindAllMarkers</span>(pbmc,
+  only.pos       = <span class="kw">TRUE</span>,        <span class="comment"># 只看上調基因</span>
+  min.pct        = <span class="num">0.25</span>,        <span class="comment"># 至少 25% 細胞表達</span>
+  logfc.threshold = <span class="num">0.25</span>)
+
+<span class="comment"># Step 2: 取每個 cluster 的 top 10</span>
+top10 &lt;- markers <span class="kw">%&gt;%</span>
+  <span class="func">group_by</span>(cluster) <span class="kw">%&gt;%</span>
+  <span class="func">slice_max</span>(order_by = avg_log2FC, n = <span class="num">10</span>)
+
+<span class="comment"># Step 3: 視覺化驗證</span>
 <span class="func">FeaturePlot</span>(pbmc, features = <span class="func">c</span>(<span class="str">"CD3D"</span>, <span class="str">"MS4A1"</span>, <span class="str">"CD14"</span>, <span class="str">"GNLY"</span>))
-<span class="func">DotPlot</span>(pbmc, features = <span class="func">c</span>(<span class="str">"CD3D"</span>, <span class="str">"MS4A1"</span>, <span class="str">"CD14"</span>)) + <span class="func">RotatedAxis</span>()
+<span class="func">DotPlot</span>(pbmc, features = <span class="func">c</span>(<span class="str">"CD3D"</span>, <span class="str">"IL7R"</span>, <span class="str">"CD8A"</span>,
+                            <span class="str">"MS4A1"</span>, <span class="str">"CD14"</span>, <span class="str">"GNLY"</span>)) + <span class="func">RotatedAxis</span>()
 
-<span class="comment"># 手動指定細胞類型</span>
-new.ids &lt;- <span class="func">c</span>(<span class="str">"CD4 T"</span>, <span class="str">"CD14 Mono"</span>, <span class="str">"B cell"</span>, <span class="str">"CD8 T"</span>, <span class="str">"NK"</span>)
+<span class="comment"># Step 4: 確認後手動指定細胞類型</span>
+new.ids &lt;- <span class="func">c</span>(<span class="str">"CD4 T"</span>, <span class="str">"CD14 Mono"</span>, <span class="str">"B cell"</span>,
+              <span class="str">"CD8 T"</span>, <span class="str">"NK"</span>, <span class="str">"DC"</span>, <span class="str">"FCGR3A Mono"</span>, <span class="str">"Platelet"</span>)
 <span class="func">names</span>(new.ids) &lt;- <span class="func">levels</span>(pbmc)
 pbmc &lt;- <span class="func">RenameIdents</span>(pbmc, new.ids)
+pbmc$cell_type &lt;- <span class="func">Idents</span>(pbmc)</pre></div>
 
-<span class="comment"># 自動註釋：SingleR</span>
-<span class="func">library</span>(SingleR)
+<div class="code-tab-content" id="r2"><pre><span class="comment"># ===== SingleR 自動註釋 =====</span>
+<span class="func">library</span>(SingleR); <span class="func">library</span>(celldex)
+
+<span class="comment"># 1. 載入參考數據集（HumanPrimaryCellAtlas）</span>
 ref &lt;- <span class="func">celldex::HumanPrimaryCellAtlasData</span>()
-pred &lt;- <span class="func">SingleR</span>(test = <span class="func">GetAssayData</span>(pbmc), ref = ref, labels = ref$label.main)</pre></div>
-<div class="code-tab-content" id="py1"><pre><span class="comment"># 找 marker genes</span>
-sc.tl.rank_genes_groups(adata, groupby=<span class="str">"leiden"</span>, method=<span class="str">"wilcoxon"</span>)
+
+<span class="comment"># 2. 跑 SingleR（cluster-level 模式較穩定）</span>
+pred &lt;- <span class="func">SingleR</span>(
+  test     = <span class="func">GetAssayData</span>(pbmc, slot = <span class="str">"data"</span>),
+  ref      = ref,
+  labels   = ref$label.main,
+  clusters = <span class="func">Idents</span>(pbmc))    <span class="comment"># cluster-level</span>
+
+<span class="comment"># 3. 將 SingleR 標籤回填到 Seurat 物件</span>
+pbmc$singler_label &lt;- pred$labels[<span class="func">match</span>(<span class="func">Idents</span>(pbmc),
+                                          <span class="func">rownames</span>(pred))]
+
+<span class="comment"># 4. 檢查 pruning（ambiguous 的 cluster 會被標 NA）</span>
+<span class="func">plotScoreHeatmap</span>(pred)
+<span class="func">plotDeltaDistribution</span>(pred)
+
+<span class="comment"># ===== Azimuth (PBMC reference) =====</span>
+<span class="func">library</span>(Azimuth)
+pbmc &lt;- <span class="func">RunAzimuth</span>(pbmc, reference = <span class="str">"pbmcref"</span>)
+<span class="comment"># 結果存於 pbmc$predicted.celltype.l1 / l2 / l3</span>
+<span class="func">DimPlot</span>(pbmc, group.by = <span class="str">"predicted.celltype.l2"</span>, label = <span class="kw">TRUE</span>)</pre></div>
+
+<div class="code-tab-content" id="py1"><pre><span class="comment"># ===== Manual marker-based (Scanpy) =====</span>
+<span class="kw">import</span> scanpy <span class="kw">as</span> sc
+
+<span class="comment"># Step 1: 找 marker genes</span>
+sc.tl.rank_genes_groups(adata, groupby=<span class="str">"leiden"</span>,
+                         method=<span class="str">"wilcoxon"</span>)
 sc.pl.rank_genes_groups(adata, n_genes=<span class="num">10</span>)
 
-<span class="comment"># 視覺化驗證</span>
-sc.pl.umap(adata, color=[<span class="str">"CD3D"</span>, <span class="str">"MS4A1"</span>, <span class="str">"CD14"</span>])
-sc.pl.dotplot(adata, var_names=[<span class="str">"CD3D"</span>, <span class="str">"MS4A1"</span>, <span class="str">"CD14"</span>], groupby=<span class="str">"leiden"</span>)
+<span class="comment"># Step 2: 視覺化</span>
+sc.pl.umap(adata, color=[<span class="str">"CD3D"</span>, <span class="str">"MS4A1"</span>, <span class="str">"CD14"</span>, <span class="str">"GNLY"</span>])
+sc.pl.dotplot(adata,
+  var_names=[<span class="str">"CD3D"</span>, <span class="str">"IL7R"</span>, <span class="str">"CD8A"</span>,
+             <span class="str">"MS4A1"</span>, <span class="str">"CD14"</span>, <span class="str">"GNLY"</span>],
+  groupby=<span class="str">"leiden"</span>)
 
-<span class="comment"># 手動指定</span>
-cluster_to_celltype = {<span class="str">"0"</span>: <span class="str">"CD4 T"</span>, <span class="str">"1"</span>: <span class="str">"CD14 Mono"</span>, <span class="str">"2"</span>: <span class="str">"B cell"</span>}
-adata.obs[<span class="str">"cell_type"</span>] = adata.obs[<span class="str">"leiden"</span>].map(cluster_to_celltype)
+<span class="comment"># Step 3: 取得 DataFrame 形式的 markers</span>
+markers_df = sc.get.rank_genes_groups_df(adata, group=<span class="kw">None</span>)
 
-<span class="comment"># 自動註釋：CellTypist</span>
+<span class="comment"># Step 4: 手動指定</span>
+celltype_map = {
+  <span class="str">"0"</span>: <span class="str">"CD4 T"</span>, <span class="str">"1"</span>: <span class="str">"CD14 Mono"</span>,
+  <span class="str">"2"</span>: <span class="str">"B cell"</span>, <span class="str">"3"</span>: <span class="str">"CD8 T"</span>,
+  <span class="str">"4"</span>: <span class="str">"NK"</span>, <span class="str">"5"</span>: <span class="str">"DC"</span>,
+}
+adata.obs[<span class="str">"cell_type"</span>] = adata.obs[<span class="str">"leiden"</span>].map(celltype_map)</pre></div>
+
+<div class="code-tab-content" id="py2"><pre><span class="comment"># ===== CellTypist 自動註釋 =====</span>
 <span class="kw">import</span> celltypist
-model = celltypist.models.download_models(model=<span class="str">"Immune_All_Low.pkl"</span>)
-predictions = celltypist.annotate(adata, model=<span class="str">"Immune_All_Low.pkl"</span>)</pre></div></div></section>
+<span class="kw">from</span> celltypist <span class="kw">import</span> models
 
-<section class="quiz-section"><h3>📝 <span data-zh="自我檢測" data-en="Self-Check">自我檢測</span></h3>
-<div class="quiz-q" data-answer="2"><p data-lang="zh">某 cluster 的 top markers 包括 CD3D 和 IL7R，最可能是？</p><p data-lang="en">A cluster's top markers include CD3D and IL7R. Most likely?</p><div class="quiz-options">
+<span class="comment"># 1. 下載模型（首次需聯網）</span>
+models.download_models(model=<span class="str">"Immune_All_Low.pkl"</span>)
+model = models.Model.load(model=<span class="str">"Immune_All_Low.pkl"</span>)
+
+<span class="comment"># 2. 預測（建議使用 raw 或標準化的 log1p 數據）</span>
+predictions = celltypist.annotate(
+  adata,
+  model=<span class="str">"Immune_All_Low.pkl"</span>,
+  majority_voting=<span class="kw">True</span>)   <span class="comment"># 同 cluster 多數決</span>
+
+<span class="comment"># 3. 將結果合併回 AnnData</span>
+adata = predictions.to_adata()
+sc.pl.umap(adata, color=[<span class="str">"majority_voting"</span>,
+                        <span class="str">"predicted_labels"</span>])
+
+<span class="comment"># 4. 檢查置信度</span>
+adata.obs[<span class="str">"conf_score"</span>] = predictions.predicted_labels[<span class="str">"conf_score"</span>]
+sc.pl.violin(adata, [<span class="str">"conf_score"</span>], groupby=<span class="str">"leiden"</span>)</pre></div>
+</div>
+</section>
+
+<!-- ===== Section 10: Best Practices ===== -->
+<section class="section">
+<div class="section-label" data-zh="最佳實務" data-en="BEST PRACTICES">最佳實務</div>
+<h2 data-zh="十、註釋最佳實務" data-en="X. Annotation Best Practices">十、最佳實務</h2>
+<div class="card-grid cols-2">
+<div class="card"><h4>✅ <span data-zh="交叉驗證" data-en="Cross-validate">交叉驗證</span></h4>
+<div data-lang="zh"><p>至少使用 <strong>2 種獨立方法</strong>（如 SingleR + 手動 markers），比較結果。一致 → 高信心；不一致 → 標記為「需專家判斷」並深入檢查。</p></div>
+<div data-lang="en"><p>Use at least <strong>2 independent methods</strong> (e.g., SingleR + manual markers) and cross-check. Agreement → high confidence; disagreement → flag for expert review.</p></div>
+</div>
+<div class="card"><h4>✅ <span data-zh="檢查 Top 3 Markers" data-en="Inspect top 3 markers">人工檢查 top 3</span></h4>
+<div data-lang="zh"><p>即使有自動標籤，務必親眼確認每個 cluster 的 top 3 markers 是否符合該細胞類型的<strong>經典標誌</strong>。<code>FeaturePlot</code> + <code>VlnPlot</code> 同時看分佈與強度。</p></div>
+<div data-lang="en"><p>Even with auto labels, eyeball the top 3 markers of each cluster against <strong>canonical signatures</strong> for that cell type. Combine <code>FeaturePlot</code> + <code>VlnPlot</code> for distribution and intensity.</p></div>
+</div>
+<div class="card"><h4>✅ <span data-zh="區分 Unknown vs Novel" data-en="Unknown vs Novel">區分 Unknown vs Novel</span></h4>
+<div data-lang="zh"><p>找不到對應的 cluster 不一定是「新發現」。先排除：技術假象、過度聚類、doublets。確認後再思考是否為真正的新生物學。</p></div>
+<div data-lang="en"><p>An unrecognised cluster is not automatically a "discovery." First rule out: technical artefacts, over-clustering, doublets. Then consider novel biology.</p></div>
+</div>
+<div class="card"><h4>✅ <span data-zh="記錄參考版本" data-en="Record reference versions">記錄參考版本</span></h4>
+<div data-lang="zh"><p>SingleR 的 reference（如 HPCA v2024.01）、Azimuth 的 reference 版本、CellTypist 的 model 名稱與下載日期，全部記錄到 metadata。可重現性的關鍵。</p></div>
+<div data-lang="en"><p>Log the SingleR reference version (e.g., HPCA v2024.01), Azimuth reference release, CellTypist model name + download date — all in metadata. Key to reproducibility.</p></div>
+</div>
+<div class="card"><h4>✅ <span data-zh="保留階層標籤" data-en="Keep hierarchical labels">保留階層標籤</span></h4>
+<div data-lang="zh"><p>不要只存最細的標籤。同時保留 L1（T cell）、L2（CD4 T）、L3（CD4 memory）。不同分析（trajectory vs DE）可能用不同層級。</p></div>
+<div data-lang="en"><p>Don't keep only the finest label. Preserve L1 (T cell), L2 (CD4 T), L3 (CD4 memory). Different downstream analyses (trajectory vs DE) need different granularity.</p></div>
+</div>
+<div class="card"><h4>✅ <span data-zh="標註信心欄位" data-en="Confidence column">加註信心等級</span></h4>
+<div data-lang="zh"><p>在 metadata 加 <code>annotation_confidence</code>（high / medium / low）。後續分析時可選擇排除 low confidence cluster，避免污染結論。</p></div>
+<div data-lang="en"><p>Add an <code>annotation_confidence</code> column (high/medium/low) in metadata. Downstream you can exclude low-confidence clusters to avoid contaminating conclusions.</p></div>
+</div>
+</div>
+</section>
+
+<!-- ===== Section 11: Pitfalls ===== -->
+<section class="section">
+<div class="section-label" data-zh="常見陷阱" data-en="PITFALLS">常見陷阱</div>
+<h2 data-zh="十一、常見陷阱與 Troubleshooting" data-en="XI. Common Pitfalls & Troubleshooting">十一、常見陷阱</h2>
+
+<div class="card">
+<h4>🚨 <span data-zh="陷阱 1：盲目相信 SingleR 在罕見細胞上的結果" data-en="Pitfall 1: Trusting SingleR for rare cell types">陷阱 1：盲信 SingleR 對罕見細胞的呼叫</span></h4>
+<div data-lang="zh"><p>SingleR 等基於參考的工具只能<strong>從參考集中已有的類別中選</strong>。如果你的數據裡有 reference 從未看過的細胞（例如新的腫瘤亞群、罕見 progenitor），SingleR 還是會「硬塞」一個最像的標籤，並可能給出看似合理的 score。<strong>對策：</strong>檢視 <code>plotScoreHeatmap</code>，若該 cluster 對多個標籤的 score 都很低或差距很小（low delta），應視為 ambiguous 並改用手動判斷。</p></div>
+<div data-lang="en"><p>Reference-based tools like SingleR <strong>can only choose from labels present in the reference</strong>. For cells the reference has never seen (novel tumor subsets, rare progenitors), SingleR still assigns the closest match — possibly with a plausible-looking score. <strong>Mitigation:</strong> inspect <code>plotScoreHeatmap</code>; if the cluster scores low across labels or has low delta between top picks, treat as ambiguous and use manual judgment.</p></div>
+</div>
+
+<div class="card">
+<h4>🚨 <span data-zh="陷阱 2：用單一 marker 下結論" data-en="Pitfall 2: One-marker calls">陷阱 2：單一 marker 即下結論</span></h4>
+<div data-lang="zh"><p>看到 CD3D 表達就標 T 細胞、看到 CD14 就標 monocyte——這是初學者最常犯的錯。<strong>單一 marker 永遠不夠</strong>，因為：① 表達是連續的，背景值可能被誤判為陽性；② 一個基因可能在多種細胞中都有表達（CD4 也存在於部分 monocyte）。<strong>正確做法：</strong>至少 3 個 markers 同時陽性 + 至少 1 個應為陰性的 marker 驗證（如 NK 應 CD3D⁻）。</p></div>
+<div data-lang="en"><p>Calling T cells from CD3D alone, or monocytes from CD14 alone, is the most common beginner mistake. <strong>Single markers are never enough</strong>: ① expression is continuous and background may be miscalled positive; ② a gene can be expressed across multiple cell types (CD4 appears in some monocytes). <strong>Best practice:</strong> require ≥3 markers positive + ≥1 expected-negative marker (e.g., NK should be CD3D-negative).</p></div>
+</div>
+
+<div class="card">
+<h4>🚨 <span data-zh="陷阱 3：過度套用 Azimuth 參考" data-en="Pitfall 3: Over-fitting Azimuth refs">陷阱 3：過度套用 Azimuth 參考</span></h4>
+<div data-lang="zh"><p>Azimuth 的 PBMC reference 是在健康人類 PBMC 上訓練的。如果你做的是<strong>類風濕關節炎滑液</strong>、<strong>癌症淋巴結</strong>或<strong>骨髓瘤骨髓</strong>等病理樣本，Azimuth 仍會給出 PBMC 細胞類型，但可能完全錯過病理特有的細胞狀態。<strong>對策：</strong>把 Azimuth 視為「baseline 框架」，再用手動 markers 補強疾病特有訊號；或選擇對應疾病的專門 reference（CellTypist 有 COVID、IBD 等模型）。</p></div>
+<div data-lang="en"><p>Azimuth's PBMC reference was trained on healthy human PBMC. For <strong>RA synovial fluid</strong>, <strong>cancer lymph node</strong>, or <strong>myeloma bone marrow</strong> samples, Azimuth will still hand out PBMC labels — but may completely miss disease-specific states. <strong>Mitigation:</strong> treat Azimuth as a "baseline scaffold," then augment with manual markers for disease-specific signals; or pick disease-specific references (CellTypist offers COVID, IBD, etc.).</p></div>
+</div>
+
+<div class="card">
+<h4>🚨 <span data-zh="陷阱 4：物種不匹配" data-en="Pitfall 4: Species mismatch">陷阱 4：物種不匹配</span></h4>
+<div data-lang="zh"><p>用人類 HPCA 參考分析<strong>小鼠數據</strong>是常見錯誤。小鼠基因名稱（Cd3d 而非 CD3D）、表達譜差異、免疫亞群定義都不同。<strong>對策：</strong>小鼠請用 <code>celldex::ImmGenData()</code> 或 <code>MouseRNAseqData()</code>；跨物種比較時，需先轉換 ortholog（biomaRt 或 homologene）。</p></div>
+<div data-lang="en"><p>Using the human HPCA reference for <strong>mouse data</strong> is a frequent mistake. Mouse gene symbols (Cd3d not CD3D), expression patterns, and immune subset definitions all differ. <strong>Mitigation:</strong> use <code>celldex::ImmGenData()</code> or <code>MouseRNAseqData()</code> for mouse; for cross-species, convert orthologs (biomaRt or homologene).</p></div>
+</div>
+
+<div class="card">
+<h4>🚨 <span data-zh="陷阱 5：忽略過渡 / 中間狀態" data-en="Pitfall 5: Ignoring transitional states">陷阱 5：忽略過渡 / 中間狀態</span></h4>
+<div data-lang="zh"><p>並非所有 cluster 都對應「離散」細胞類型。在發育、活化、分化途中的細胞，可能同時表達兩個類型的 markers。強行單一標籤會抹去重要的生物學動態。<strong>對策：</strong>使用 <strong>trajectory / pseudotime</strong> 分析；或保留 <code>"CD4_T_activating"</code> 這類過渡標籤；或將該 cluster 標為 <code>"transitional"</code>。</p></div>
+<div data-lang="en"><p>Not every cluster maps to a discrete cell type. Cells mid-development, activation, or differentiation may co-express markers from two types. Forcing a single label erases important dynamics. <strong>Mitigation:</strong> use <strong>trajectory / pseudotime</strong> analysis; keep transitional labels like <code>"CD4_T_activating"</code>; or mark the cluster as <code>"transitional"</code>.</p></div>
+</div>
+</section>
+
+<!-- ===== Section 12: Quiz ===== -->
+<section class="quiz-section">
+<h3>📝 <span data-zh="自我檢測" data-en="Self-Check">自我檢測</span></h3>
+
+<div class="quiz-q" data-answer="2">
+<p data-lang="zh">1. 某 cluster 的 top markers 包括 CD3D 和 IL7R，最可能是？</p>
+<p data-lang="en">1. A cluster's top markers include CD3D and IL7R. Most likely?</p>
+<div class="quiz-options">
 <div class="quiz-opt" data-idx="0"><span data-lang="zh">A. B 細胞</span><span data-lang="en">A. B cell</span></div>
 <div class="quiz-opt" data-idx="1"><span data-lang="zh">B. NK 細胞</span><span data-lang="en">B. NK cell</span></div>
 <div class="quiz-opt" data-idx="2"><span data-lang="zh">C. CD4+ T 細胞</span><span data-lang="en">C. CD4+ T cell</span></div>
-<div class="quiz-opt" data-idx="3"><span data-lang="zh">D. Monocyte</span><span data-lang="en">D. Monocyte</span></div></div><div class="quiz-feedback" id="fb1"></div></div></section>
-<nav class="page-nav"><a href="umap.html"><span class="nav-dir" data-zh="← 上一步" data-en="← Previous">← 上一步</span><span class="nav-title" data-zh="Step 7：UMAP" data-en="Step 7: UMAP">Step 7：UMAP</span></a><a href="differential-expression.html"><span class="nav-dir" data-zh="下一步 →" data-en="Next →">下一步 →</span><span class="nav-title" data-zh="Step 9：DE" data-en="Step 9: DE">Step 9：DE</span></a></nav></main>
+<div class="quiz-opt" data-idx="3"><span data-lang="zh">D. Monocyte</span><span data-lang="en">D. Monocyte</span></div>
+</div><div class="quiz-feedback" id="fb1"></div>
+</div>
+
+<div class="quiz-q" data-answer="1">
+<p data-lang="zh">2. 你分析人類肺癌組織，SingleR 將某 cluster 標為「Macrophage」，但 score 對多個免疫類別都很相近（low delta）。最佳處理是？</p>
+<p data-lang="en">2. You analyze human lung cancer; SingleR labels a cluster "Macrophage" but with similar scores across multiple immune classes (low delta). Best action?</p>
+<div class="quiz-options">
+<div class="quiz-opt" data-idx="0"><span data-lang="zh">A. 直接採用 SingleR 結果</span><span data-lang="en">A. Accept SingleR's call as-is</span></div>
+<div class="quiz-opt" data-idx="1"><span data-lang="zh">B. 視為 ambiguous，跑 FindAllMarkers 並用腫瘤特異的 reference (如 tumor-associated macrophage atlas) 驗證</span><span data-lang="en">B. Treat as ambiguous; run FindAllMarkers and verify with a tumor-specific reference (e.g., TAM atlas)</span></div>
+<div class="quiz-opt" data-idx="2"><span data-lang="zh">C. 直接刪除這個 cluster</span><span data-lang="en">C. Delete the cluster</span></div>
+<div class="quiz-opt" data-idx="3"><span data-lang="zh">D. 把 cluster 再次分群</span><span data-lang="en">D. Re-cluster it</span></div>
+</div><div class="quiz-feedback" id="fb2"></div>
+</div>
+
+<div class="quiz-q" data-answer="3">
+<p data-lang="zh">3. 在分析小鼠 PBMC 時，下列何者最不妥當？</p>
+<p data-lang="en">3. When analyzing mouse PBMC, which is least appropriate?</p>
+<div class="quiz-options">
+<div class="quiz-opt" data-idx="0"><span data-lang="zh">A. 使用 celldex::ImmGenData() 作為 SingleR 參考</span><span data-lang="en">A. Use celldex::ImmGenData() as SingleR reference</span></div>
+<div class="quiz-opt" data-idx="1"><span data-lang="zh">B. 將人類 markers 透過 ortholog 轉成小鼠基因名</span><span data-lang="en">B. Convert human markers to mouse via ortholog mapping</span></div>
+<div class="quiz-opt" data-idx="2"><span data-lang="zh">C. 同時用 FindAllMarkers 做人工驗證</span><span data-lang="en">C. Cross-check with FindAllMarkers manual review</span></div>
+<div class="quiz-opt" data-idx="3"><span data-lang="zh">D. 直接用人類 HPCA 參考、不轉換 ortholog</span><span data-lang="en">D. Apply human HPCA directly without ortholog conversion</span></div>
+</div><div class="quiz-feedback" id="fb3"></div>
+</div>
+
+<div class="quiz-q" data-answer="1">
+<p data-lang="zh">4. 關於 marker-based 手動註釋，下列敘述何者正確？</p>
+<p data-lang="en">4. Which statement about marker-based manual annotation is correct?</p>
+<div class="quiz-options">
+<div class="quiz-opt" data-idx="0"><span data-lang="zh">A. 看到 1 個經典 marker 陽性就能下結論</span><span data-lang="en">A. One canonical marker is enough to call cell type</span></div>
+<div class="quiz-opt" data-idx="1"><span data-lang="zh">B. 應結合多個陽性 markers + 至少一個預期陰性 marker</span><span data-lang="en">B. Need multiple positives + at least one expected-negative marker</span></div>
+<div class="quiz-opt" data-idx="2"><span data-lang="zh">C. 不需要查 CellMarker 或 PanglaoDB</span><span data-lang="en">C. CellMarker / PanglaoDB checks are unnecessary</span></div>
+<div class="quiz-opt" data-idx="3"><span data-lang="zh">D. 自動工具的結果一律優先於人工判斷</span><span data-lang="en">D. Auto-tool results always override expert judgment</span></div>
+</div><div class="quiz-feedback" id="fb4"></div>
+</div>
+</section>
+
+<nav class="page-nav">
+<a href="umap.html"><span class="nav-dir" data-zh="← 上一步" data-en="← Previous">← 上一步</span><span class="nav-title" data-zh="Step 7：UMAP" data-en="Step 7: UMAP">Step 7：UMAP</span></a>
+<a href="differential-expression.html"><span class="nav-dir" data-zh="下一步 →" data-en="Next →">下一步 →</span><span class="nav-title" data-zh="Step 9：DE 差異表達" data-en="Step 9: Differential Expression">Step 9：DE</span></a>
+</nav>
+</main>
 <footer class="site-footer">© Charlene — scRNA-seq Interactive Tutorial</footer>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script><script src="i18n.js"></script><script>
+<script src="i18n.js"></script>
+<script>
 window.addEventListener("scroll",()=>{const h=document.documentElement;document.getElementById("progressBar").style.width=(h.scrollTop/(h.scrollHeight-h.clientHeight))*100+"%";});
 function switchTab(b,id){const p=b.closest(".code-tabs");p.querySelectorAll(".code-tab-btn").forEach(x=>x.classList.remove("active"));p.querySelectorAll(".code-tab-content").forEach(x=>x.classList.remove("active"));b.classList.add("active");document.getElementById(id).classList.add("active");}
 
+// =============== Dot Plot Explorer ===============
 const gN=['CD3D','CD3E','IL7R','CD8A','MS4A1','CD79A','GNLY','NKG7','CD14','LYZ'];
-const cD=[{zh:'→ CD4+ T 細胞（CD3D↑ IL7R↑）',en:'→ CD4+ T cell (CD3D↑ IL7R↑)',v:[3.8,3.2,3.5,0.3,0.1,0.1,0.2,0.3,0.1,0.2]},{zh:'→ CD8+ T 細胞（CD3D↑ CD8A↑）',en:'→ CD8+ T cell (CD3D↑ CD8A↑)',v:[3.5,3.0,0.8,3.2,0.1,0.1,1.5,1.8,0.1,0.2]},{zh:'→ B 細胞（MS4A1↑ CD79A↑）',en:'→ B cell (MS4A1↑ CD79A↑)',v:[0.2,0.1,0.1,0.1,4.2,3.8,0.1,0.1,0.2,0.3]},{zh:'→ NK 細胞（GNLY↑ NKG7↑）',en:'→ NK cell (GNLY↑ NKG7↑)',v:[0.3,0.2,0.2,0.5,0.1,0.1,4.5,4.0,0.1,0.2]},{zh:'→ CD14 Monocyte（CD14↑ LYZ↑）',en:'→ CD14 Monocyte (CD14↑ LYZ↑)',v:[0.1,0.1,0.1,0.1,0.1,0.1,0.2,0.3,4.0,4.5]}];
+const cD=[
+ {zh:'→ CD4+ T 細胞（CD3D↑ IL7R↑）',en:'→ CD4+ T cell (CD3D↑ IL7R↑)',v:[3.8,3.2,3.5,0.3,0.1,0.1,0.2,0.3,0.1,0.2]},
+ {zh:'→ CD8+ T 細胞（CD3D↑ CD8A↑）',en:'→ CD8+ T cell (CD3D↑ CD8A↑)',v:[3.5,3.0,0.8,3.2,0.1,0.1,1.5,1.8,0.1,0.2]},
+ {zh:'→ B 細胞（MS4A1↑ CD79A↑）',en:'→ B cell (MS4A1↑ CD79A↑)',v:[0.2,0.1,0.1,0.1,4.2,3.8,0.1,0.1,0.2,0.3]},
+ {zh:'→ NK 細胞（GNLY↑ NKG7↑）',en:'→ NK cell (GNLY↑ NKG7↑)',v:[0.3,0.2,0.2,0.5,0.1,0.1,4.5,4.0,0.1,0.2]},
+ {zh:'→ CD14 Monocyte（CD14↑ LYZ↑）',en:'→ CD14 Monocyte (CD14↑ LYZ↑)',v:[0.1,0.1,0.1,0.1,0.1,0.1,0.2,0.3,4.0,4.5]}
+];
 const dotChart=new Chart(document.getElementById('dotChart'),{type:'bar',data:{labels:gN,datasets:[{data:cD[0].v,backgroundColor:'rgba(26,107,90,0.6)',borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,animation:false,plugins:{legend:{display:false}},scales:{y:{min:0,max:5.5,title:{display:true,text:'Expression'}},x:{}}}});
-let curCl=0;function showCl(i){curCl=i;for(let j=0;j<5;j++)document.getElementById('cl-'+j).classList.toggle('active',j===i);const L=I18n.get();document.getElementById('clLabel').textContent='Cluster '+i+' '+cD[i][L];dotChart.data.datasets[0].data=cD[i].v;dotChart.update('none');}
-document.addEventListener('langchange',()=>showCl(curCl));showCl(0);
-window._QF={zh:{q1_y:'CD3D + IL7R 是 CD4+ T 細胞的經典標誌組合。CD3D 標記 T 細胞系，IL7R 區分 CD4+ 亞型。',q1_n:'答案是 C。CD3D + IL7R = CD4+ T 細胞。'},en:{q1_y:'CD3D + IL7R is the classic CD4+ T cell marker combination. CD3D marks T cell lineage, IL7R distinguishes the CD4+ subset.',q1_n:'Answer is C. CD3D + IL7R = CD4+ T cell.'}};
-const QF=window._QF||{};document.querySelectorAll(".quiz-q").forEach((q,qi)=>{const ans=+q.dataset.answer;q.querySelectorAll(".quiz-opt").forEach(o=>{o.addEventListener("click",()=>{if(q.classList.contains("answered"))return;q.classList.add("answered");const fb=document.getElementById("fb"+(qi+1));const ok=+o.dataset.idx===ans;o.classList.add(ok?"correct":"wrong");if(!ok)q.querySelectorAll(".quiz-opt")[ans].classList.add("correct");const L=I18n.get();fb.className="quiz-feedback show "+(ok?"correct-fb":"wrong-fb");fb.textContent=(ok?"✅ ":"❌ ")+(QF[L]&&QF[L]["q"+(qi+1)+"_"+(ok?"y":"n")]||"");});});});
-</script></body></html>
+let curCl=0;
+function showCl(i){curCl=i;for(let j=0;j<5;j++)document.getElementById('cl-'+j).classList.toggle('active',j===i);const L=I18n.get();document.getElementById('clLabel').textContent='Cluster '+i+' '+cD[i][L];dotChart.data.datasets[0].data=cD[i].v;dotChart.update('none');}
+
+// =============== Confidence Simulator ===============
+// 5 clusters × 1 ground-truth label each. Score = specificity * (1 - noise * jitter).
+const confClusters=['Cluster 0','Cluster 1','Cluster 2','Cluster 3','Cluster 4'];
+const baseSpec=[0.92,0.78,0.85,0.65,0.95]; // intrinsic specificity per cluster
+function clamp(v,lo,hi){return Math.max(lo,Math.min(hi,v));}
+const confChart=new Chart(document.getElementById('confChart'),{
+  type:'bar',
+  data:{labels:confClusters,datasets:[{label:'Confidence',data:[],backgroundColor:[],borderRadius:4}]},
+  options:{
+    responsive:true,maintainAspectRatio:false,animation:false,
+    plugins:{legend:{display:false},tooltip:{callbacks:{label:(c)=>'Conf: '+c.parsed.y.toFixed(2)}}},
+    scales:{
+      y:{min:0,max:1,title:{display:true,text:'Confidence (0-1)',font:{size:11}},ticks:{font:{size:10}}},
+      x:{ticks:{font:{size:10}}}
+    }
+  }
+});
+function updateConf(){
+  const spec=+document.getElementById('sliderSpec').value/100;
+  const noise=+document.getElementById('sliderNoise').value/100;
+  document.getElementById('valSpec').textContent=spec.toFixed(2);
+  document.getElementById('valNoise').textContent=noise.toFixed(2);
+  const scores=baseSpec.map(b=>clamp(b*spec - noise*(0.3+0.7*Math.random()),0,1));
+  // categorize counts
+  let hi=0,md=0,lo=0;
+  const colors=scores.map(s=>{
+    if(s>=0.8){hi++;return 'rgba(26,107,90,0.7)';}
+    if(s>=0.5){md++;return 'rgba(212,160,60,0.8)';}
+    lo++;return 'rgba(192,57,43,0.7)';
+  });
+  confChart.data.datasets[0].data=scores;
+  confChart.data.datasets[0].backgroundColor=colors;
+  confChart.update('none');
+  const L=I18n.get();
+  document.getElementById('statConfHigh').textContent=(L==='zh'?'高信心 ':'High ')+hi;
+  document.getElementById('statConfMid').textContent=(L==='zh'?'需驗證 ':'Verify ')+md;
+  document.getElementById('statConfLow').textContent=(L==='zh'?'低信心 ':'Low ')+lo;
+}
+['sliderSpec','sliderNoise'].forEach(id=>document.getElementById(id).addEventListener('input',updateConf));
+document.addEventListener('langchange',()=>{showCl(curCl);updateConf();});
+showCl(0);updateConf();
+
+// =============== Quiz ===============
+window._QF={
+ zh:{
+  q1_y:'CD3D + IL7R 是 CD4+ T 細胞的經典標誌組合。CD3D 標記 T 細胞系，IL7R 區分 CD4+ 亞型。',
+  q1_n:'答案是 C。CD3D + IL7R = CD4+ T 細胞。',
+  q2_y:'低 delta 代表 SingleR 不確定，腫瘤樣本中更可能是 TAM 或新亞群。應交叉驗證並用腫瘤專門 reference。',
+  q2_n:'答案是 B。SingleR 在腫瘤樣本中對 TAM 等病理特有細胞容易錯標。',
+  q3_y:'小鼠 PBMC 必須使用對應物種的 reference 和 ortholog 後的 marker 名稱。直接套人類 HPCA 會嚴重錯誤。',
+  q3_n:'答案是 D。物種不匹配是 SingleR 最容易產生荒謬結果的情境之一。',
+  q4_y:'多個 markers 同時陽性 + 預期陰性 marker 是黃金標準，避免單一基因背景值造成的誤判。',
+  q4_n:'答案是 B。任何一種策略都應有「陽性 + 陰性」雙向驗證。'
+ },
+ en:{
+  q1_y:'CD3D + IL7R is the classic CD4+ T cell signature. CD3D marks T lineage, IL7R distinguishes CD4+.',
+  q1_n:'Answer is C. CD3D + IL7R = CD4+ T cell.',
+  q2_y:'Low delta means SingleR is uncertain; tumor samples likely contain TAMs or novel subsets. Cross-validate with tumor-specific references.',
+  q2_n:'Answer is B. SingleR easily mis-labels disease-specific cells like TAMs.',
+  q3_y:'Mouse PBMC requires a species-matched reference and ortholog-converted marker names. Using human HPCA directly is a serious mistake.',
+  q3_n:'Answer is D. Species mismatch is one of the easiest ways to get nonsense from SingleR.',
+  q4_y:'Multiple positives + an expected-negative marker is the gold standard, avoiding single-gene background false-calls.',
+  q4_n:'Answer is B. Every strategy needs both positive and negative marker verification.'
+ }
+};
+const QF=window._QF||{};
+document.querySelectorAll(".quiz-q").forEach((q,qi)=>{const ans=+q.dataset.answer;q.querySelectorAll(".quiz-opt").forEach(o=>{o.addEventListener("click",()=>{if(q.classList.contains("answered"))return;q.classList.add("answered");const fb=document.getElementById("fb"+(qi+1));const ok=+o.dataset.idx===ans;o.classList.add(ok?"correct":"wrong");if(!ok)q.querySelectorAll(".quiz-opt")[ans].classList.add("correct");const L=I18n.get();fb.className="quiz-feedback show "+(ok?"correct-fb":"wrong-fb");fb.textContent=(ok?"✅ ":"❌ ")+(QF[L]&&QF[L]["q"+(qi+1)+"_"+(ok?"y":"n")]||"");});});});
+</script>
+</body></html>

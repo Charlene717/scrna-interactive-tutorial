@@ -1,49 +1,516 @@
-<!DOCTYPE html><html lang="zh-Hant"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>pca — scRNA-seq Tutorial</title><link rel="stylesheet" href="styles.css"></head><body>
-<nav class="top-nav"><div class="top-nav-inner"><a href="index.html" class="top-nav-brand"><span>🧬</span> <span data-zh="scRNA-seq 教學" data-en="scRNA-seq Tutorial">scRNA-seq 教學</span></a><ul class="top-nav-links"><li><a href="qc.html">QC</a></li><li><a href="normalization.html">Norm.</a></li><li><a href="variable-features.html">Features</a></li><li><a href="scaling.html">Scaling</a></li><li><a href="pca.html" class=active>PCA</a></li><li><a href="clustering.html">Clustering</a></li><li><a href="umap.html">UMAP</a></li><li><a href="annotation.html">Annot.</a></li><li><a href="differential-expression.html">DE</a></li><li><a href="integration.html">Integ.</a></li><li><a href="cellchat.html">CellChat</a></li><li><a href="trajectory.html">Traj.</a></li>
+<!DOCTYPE html><html lang="zh-Hant"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Step 5: PCA — scRNA-seq Tutorial</title>
+<link rel="stylesheet" href="styles.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+</head><body>
+<nav class="top-nav"><div class="top-nav-inner">
+  <a href="index.html" class="top-nav-brand"><span>🧬</span> <span data-zh="scRNA-seq 教學" data-en="scRNA-seq Tutorial">scRNA-seq 教學</span></a>
+  <ul class="top-nav-links"><li><a href="qc.html">QC</a></li><li><a href="normalization.html">Norm.</a></li><li><a href="variable-features.html">Features</a></li><li><a href="scaling.html">Scaling</a></li><li><a href="pca.html" class="active">PCA</a></li><li><a href="clustering.html">Clustering</a></li><li><a href="umap.html">UMAP</a></li><li><a href="annotation.html">Annot.</a></li><li><a href="differential-expression.html">DE</a></li><li><a href="integration.html">Integ.</a></li><li><a href="cellchat.html">CellChat</a></li><li><a href="trajectory.html">Traj.</a></li>
     <li><a href="references/index.html" data-zh="📚 參考資料" data-en="📚 References">📚 參考資料</a></li>
-  </ul></div></nav><div class="progress-bar-container"><div class="progress-bar" id="progressBar"></div></div>
-<header class="page-hero"><div class="step-badge">STEP 5 / 9</div><h1 data-zh="主成分分析 (PCA)" data-en="Principal Component Analysis (PCA)">主成分分析 (PCA)</h1><p class="subtitle" data-lang="zh">將數千個基因維度壓縮成數十個主成分，保留關鍵變異與降低噪音。</p><p class="subtitle" data-lang="en">Compress thousands of gene dimensions into tens of principal components — retain key variation, reduce noise.</p></header><main class="content-wrap">
-<section class="section"><div class="section-label" data-zh="核心概念" data-en="CONCEPT">核心概念</div><h2 data-zh="PCA 在 scRNA-seq 中的角色" data-en="Role of PCA in scRNA-seq">PCA 的角色</h2>
-<div data-lang="zh"><p>即使只使用 2000 個 HVGs，數據仍然是 2000 維的——這對聚類和視覺化來說太高了（「維度災難」）。PCA 找出數據中方差最大的方向（主成分），用前 N 個主成分就能捕捉絕大部分的真實訊號，而後面的主成分多半是噪音。</p></div>
-<div data-lang="en"><p>Even with just 2000 HVGs, the data is still 2000-dimensional — too high for clustering and visualization ("curse of dimensionality"). PCA finds directions of maximum variance (principal components); the first N PCs capture most true signal while later PCs are mostly noise.</p></div>
-<div class="card-grid cols-3"><div class="card"><div class="card-icon">🗜️</div><h4 data-zh="降維" data-en="Dim. Reduction">降維</h4><p data-lang="zh">從 ~2000 維壓縮到 10–50 維。</p><p data-lang="en">Compress from ~2000 to 10–50 dimensions.</p></div>
-<div class="card"><div class="card-icon">🧹</div><h4 data-zh="去噪" data-en="Denoising">去噪</h4><p data-lang="zh">丟棄低方差主成分等同過濾噪音。</p><p data-lang="en">Discarding low-variance PCs effectively filters noise.</p></div>
-<div class="card"><div class="card-icon">⚡</div><h4 data-zh="加速" data-en="Speed">加速</h4><p data-lang="zh">降維後聚類、UMAP 計算大幅提升。</p><p data-lang="en">Dramatically speeds up clustering and UMAP computation.</p></div></div></section>
-<section class="section"><div class="section-label" data-zh="互動模擬" data-en="INTERACTIVE">互動模擬</div><h2 data-zh="Elbow Plot：選擇多少個主成分？" data-en="Elbow Plot: How many PCs?">Elbow Plot</h2>
-<div data-lang="zh"><p>Elbow Plot 顯示每個主成分解釋的方差比例。找到「手肘」——曲線開始趨平的位置。拖動滑桿設定選擇。</p></div><div data-lang="en"><p>Elbow Plot shows variance explained by each PC. Find the "elbow" — where the curve flattens. Drag slider to set your choice.</p></div>
-<div class="interactive-panel"><div class="slider-group"><label>nPCs <span id="valPC">15</span></label><input type="range" id="sliderPC" min="5" max="50" value="15" step="1"></div>
-<div id="pcDesc" style="font-size:.88rem;color:var(--c-ink-light);margin-bottom:8px;"></div><div class="chart-container" style="height:300px;"><canvas id="elbowChart"></canvas></div></div>
-<div class="decision-tree"><h4>🌳 <span data-zh="如何決定 nPCs？" data-en="How to decide nPCs?">如何決定 nPCs？</span></h4>
-<div data-lang="zh"><div class="dt-node"><span class="dt-q">方法1:</span><div><strong>Elbow Plot</strong> — 選在曲線趨平處，通常 10–20。</div></div><div class="dt-node"><span class="dt-q">方法2:</span><div><strong>JackStraw test</strong> — 統計檢定每個 PC 的顯著性（計算較慢）。</div></div><div class="dt-node"><span class="dt-q">經驗值:</span><div>大多數情況 15–30 即足夠。稍微選多比選少安全——寧可包含一點噪音，也不要遺漏訊號。</div></div></div>
-<div data-lang="en"><div class="dt-node"><span class="dt-q">Method 1:</span><div><strong>Elbow Plot</strong> — select where curve flattens, typically 10–20.</div></div><div class="dt-node"><span class="dt-q">Method 2:</span><div><strong>JackStraw test</strong> — statistical test for PC significance (computationally slow).</div></div><div class="dt-node"><span class="dt-q">Rule of thumb:</span><div>15–30 usually sufficient. Slightly more is safer than fewer — better to include some noise than miss signal.</div></div></div></div></section>
-<section class="section"><div class="section-label" data-zh="程式碼" data-en="CODE">程式碼</div><h2 data-zh="實作範例" data-en="Code Examples">實作範例</h2>
-<div class="code-tabs"><div class="code-tab-btns"><button class="code-tab-btn active" onclick="switchTab(this,'r1')">R / Seurat</button><button class="code-tab-btn" onclick="switchTab(this,'py1')">Python / Scanpy</button></div>
-<div class="code-tab-content active" id="r1"><pre>pbmc &lt;- <span class="func">RunPCA</span>(pbmc, features = <span class="func">VariableFeatures</span>(pbmc))
-<span class="func">DimPlot</span>(pbmc, reduction = <span class="str">"pca"</span>)
+  </ul>
+</div></nav>
+<div class="progress-bar-container"><div class="progress-bar" id="progressBar"></div></div>
+<header class="page-hero"><div class="step-badge">STEP 5 / 9</div>
+<h1 data-zh="主成分分析 (PCA)" data-en="Principal Component Analysis (PCA)">主成分分析 (PCA)</h1>
+<p class="subtitle" data-lang="zh">將數千個基因維度壓縮成數十個主成分——保留關鍵變異、抑制噪音、為下游分群與視覺化奠基。</p>
+<p class="subtitle" data-lang="en">Compress thousands of gene dimensions into tens of principal components — retain key variation, suppress noise, and lay the groundwork for clustering and visualization.</p>
+</header>
+<main class="content-wrap">
+
+<!-- ===== Section 1: Overview ===== -->
+<section class="section">
+<div class="section-label" data-zh="概覽" data-en="OVERVIEW">概覽</div>
+<h2 data-zh="一、為什麼 scRNA-seq 需要 PCA？" data-en="I. Why does scRNA-seq need PCA?">一、為什麼 scRNA-seq 需要 PCA？</h2>
+<div data-lang="zh">
+<p>單細胞數據動輒包含 <strong>20,000+ 基因</strong>，即使做了 HVG 篩選後仍剩約 2,000 維特徵。直接在這個高維空間做聚類、UMAP，會遇到所謂<strong>「維度災難 (Curse of Dimensionality)」</strong>——當維度過高時：</p>
+<ul style="margin:8px 0 0 20px;color:var(--c-ink-light);">
+<li>細胞間的歐氏距離趨於同質化，鄰居關係失去鑑別力</li>
+<li>下游算法計算量隨維度線性甚至指數增長</li>
+<li>噪音（drop-out、技術變異）會掩蓋真實生物訊號</li>
+</ul>
+<p><strong>PCA 的核心想法：</strong>在所有可能的線性方向中，找出資料變異量最大的那幾個軸（主成分），用它們來重新表達細胞。前幾個 PC 通常就足以捕捉細胞之間的主要差異（細胞類型、狀態），而後面的 PC 多半是技術噪音——直接丟棄。</p>
+</div>
+<div data-lang="en">
+<p>Single-cell datasets routinely contain <strong>20,000+ genes</strong>; even after HVG selection ~2,000 features remain. Clustering or UMAP directly in this high-dimensional space hits the so-called <strong>"Curse of Dimensionality"</strong>:</p>
+<ul style="margin:8px 0 0 20px;color:var(--c-ink-light);">
+<li>Euclidean distances between cells become homogeneous — neighborhood structure loses discriminative power</li>
+<li>Downstream algorithms scale linearly or worse in dimensionality</li>
+<li>Noise (dropout, technical variation) drowns out real biological signal</li>
+</ul>
+<p><strong>The core idea of PCA:</strong> among all possible linear directions, find those that capture maximal data variance (principal components) and use them to re-represent cells. The first few PCs typically suffice to capture major cell-to-cell differences (cell types, states); later PCs are mostly technical noise — discard them.</p>
+</div>
+<div class="card-grid cols-3">
+<div class="card"><div class="card-icon">🗜️</div><h4 data-zh="降維" data-en="Dim. Reduction">降維</h4><p data-lang="zh">從 ~2000 維壓縮到 10–50 維，保留 70–90% 的有效變異。</p><p data-lang="en">Compress ~2000 dims to 10–50, retaining 70–90% of meaningful variance.</p></div>
+<div class="card"><div class="card-icon">🧹</div><h4 data-zh="去噪" data-en="Denoising">去噪</h4><p data-lang="zh">低方差 PC 多半是雜訊；丟棄它們等同於做頻譜過濾。</p><p data-lang="en">Low-variance PCs are mostly noise; discarding them is equivalent to spectral filtering.</p></div>
+<div class="card"><div class="card-icon">⚡</div><h4 data-zh="加速" data-en="Speed">加速</h4><p data-lang="zh">後續 kNN、UMAP、Leiden 都在 PCA 空間中運作，速度提升一個數量級。</p><p data-lang="en">Downstream kNN, UMAP, Leiden all operate in PCA space — an order of magnitude faster.</p></div>
+</div>
+<div class="callout tip"><span class="callout-icon">💡</span><div>
+<span data-lang="zh"><strong>關鍵原則：</strong>PCA 在 scRNA-seq 中<strong>不是</strong>用來做視覺化（那是 UMAP 的工作），而是<strong>下游分析的入口空間</strong>——所有 kNN、聚類、UMAP 投影都在這個 PCA 空間中進行。因此 PCA 的品質直接決定整個下游結果。</span>
+<span data-lang="en"><strong>Key principle:</strong> PCA in scRNA-seq is <strong>not</strong> for visualization (that's UMAP's job) — it is the <strong>entry space for downstream analysis</strong>. All kNN graphs, clustering, and UMAP projection happen in PCA space. The quality of PCA therefore directly determines the quality of everything downstream.</span>
+</div></div>
+</section>
+
+<!-- ===== Section 2: Math Intuition ===== -->
+<section class="section">
+<div class="section-label" data-zh="數學直覺" data-en="MATH INTUITION">數學直覺</div>
+<h2 data-zh="二、PCA 背後的數學直覺" data-en="II. Mathematical Intuition Behind PCA">二、PCA 背後的數學直覺</h2>
+<div data-lang="zh">
+<p>從幾何角度看，PCA 在做這件事：</p>
+<ol style="margin:8px 0 0 20px;color:var(--c-ink-light);">
+<li><strong>中心化資料</strong>：每個基因減去平均（這就是為什麼 Scaling 步驟必要）</li>
+<li><strong>計算共變異矩陣</strong> Σ = (1/n) XᵀX（基因 × 基因的矩陣）</li>
+<li><strong>特徵分解</strong>：Σ = V Λ Vᵀ。<strong>特徵向量 V</strong> 就是主成分方向，<strong>特徵值 Λ</strong> 是該方向上的變異量</li>
+<li><strong>投影</strong>：原始細胞 × 基因矩陣 X 投影到前 k 個特徵向量，得到細胞 × k 的降維表現 X·V[:,1:k]</li>
+</ol>
+<p><strong>SVD 視角：</strong>實務上幾乎不會真的算共變異矩陣，而是用 SVD 分解 X = U Σ Vᵀ。U·Σ 就是細胞在 PC 空間的座標，Vᵀ 是基因 loadings。</p>
+<p><strong>為什麼 scRNA-seq 用 randomized / truncated SVD？</strong>因為我們只要前 50 個 PC，不需要完整分解。Seurat 的 <code>irlba</code>、Scanpy 的 <code>arpack</code> 都是這種「近似但夠用」的演算法，把 O(n³) 的全分解降到 O(n²·k)，對 10⁵–10⁶ 個細胞至關重要。</p>
+</div>
+<div data-lang="en">
+<p>Geometrically, PCA does the following:</p>
+<ol style="margin:8px 0 0 20px;color:var(--c-ink-light);">
+<li><strong>Center the data</strong>: subtract per-gene mean (this is why Scaling matters)</li>
+<li><strong>Compute the covariance matrix</strong> Σ = (1/n) XᵀX (a gene × gene matrix)</li>
+<li><strong>Eigendecomposition</strong>: Σ = V Λ Vᵀ. <strong>Eigenvectors V</strong> are PC directions; <strong>eigenvalues Λ</strong> are variances along those directions</li>
+<li><strong>Projection</strong>: project cell × gene matrix X onto the top k eigenvectors → cell × k embedding X·V[:,1:k]</li>
+</ol>
+<p><strong>SVD viewpoint:</strong> in practice we almost never compute the covariance matrix directly. Instead we use SVD X = U Σ Vᵀ. U·Σ gives PC-space coordinates, Vᵀ are gene loadings.</p>
+<p><strong>Why scRNA-seq uses randomized / truncated SVD:</strong> we only need the top 50 PCs, not the full decomposition. Seurat's <code>irlba</code> and Scanpy's <code>arpack</code> are such "approximate but sufficient" methods, reducing O(n³) full decomposition to O(n²·k) — critical for 10⁵–10⁶ cells.</p>
+</div>
+<div class="card-grid cols-2">
+<div class="card"><div class="card-icon">🎯</div><h4 data-zh="變異量分解" data-en="Variance Decomposition">變異量分解</h4>
+<div data-lang="zh"><p>每個 PC 解釋固定比例的總方差。前 10–30 個 PC 通常累積 60–90% 解釋率，其餘多為噪音。<strong>累積解釋率曲線</strong>是選擇 npcs 的重要依據。</p></div>
+<div data-lang="en"><p>Each PC explains a fixed fraction of total variance. The first 10–30 PCs typically cumulate 60–90% explained variance; the rest are mostly noise. The <strong>cumulative explained variance curve</strong> is a key reference for choosing npcs.</p></div>
+</div>
+<div class="card"><div class="card-icon">🧭</div><h4 data-zh="PC 載荷 (Loadings)" data-en="PC Loadings">PC 載荷</h4>
+<div data-lang="zh"><p>每個 PC 都是基因的線性組合；高 loading 的基因驅動該 PC 的方向。檢視 top loadings 可以判斷這個 PC 是反映「細胞類型」、「細胞週期」還是「批次效應」。</p></div>
+<div data-lang="en"><p>Each PC is a linear combination of genes; high-loading genes drive its direction. Inspecting top loadings tells you whether a PC reflects "cell type," "cell cycle," or "batch effects."</p></div>
+</div>
+</div>
+</section>
+
+<!-- ===== Section 3: How many PCs? ===== -->
+<section class="section">
+<div class="section-label" data-zh="決定 nPCs" data-en="CHOOSING nPCs">決定 nPCs</h2 style="display:none"></div>
+<h2 data-zh="三、如何決定要用幾個主成分？" data-en="III. How to decide how many PCs to use?">三、如何決定要用幾個主成分？</h2>
+<div data-lang="zh">
+<p>「要用幾個 PC？」是 PCA 步驟唯一需要人工決策的參數。常見三種方法：</p>
+</div>
+<div data-lang="en">
+<p>"How many PCs?" is the only manual decision in the PCA step. Three common approaches:</p>
+</div>
+<div class="card-grid cols-3">
+<div class="card"><div class="card-icon">📈</div><h4 data-zh="① Elbow Plot（最常用）" data-en="① Elbow Plot (most common)">① Elbow Plot</h4>
+<div data-lang="zh"><p>畫出每個 PC 解釋的方差比例（標準差），找曲線「手肘」處——下降開始趨平的位置。直觀快速，但「手肘」位置主觀。</p></div>
+<div data-lang="en"><p>Plot variance (or std-dev) explained per PC; find the "elbow" where the curve flattens. Intuitive and fast, but the elbow position is subjective.</p></div>
+</div>
+<div class="card"><div class="card-icon">🧪</div><h4 data-zh="② JackStraw 檢定" data-en="② JackStraw test">② JackStraw 檢定</h4>
+<div data-lang="zh"><p>隨機打亂 1% 基因表現後重算 PCA，計算每個 PC 的 p-value——統計上顯著的 PC 才保留。準確但極慢（重複百次）。</p></div>
+<div data-lang="en"><p>Permute 1% of gene expression, re-run PCA, compute a p-value for each PC — keep statistically significant ones. Accurate but very slow (hundreds of permutations).</p></div>
+</div>
+<div class="card"><div class="card-icon">📊</div><h4 data-zh="③ 累積解釋率閾值" data-en="③ Cumulative variance threshold">③ 累積解釋率</h4>
+<div data-lang="zh"><p>累積解釋率達 80–90% 時截斷。客觀但對 scRNA-seq 可能取過多 PC（因為 single-cell 噪音多）。</p></div>
+<div data-lang="en"><p>Truncate when cumulative explained variance reaches 80–90%. Objective, but may overshoot for scRNA-seq (single-cell noise inflates tails).</p></div>
+</div>
+</div>
+<div class="decision-tree">
+<h4>🌳 <span data-zh="實務建議：先用 ElbowPlot，再用 DimHeatmap 驗證" data-en="Practical recipe: ElbowPlot first, DimHeatmap to validate">實務建議</span></h4>
+<div data-lang="zh">
+<div class="dt-node"><span class="dt-q">經驗值:</span><div>大多數 PBMC / 組織數據集 <strong>15–30 個 PC</strong> 就足夠；複雜異質組織（多細胞類型 + 多狀態）可以選 30–50。</div></div>
+<div class="dt-node"><span class="dt-q">原則:</span><div><strong>寧可多選一點</strong>。多選 5 個 PC 帶來的噪音遠小於少選 5 個遺失的稀有族群訊號。</div></div>
+<div class="dt-node"><span class="dt-q">驗證:</span><div>用 <code>DimHeatmap()</code> 檢視每個 PC 的 top loading 基因；如果 PC 30 還有清晰的生物學意義基因群，就再多取幾個。</div></div>
+<div class="dt-node"><span class="dt-q">迭代:</span><div>npcs 不是一錘定音——可以先選 20 跑分群，看結果合理性，必要時調整重跑。</div></div>
+</div>
+<div data-lang="en">
+<div class="dt-node"><span class="dt-q">Rule of thumb:</span><div>Most PBMC / tissue datasets need <strong>15–30 PCs</strong>; complex heterogeneous tissues (many types × states) may need 30–50.</div></div>
+<div class="dt-node"><span class="dt-q">Principle:</span><div><strong>Lean toward more PCs.</strong> Noise from 5 extra PCs is much less harmful than losing rare-population signal from 5 too few.</div></div>
+<div class="dt-node"><span class="dt-q">Validate:</span><div>Use <code>DimHeatmap()</code> to inspect top-loading genes per PC. If PC 30 still shows clear biological gene programs, take a few more.</div></div>
+<div class="dt-node"><span class="dt-q">Iterate:</span><div>npcs is not set in stone — pick 20, run clustering, judge biological plausibility, adjust if needed.</div></div>
+</div>
+</div>
+<div class="callout warn"><span class="callout-icon">⚠️</span><div>
+<span data-lang="zh"><strong>太少 PC 的風險：</strong>會遺失稀有細胞群的訊號（它們的變異可能集中在 PC 20–30 之間）。<strong>太多 PC 的風險：</strong>引入噪音，使 kNN 圖出現虛假連結，UMAP 上會看到雜亂的細點。經驗上「太少 PC」傷害更大。</span>
+<span data-lang="en"><strong>Risk of too few PCs:</strong> losing rare population signal (their variance may sit at PCs 20–30). <strong>Risk of too many PCs:</strong> noise creates spurious edges in the kNN graph and scattered points on UMAP. Empirically, "too few" is the worse failure mode.</span>
+</div></div>
+</section>
+
+<!-- ===== Section 4: Interactive Sim ===== -->
+<section class="section">
+<div class="section-label" data-zh="互動模擬" data-en="INTERACTIVE">互動模擬</div>
+<h2 data-zh="四、互動模擬：Elbow Plot × 下游分群" data-en="IV. Interactive Sim: Elbow Plot × Downstream Clusters">四、Elbow Plot × 下游分群</h2>
+<div data-lang="zh"><p>左側為 <strong>Elbow Plot</strong>：每個 PC 解釋的標準差。拖動滑桿選擇 nPCs，藍色長條代表選中的 PC。右側為<strong>合成下游 UMAP</strong>，模擬不同 nPCs 對分群結果的影響——當 PC 數太少時，<span style="color:#c0392b;font-weight:600;">稀有族群消失</span>；太多 PC 時，<span style="color:#8e44ad;font-weight:600;">出現雜訊小群</span>。</p></div>
+<div data-lang="en"><p>The <strong>left panel</strong> is an Elbow Plot — std-dev explained per PC. Drag the slider to choose nPCs (blue bars = selected). The <strong>right panel</strong> is a synthetic downstream UMAP showing how nPCs affects clustering: too few PCs and <span style="color:#c0392b;font-weight:600;">rare populations vanish</span>; too many and <span style="color:#8e44ad;font-weight:600;">noise clusters appear</span>.</p></div>
+<div class="interactive-panel">
+<div class="sim-stats"><span class="sim-stat" id="statNPC">—</span><span class="sim-stat pass" id="statVar">—</span><span class="sim-stat" style="background:var(--c-bg-alt);color:var(--c-ink-light);" id="statClust">—</span></div>
+<div class="slider-group"><label><span data-zh="選擇 nPCs" data-en="Select nPCs">選擇 nPCs</span> <span id="valPC">15</span></label><input type="range" id="sliderPC" min="3" max="50" value="15" step="1"></div>
+<div class="slider-group"><label><span data-zh="噪音強度（dataset 複雜度）" data-en="Noise level (dataset complexity)">噪音強度</span> <span id="valNoise">中</span></label><input type="range" id="sliderNoise" min="1" max="5" value="3" step="1"></div>
+<div id="pcDesc" style="font-size:.88rem;color:var(--c-ink-light);margin:8px 0;"></div>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px;margin-top:10px;">
+  <div><div style="font-size:.82rem;font-weight:600;text-align:center;margin-bottom:4px;color:var(--c-ink-light);"><span data-zh="① Elbow Plot（每個 PC 的方差）" data-en="① Elbow Plot (variance per PC)">① Elbow Plot</span></div><div class="chart-container" style="height:260px;"><canvas id="elbowChart"></canvas></div></div>
+  <div><div style="font-size:.82rem;font-weight:600;text-align:center;margin-bottom:4px;color:var(--c-ink-light);"><span data-zh="② 合成下游 UMAP（基於選定的 nPCs）" data-en="② Synthetic downstream UMAP (using selected nPCs)">② 合成 UMAP</span></div><div class="chart-container" style="height:260px;"><canvas id="downChart"></canvas></div></div>
+</div>
+<p style="font-size:.78rem;color:var(--c-ink-muted);text-align:center;margin-top:8px;"><span data-zh="這是教學用的合成模擬，並非真實 PCA。觀察「太少 → 群體合併、稀有群消失」與「太多 → 出現雜訊散點」的整體趨勢。" data-en="This is a pedagogical simulation, not a real PCA run. Observe trends: 'too few → clusters merge, rare populations vanish'; 'too many → noise scatter appears.'">這是教學用的合成模擬，並非真實 PCA。</span></p>
+</div>
+</section>
+
+<!-- ===== Section 5: Comparison Table ===== -->
+<section class="section">
+<div class="section-label" data-zh="方法比較" data-en="COMPARISON">方法比較</div>
+<h2 data-zh="五、PCA vs 其他降維方法" data-en="V. PCA vs Other Dimensionality Reduction">五、PCA vs 其他降維方法</h2>
+<div data-lang="zh"><p>scRNA-seq 中的線性降維選擇不只 PCA。以下是常見方法的比較：</p></div>
+<div data-lang="en"><p>Linear dimensionality reduction in scRNA-seq is not limited to PCA. Here is a comparison of common methods:</p></div>
+<table class="comp-table">
+<thead><tr>
+<th data-zh="方法" data-en="Method">方法</th>
+<th data-zh="假設" data-en="Assumption">假設</th>
+<th data-zh="優點" data-en="Pros">優點</th>
+<th data-zh="缺點" data-en="Cons">缺點</th>
+<th data-zh="scRNA-seq 適用度" data-en="scRNA-seq fit">scRNA-seq 適用</th>
+</tr></thead>
+<tbody>
+<tr>
+<td><strong>PCA</strong></td>
+<td data-lang="zh">資料近似高斯分佈</td><td data-lang="zh">快、可解釋、loadings 直接</td><td data-lang="zh">忽略 zero-inflation；對 raw count 不適</td><td data-lang="zh">⭐⭐⭐⭐⭐（log-normalized 後）</td>
+<td data-lang="en">Data approximately Gaussian</td><td data-lang="en">Fast, interpretable, direct loadings</td><td data-lang="en">Ignores zero-inflation; bad on raw counts</td><td data-lang="en">⭐⭐⭐⭐⭐ (after log-norm)</td>
+</tr>
+<tr>
+<td><strong>Truncated SVD</strong></td>
+<td data-lang="zh">同 PCA，但不需中心化</td><td data-lang="zh">適用稀疏矩陣，不破壞稀疏性</td><td data-lang="zh">需自行做 scaling</td><td data-lang="zh">⭐⭐⭐⭐（Scanpy 內部用）</td>
+<td data-lang="en">Same as PCA, but no centering needed</td><td data-lang="en">Works on sparse matrix without densification</td><td data-lang="en">Must scale manually</td><td data-lang="en">⭐⭐⭐⭐ (used internally by Scanpy)</td>
+</tr>
+<tr>
+<td><strong>LSI (Latent Semantic Indexing)</strong></td>
+<td data-lang="zh">TF-IDF 後 SVD</td><td data-lang="zh">對極稀疏資料（如 scATAC）出色</td><td data-lang="zh">scRNA-seq 並無明顯優勢</td><td data-lang="zh">⭐⭐（scATAC 才是主場）</td>
+<td data-lang="en">TF-IDF then SVD</td><td data-lang="en">Excellent for extreme sparsity (e.g. scATAC)</td><td data-lang="en">No clear advantage in scRNA-seq</td><td data-lang="en">⭐⭐ (mainly scATAC)</td>
+</tr>
+<tr>
+<td><strong>NMF</strong></td>
+<td data-lang="zh">非負分解，元件加成</td><td data-lang="zh">元件可解釋為「基因模組 / 程式」</td><td data-lang="zh">慢、需選 k、不保證唯一解</td><td data-lang="zh">⭐⭐⭐（程式發現研究）</td>
+<td data-lang="en">Non-negative additive decomposition</td><td data-lang="en">Components interpretable as gene programs/modules</td><td data-lang="en">Slow; needs k; not unique</td><td data-lang="en">⭐⭐⭐ (program discovery)</td>
+</tr>
+<tr>
+<td><strong>scVI / autoencoder</strong></td>
+<td data-lang="zh">非線性、學習潛在分佈</td><td data-lang="zh">同時去批次、處理 dropout</td><td data-lang="zh">需 GPU、可解釋性低</td><td data-lang="zh">⭐⭐⭐⭐（大型整合研究）</td>
+<td data-lang="en">Non-linear, learns latent distribution</td><td data-lang="en">Joint batch correction and dropout handling</td><td data-lang="en">Needs GPU; low interpretability</td><td data-lang="en">⭐⭐⭐⭐ (large integration studies)</td>
+</tr>
+</tbody>
+</table>
+<div class="callout tip"><span class="callout-icon">💡</span><div>
+<span data-lang="zh"><strong>結論：</strong>標準 scRNA-seq pipeline 的預設選擇仍是 <strong>PCA on log-normalized HVG matrix</strong>。Seurat/Scanpy 預設使用 randomized truncated SVD，速度與精度都很好。其他方法視特殊需求才考慮。</span>
+<span data-lang="en"><strong>Bottom line:</strong> the default for standard scRNA-seq pipelines is still <strong>PCA on log-normalized HVG matrix</strong>. Seurat/Scanpy use randomized truncated SVD by default — fast and accurate. Other methods only when specifically needed.</span>
+</div></div>
+</section>
+
+<!-- ===== Section 6: Code ===== -->
+<section class="section">
+<div class="section-label" data-zh="程式碼" data-en="CODE">程式碼</div>
+<h2 data-zh="六、實作範例" data-en="VI. Code Examples">六、實作範例</h2>
+<div class="code-tabs"><div class="code-tab-btns"><button class="code-tab-btn active" onclick="switchTab(this,'r1')">R / Seurat</button><button class="code-tab-btn" onclick="switchTab(this,'py1')">Python / Scanpy</button><button class="code-tab-btn" onclick="switchTab(this,'sk1')">Python / sklearn</button></div>
+<div class="code-tab-content active" id="r1"><pre><span class="comment"># 前置：必須先做 NormalizeData → FindVariableFeatures → ScaleData</span>
+pbmc &lt;- <span class="func">NormalizeData</span>(pbmc)
+pbmc &lt;- <span class="func">FindVariableFeatures</span>(pbmc, nfeatures = <span class="num">2000</span>)
+pbmc &lt;- <span class="func">ScaleData</span>(pbmc, vars.to.regress = <span class="func">c</span>(<span class="str">"percent.mt"</span>, <span class="str">"nCount_RNA"</span>))
+
+<span class="comment"># 跑 PCA（預設 50 個 PC，使用 irlba 加速 SVD）</span>
+pbmc &lt;- <span class="func">RunPCA</span>(pbmc, features = <span class="func">VariableFeatures</span>(pbmc), npcs = <span class="num">50</span>)
+
+<span class="comment"># 1. Elbow Plot 觀察曲線</span>
 <span class="func">ElbowPlot</span>(pbmc, ndims = <span class="num">50</span>)
-<span class="comment"># JackStraw（可選，較慢）</span>
-pbmc &lt;- <span class="func">JackStraw</span>(pbmc, num.replicate = <span class="num">100</span>)
-pbmc &lt;- <span class="func">ScoreJackStraw</span>(pbmc, dims = <span class="num">1</span>:<span class="num">30</span>)
-<span class="func">JackStrawPlot</span>(pbmc, dims = <span class="num">1</span>:<span class="num">30</span>)</pre></div>
-<div class="code-tab-content" id="py1"><pre>sc.tl.pca(adata, n_comps=<span class="num">50</span>)
-sc.pl.pca(adata)
-sc.pl.pca_variance_ratio(adata, n_pcs=<span class="num">50</span>)</pre></div></div></section>
-<section class="quiz-section"><h3>📝 <span data-zh="自我檢測" data-en="Self-Check">自我檢測</span></h3>
-<div class="quiz-q" data-answer="1"><p data-lang="zh">PCA 主要壓縮哪個方向的維度？</p><p data-lang="en">PCA primarily compresses which dimension?</p><div class="quiz-options">
+
+<span class="comment"># 2. 看 top loadings 確認 PC 的生物意義</span>
+<span class="func">VizDimLoadings</span>(pbmc, dims = <span class="num">1</span>:<span class="num">4</span>, reduction = <span class="str">"pca"</span>)
+<span class="func">DimHeatmap</span>(pbmc, dims = <span class="num">1</span>:<span class="num">15</span>, cells = <span class="num">500</span>, balanced = <span class="kw">TRUE</span>)
+
+<span class="comment"># 3. (可選) JackStraw 統計檢定</span>
+pbmc &lt;- <span class="func">JackStraw</span>(pbmc, num.replicate = <span class="num">100</span>, dims = <span class="num">50</span>)
+pbmc &lt;- <span class="func">ScoreJackStraw</span>(pbmc, dims = <span class="num">1</span>:<span class="num">50</span>)
+<span class="func">JackStrawPlot</span>(pbmc, dims = <span class="num">1</span>:<span class="num">50</span>)
+
+<span class="comment"># 4. 視覺化 PCA</span>
+<span class="func">DimPlot</span>(pbmc, reduction = <span class="str">"pca"</span>)
+
+<span class="comment"># 5. 下游分析時傳入選定的 dims（這裡用 1:20）</span>
+pbmc &lt;- <span class="func">FindNeighbors</span>(pbmc, dims = <span class="num">1</span>:<span class="num">20</span>)
+pbmc &lt;- <span class="func">RunUMAP</span>(pbmc, dims = <span class="num">1</span>:<span class="num">20</span>)</pre></div>
+<div class="code-tab-content" id="py1"><pre><span class="kw">import</span> scanpy <span class="kw">as</span> sc
+
+<span class="comment"># 前置：normalize → log → HVG → scale</span>
+sc.pp.normalize_total(adata, target_sum=<span class="num">1e4</span>)
+sc.pp.log1p(adata)
+sc.pp.highly_variable_genes(adata, n_top_genes=<span class="num">2000</span>)
+sc.pp.scale(adata, max_value=<span class="num">10</span>)
+
+<span class="comment"># 跑 PCA（預設 arpack solver；大資料可改 randomized）</span>
+sc.tl.pca(adata, n_comps=<span class="num">50</span>, svd_solver=<span class="str">"arpack"</span>, use_highly_variable=<span class="kw">True</span>)
+
+<span class="comment"># 1. Elbow Plot</span>
+sc.pl.pca_variance_ratio(adata, n_pcs=<span class="num">50</span>, log=<span class="kw">True</span>)
+
+<span class="comment"># 2. 檢視 PC 的 top loadings</span>
+sc.pl.pca_loadings(adata, components=<span class="str">"1,2,3,4"</span>)
+
+<span class="comment"># 3. 視覺化 PCA</span>
+sc.pl.pca(adata, color=[<span class="str">"total_counts"</span>, <span class="str">"pct_counts_mt"</span>])
+
+<span class="comment"># 4. 下游使用 n_pcs（這裡用 20）</span>
+sc.pp.neighbors(adata, n_pcs=<span class="num">20</span>, n_neighbors=<span class="num">15</span>)
+sc.tl.umap(adata)</pre></div>
+<div class="code-tab-content" id="sk1"><pre><span class="kw">from</span> sklearn.decomposition <span class="kw">import</span> PCA, TruncatedSVD
+<span class="kw">import</span> numpy <span class="kw">as</span> np
+
+<span class="comment"># 對 log-normalized HVG matrix（cells × genes）做 PCA</span>
+X = adata[:, adata.var.highly_variable].X
+<span class="kw">if</span> hasattr(X, <span class="str">"toarray"</span>): X = X.toarray()  <span class="comment"># PCA 需要 dense</span>
+
+<span class="comment"># Standard PCA（已 scale）</span>
+pca = PCA(n_components=<span class="num">50</span>, svd_solver=<span class="str">"randomized"</span>, random_state=<span class="num">42</span>)
+X_pca = pca.fit_transform(X)
+
+<span class="comment"># Elbow（解釋率）</span>
+<span class="kw">import</span> matplotlib.pyplot <span class="kw">as</span> plt
+plt.plot(np.arange(<span class="num">1</span>, <span class="num">51</span>), pca.explained_variance_ratio_, <span class="str">"o-"</span>)
+plt.xlabel(<span class="str">"PC"</span>); plt.ylabel(<span class="str">"Explained variance ratio"</span>)
+
+<span class="comment"># 若要保留稀疏性，改用 TruncatedSVD（不中心化）</span>
+svd = TruncatedSVD(n_components=<span class="num">50</span>, random_state=<span class="num">42</span>)
+X_svd = svd.fit_transform(X)  <span class="comment"># 接受 sparse input</span></pre></div>
+</div>
+<div class="callout warn"><span class="callout-icon">⚠️</span><div>
+<span data-lang="zh"><strong>順序很重要！</strong>PCA 必須在 <strong>NormalizeData → HVG → ScaleData</strong> 之後執行。沒有 normalize 會被 library size 主導；沒有 scale 會被高表現基因（如 ribosomal）主導 PC1。</span>
+<span data-lang="en"><strong>Order matters!</strong> PCA must run after <strong>NormalizeData → HVG → ScaleData</strong>. Without normalization, PC1 is dominated by library size; without scaling, PC1 is dominated by high-expression genes (e.g., ribosomal).</span>
+</div></div>
+</section>
+
+<!-- ===== Section 7: Best Practices ===== -->
+<section class="section">
+<div class="section-label" data-zh="最佳實務" data-en="BEST PRACTICES">最佳實務</div>
+<h2 data-zh="七、最佳實務 Checklist" data-en="VII. Best Practices Checklist">七、最佳實務 Checklist</h2>
+<div class="card-grid cols-2">
+<div class="card"><h4>✅ <span data-zh="先 scale 再 PCA" data-en="Scale before PCA">先 scale 再 PCA</span></h4>
+<div data-lang="zh"><p>每個基因的方差差異極大；不 scale 就會被 housekeeping / ribosomal 基因主導。Seurat <code>ScaleData()</code>、Scanpy <code>sc.pp.scale()</code> 都會做 z-score。</p></div>
+<div data-lang="en"><p>Variance varies enormously between genes; without scaling, housekeeping / ribosomal genes dominate. Both Seurat <code>ScaleData()</code> and Scanpy <code>sc.pp.scale()</code> apply z-scoring.</p></div>
+</div>
+<div class="card"><h4>✅ <span data-zh="先在 HVG 上做" data-en="Run PCA on HVGs">先在 HVG 上做</span></h4>
+<div data-lang="zh"><p>只取 ~2000 個 HVG 跑 PCA，加速 10×，且結果通常更乾淨——大部分低變異基因只是噪音。</p></div>
+<div data-lang="en"><p>Run PCA on just ~2000 HVGs — 10× faster, and usually cleaner; most low-variance genes are just noise.</p></div>
+</div>
+<div class="card"><h4>✅ <span data-zh="檢視 PC1 / PC2 的 loadings" data-en="Inspect PC1/PC2 loadings">檢視 PC1 / PC2 loadings</span></h4>
+<div data-lang="zh"><p>用 <code>VizDimLoadings</code> 或 <code>sc.pl.pca_loadings</code>。如果 PC1 全是 cell cycle 基因，代表細胞週期主導變異——需要回去 regress out。</p></div>
+<div data-lang="en"><p>Use <code>VizDimLoadings</code> or <code>sc.pl.pca_loadings</code>. If PC1 is dominated by cell-cycle genes, the cell cycle is driving variance — go back and regress it out.</p></div>
+</div>
+<div class="card"><h4>✅ <span data-zh="固定 random seed" data-en="Fix random seed">固定 random seed</span></h4>
+<div data-lang="zh"><p>Randomized SVD 是隨機算法——不同 seed 得到的 PC 方向可能正負相反。Seurat 預設 seed=42；Scanpy 用 <code>random_state</code> 參數。</p></div>
+<div data-lang="en"><p>Randomized SVD is stochastic — different seeds can flip PC signs. Seurat defaults to seed=42; Scanpy uses <code>random_state</code>.</p></div>
+</div>
+<div class="card"><h4>✅ <span data-zh="PCA 結果只用於下游分析" data-en="PCA only for downstream, never plotting cells">下游分析才用</span></h4>
+<div data-lang="zh"><p>PC1×PC2 散佈圖很少能展示完整生物結構——只用於除錯（看是否有批次主導 PC）。展示細胞結構請用 UMAP。</p></div>
+<div data-lang="en"><p>PC1×PC2 scatter rarely shows full biological structure — use it only for debugging (checking whether a batch dominates a PC). For showing cell structure, use UMAP.</p></div>
+</div>
+<div class="card"><h4>✅ <span data-zh="多樣本：整合後再 PCA" data-en="Multi-sample: integrate THEN PCA">多樣本先整合</span></h4>
+<div data-lang="zh"><p>多批次資料若直接 PCA，PC1 通常會是「批次」。建議先用 Harmony / RPCA / scVI 整合再跑 PCA（或直接用整合後的 embedding 取代 PCA）。</p></div>
+<div data-lang="en"><p>For multi-batch data, naive PCA often gives "batch" as PC1. Run Harmony / RPCA / scVI integration first (or use the integrated embedding in place of PCA).</p></div>
+</div>
+</div>
+</section>
+
+<!-- ===== Section 8: Pitfalls ===== -->
+<section class="section">
+<div class="section-label" data-zh="常見陷阱" data-en="PITFALLS">常見陷阱</div>
+<h2 data-zh="八、常見陷阱與除錯指南" data-en="VIII. Common Pitfalls & Troubleshooting">八、常見陷阱</h2>
+<div class="card-grid cols-2">
+<div class="card" style="border-left:4px solid var(--c-danger);"><h4>🚫 <span data-zh="未 scale 就 PCA" data-en="PCA on un-scaled data">未 scale 就 PCA</span></h4>
+<div data-lang="zh"><p><strong>症狀：</strong>PC1 解釋率異常高（&gt;40%），所有 PC1 高 loading 基因是 ribosomal / mitochondrial。<br><strong>原因：</strong>高表現基因的絕對方差自然大，主導 PC1。<br><strong>解法：</strong>重做 <code>ScaleData</code> 或 <code>sc.pp.scale</code>。</p></div>
+<div data-lang="en"><p><strong>Symptom:</strong> PC1 explained variance abnormally high (&gt;40%); top PC1 loading genes are ribosomal / mitochondrial.<br><strong>Cause:</strong> high-expression genes naturally have large absolute variance and dominate PC1.<br><strong>Fix:</strong> rerun <code>ScaleData</code> or <code>sc.pp.scale</code>.</p></div>
+</div>
+<div class="card" style="border-left:4px solid var(--c-danger);"><h4>🚫 <span data-zh="細胞週期主導 PC1" data-en="Cell cycle dominates PC1">細胞週期主導 PC1</span></h4>
+<div data-lang="zh"><p><strong>症狀：</strong>PC1 loadings 是 MKI67、PCNA、TOP2A 等週期基因；UMAP 上同類型細胞被分成 G1/S/G2M 三群。<br><strong>解法：</strong>計算 cell cycle score 後在 <code>ScaleData(vars.to.regress)</code> 中扣除，或使用 SCTransform 的 <code>vars.to.regress</code> 參數。</p></div>
+<div data-lang="en"><p><strong>Symptom:</strong> PC1 loadings are cycle genes (MKI67, PCNA, TOP2A); same cell type splits into G1/S/G2M groups on UMAP.<br><strong>Fix:</strong> compute cell cycle scores and regress them out via <code>ScaleData(vars.to.regress)</code>, or use the <code>vars.to.regress</code> argument in SCTransform.</p></div>
+</div>
+<div class="card" style="border-left:4px solid var(--c-danger);"><h4>🚫 <span data-zh="批次效應掩蓋生物訊號" data-en="Batch effects mask biology">批次效應主導</span></h4>
+<div data-lang="zh"><p><strong>症狀：</strong>PC1 或 PC2 完美區分樣本來源而非細胞類型。<br><strong>解法：</strong>聚類前用 Harmony / RPCA / scVI 進行 integration，得到批次校正後的 embedding 後再做後續 kNN / UMAP。</p></div>
+<div data-lang="en"><p><strong>Symptom:</strong> PC1 or PC2 perfectly separates sample identity rather than cell type.<br><strong>Fix:</strong> integrate (Harmony / RPCA / scVI) before clustering; use the batch-corrected embedding for downstream kNN / UMAP.</p></div>
+</div>
+<div class="card" style="border-left:4px solid var(--c-danger);"><h4>🚫 <span data-zh="nPCs 取得太少" data-en="Too few PCs">nPCs 太少</span></h4>
+<div data-lang="zh"><p><strong>症狀：</strong>稀有細胞群在 UMAP 上「不見了」或被併入相鄰大群。<br><strong>解法：</strong>把 npcs 從 10 提高到 30；用 <code>DimHeatmap</code> 確認 PC 20–30 是否仍有生物意義基因群。</p></div>
+<div data-lang="en"><p><strong>Symptom:</strong> rare populations "disappear" on UMAP or merge into adjacent clusters.<br><strong>Fix:</strong> raise npcs from 10 to 30; use <code>DimHeatmap</code> to verify PCs 20–30 still carry biologically meaningful gene programs.</p></div>
+</div>
+<div class="card" style="border-left:4px solid var(--c-danger);"><h4>🚫 <span data-zh="SCT 後忘了改變 dims 解讀" data-en="SCT changes PC interpretation">SCT 流程的 PC 不同</span></h4>
+<div data-lang="zh"><p><strong>症狀：</strong>用 SCTransform 後 PC loadings 看起來「不太一樣」。<br><strong>說明：</strong>SCT 用 Pearson residuals 取代 z-score，數值意義不同——loadings 應理解為「殘差空間的方向」。npcs 選擇方法不變，但解讀 loadings 要小心。</p></div>
+<div data-lang="en"><p><strong>Symptom:</strong> after SCTransform, PC loadings look "different."<br><strong>Note:</strong> SCT uses Pearson residuals in place of z-scores — loadings live in residual space. The npcs selection method is unchanged, but interpret loadings with this in mind.</p></div>
+</div>
+<div class="card" style="border-left:4px solid var(--c-danger);"><h4>🚫 <span data-zh="raw counts 直接 PCA" data-en="PCA directly on raw counts">raw counts 直接做 PCA</span></h4>
+<div data-lang="zh"><p><strong>症狀：</strong>PC1 解釋率 &gt;60%，且高度與 nCount_RNA 相關。<br><strong>原因：</strong>未做 log-normalize，total counts 變成最大的方差來源。<br><strong>解法：</strong>必須先 <code>NormalizeData</code> / <code>sc.pp.normalize_total + log1p</code>。</p></div>
+<div data-lang="en"><p><strong>Symptom:</strong> PC1 explained variance &gt;60% and highly correlated with nCount_RNA.<br><strong>Cause:</strong> no log-normalization — total counts become the largest variance source.<br><strong>Fix:</strong> always run <code>NormalizeData</code> / <code>sc.pp.normalize_total + log1p</code> first.</p></div>
+</div>
+</div>
+<div class="callout warn"><span class="callout-icon">⚠️</span><div>
+<span data-lang="zh"><strong>除錯第一步：算 PC1 與 metadata 的相關係數。</strong>用 <code>cor(Embeddings(pbmc,'pca')[,1], pbmc$nCount_RNA)</code>。如果 |r| &gt; 0.5，代表 PC1 被 library size 綁架；如果與 <code>orig.ident</code> 相關，代表批次效應主導。</span>
+<span data-lang="en"><strong>First debug step: correlate PC1 with metadata.</strong> Use <code>cor(Embeddings(pbmc,'pca')[,1], pbmc$nCount_RNA)</code>. If |r| &gt; 0.5, PC1 is hijacked by library size; if correlated with <code>orig.ident</code>, batch effects dominate.</span>
+</div></div>
+</section>
+
+<!-- ===== Section 9: Quiz ===== -->
+<section class="quiz-section">
+<h3>📝 <span data-zh="自我檢測" data-en="Self-Check">自我檢測</span></h3>
+
+<div class="quiz-q" data-answer="1">
+<p data-lang="zh">1. PCA 主要壓縮的是哪個方向的維度？</p>
+<p data-lang="en">1. Which dimension does PCA primarily compress?</p>
+<div class="quiz-options">
 <div class="quiz-opt" data-idx="0"><span data-lang="zh">A. 減少細胞數量（行）</span><span data-lang="en">A. Reduce cell count (rows)</span></div>
-<div class="quiz-opt" data-idx="1"><span data-lang="zh">B. 壓縮基因維度（列），從數千維到數十維</span><span data-lang="en">B. Compress gene dimensions (columns), from thousands to tens</span></div>
+<div class="quiz-opt" data-idx="1"><span data-lang="zh">B. 壓縮基因（特徵）維度，從數千維到數十維</span><span data-lang="en">B. Compress gene (feature) dimensions from thousands to tens</span></div>
 <div class="quiz-opt" data-idx="2"><span data-lang="zh">C. 將數據降到 2D 以便視覺化</span><span data-lang="en">C. Reduce to 2D for visualization</span></div>
-<div class="quiz-opt" data-idx="3"><span data-lang="zh">D. 移除批次效應</span><span data-lang="en">D. Remove batch effects</span></div></div><div class="quiz-feedback" id="fb1"></div></div></section>
-<nav class="page-nav"><a href="scaling.html"><span class="nav-dir" data-zh="← 上一步" data-en="← Previous">← 上一步</span><span class="nav-title" data-zh="Step 4：Scaling" data-en="Step 4: Scaling">Step 4：Scaling</span></a><a href="clustering.html"><span class="nav-dir" data-zh="下一步 →" data-en="Next →">下一步 →</span><span class="nav-title" data-zh="Step 6：聚類" data-en="Step 6: Clustering">Step 6：聚類</span></a></nav></main>
+<div class="quiz-opt" data-idx="3"><span data-lang="zh">D. 移除批次效應</span><span data-lang="en">D. Remove batch effects</span></div>
+</div><div class="quiz-feedback" id="fb1"></div></div>
+
+<div class="quiz-q" data-answer="2">
+<p data-lang="zh">2. 你跑完 PCA 後發現 PC1 解釋率 50%，且 top loadings 全是 RPL/RPS 基因。最可能的原因是？</p>
+<p data-lang="en">2. After PCA, PC1 explains 50% variance and top loadings are all RPL/RPS genes. Most likely cause?</p>
+<div class="quiz-options">
+<div class="quiz-opt" data-idx="0"><span data-lang="zh">A. 你的細胞高表現核糖體蛋白，這是正常生物現象</span><span data-lang="en">A. Your cells highly express ribosomal proteins, normal biology</span></div>
+<div class="quiz-opt" data-idx="1"><span data-lang="zh">B. nPCs 取得太多</span><span data-lang="en">B. Too many nPCs</span></div>
+<div class="quiz-opt" data-idx="2"><span data-lang="zh">C. 沒有先做 ScaleData，高表現基因主導 PC1</span><span data-lang="en">C. ScaleData was skipped — high-expression genes dominate PC1</span></div>
+<div class="quiz-opt" data-idx="3"><span data-lang="zh">D. UMAP 計算錯誤</span><span data-lang="en">D. UMAP error</span></div>
+</div><div class="quiz-feedback" id="fb2"></div></div>
+
+<div class="quiz-q" data-answer="2">
+<p data-lang="zh">3. 關於 nPCs 的選擇，下列何者最符合最佳實務？</p>
+<p data-lang="en">3. Which best matches best practice for choosing nPCs?</p>
+<div class="quiz-options">
+<div class="quiz-opt" data-idx="0"><span data-lang="zh">A. 永遠用 10 個 PC 就好</span><span data-lang="en">A. Always use exactly 10 PCs</span></div>
+<div class="quiz-opt" data-idx="1"><span data-lang="zh">B. 取累積解釋率 99% 為止</span><span data-lang="en">B. Take PCs until cumulative variance hits 99%</span></div>
+<div class="quiz-opt" data-idx="2"><span data-lang="zh">C. 從 Elbow Plot 起跳，多取 5 個比少取 5 個安全；用 DimHeatmap 驗證</span><span data-lang="en">C. Start from Elbow Plot; taking 5 too many is safer than 5 too few; validate with DimHeatmap</span></div>
+<div class="quiz-opt" data-idx="3"><span data-lang="zh">D. 直接用全部 50 個 PC</span><span data-lang="en">D. Use all 50 PCs</span></div>
+</div><div class="quiz-feedback" id="fb3"></div></div>
+
+<div class="quiz-q" data-answer="1">
+<p data-lang="zh">4. 為什麼 Seurat 預設用 irlba (randomized SVD) 而不是完整特徵分解？</p>
+<p data-lang="en">4. Why does Seurat default to irlba (randomized SVD) instead of full eigendecomposition?</p>
+<div class="quiz-options">
+<div class="quiz-opt" data-idx="0"><span data-lang="zh">A. irlba 更準確</span><span data-lang="en">A. irlba is more accurate</span></div>
+<div class="quiz-opt" data-idx="1"><span data-lang="zh">B. 我們只要前 50 個 PC，randomized SVD 速度快很多（O(n²·k) vs O(n³)）</span><span data-lang="en">B. We only want top 50 PCs; randomized SVD is much faster (O(n²·k) vs O(n³))</span></div>
+<div class="quiz-opt" data-idx="2"><span data-lang="zh">C. irlba 自動移除批次效應</span><span data-lang="en">C. irlba auto-removes batch effects</span></div>
+<div class="quiz-opt" data-idx="3"><span data-lang="zh">D. irlba 不需要 scale</span><span data-lang="en">D. irlba doesn't need scaling</span></div>
+</div><div class="quiz-feedback" id="fb4"></div></div>
+</section>
+
+<nav class="page-nav">
+<a href="scaling.html"><span class="nav-dir" data-zh="← 上一步" data-en="← Previous">← 上一步</span><span class="nav-title" data-zh="Step 4：Scaling" data-en="Step 4: Scaling">Step 4：Scaling</span></a>
+<a href="clustering.html"><span class="nav-dir" data-zh="下一步 →" data-en="Next →">下一步 →</span><span class="nav-title" data-zh="Step 6：聚類" data-en="Step 6: Clustering">Step 6：聚類</span></a>
+</nav>
+</main>
 <footer class="site-footer">© Charlene — scRNA-seq Interactive Tutorial</footer>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script><script src="i18n.js"></script><script>
+<script src="i18n.js"></script>
+<script>
 window.addEventListener("scroll",()=>{const h=document.documentElement;document.getElementById("progressBar").style.width=(h.scrollTop/(h.scrollHeight-h.clientHeight))*100+"%";});
 function switchTab(b,id){const p=b.closest(".code-tabs");p.querySelectorAll(".code-tab-btn").forEach(x=>x.classList.remove("active"));p.querySelectorAll(".code-tab-content").forEach(x=>x.classList.remove("active"));b.classList.add("active");document.getElementById(id).classList.add("active");}
 
-const varExp=[];let v=12;for(let i=0;i<50;i++){varExp.push(v);v*=(0.82+Math.random()*0.08);}const tV=varExp.reduce((a,b)=>a+b,0);
-const elbowChart=new Chart(document.getElementById('elbowChart'),{type:'bar',data:{labels:varExp.map((_,i)=>'PC'+(i+1)),datasets:[{data:varExp,backgroundColor:varExp.map(()=>'rgba(200,195,185,0.5)'),borderRadius:2}]},options:{responsive:true,maintainAspectRatio:false,animation:false,plugins:{legend:{display:false}},scales:{x:{ticks:{maxTicksLimit:15},title:{display:true,text:'PC'}},y:{title:{display:true,text:'Variance %'}}}}});
-function upElbow(){const n=+document.getElementById('sliderPC').value;document.getElementById('valPC').textContent=n;const cap=varExp.slice(0,n).reduce((a,b)=>a+b,0);const L=I18n.get();document.getElementById('pcDesc').innerHTML=L==='zh'?'前 <strong>'+n+'</strong> 個 PC 捕捉約 <strong>'+(cap/tV*100).toFixed(1)+'%</strong> 的總方差。':'First <strong>'+n+'</strong> PCs capture ~<strong>'+(cap/tV*100).toFixed(1)+'%</strong> of total variance.';elbowChart.data.datasets[0].backgroundColor=varExp.map((_,i)=>i<n?'rgba(26,107,90,0.7)':'rgba(200,195,185,0.5)');elbowChart.update('none');}
-document.getElementById('sliderPC').addEventListener('input',upElbow);document.addEventListener('langchange',upElbow);upElbow();
-window._QF={zh:{q1_y:'PCA 壓縮的是基因（特徵）維度。2D 視覺化是 UMAP/t-SNE 的工作。',q1_n:'答案是 B。PCA 作用於特徵維度壓縮。'},en:{q1_y:'PCA compresses gene (feature) dimensions. 2D visualization is UMAP/t-SNE\u2019s job.',q1_n:'Answer is B. PCA compresses feature dimensions.'}};
-const QF=window._QF||{};document.querySelectorAll(".quiz-q").forEach((q,qi)=>{const ans=+q.dataset.answer;q.querySelectorAll(".quiz-opt").forEach(o=>{o.addEventListener("click",()=>{if(q.classList.contains("answered"))return;q.classList.add("answered");const fb=document.getElementById("fb"+(qi+1));const ok=+o.dataset.idx===ans;o.classList.add(ok?"correct":"wrong");if(!ok)q.querySelectorAll(".quiz-opt")[ans].classList.add("correct");const L=I18n.get();fb.className="quiz-feedback show "+(ok?"correct-fb":"wrong-fb");fb.textContent=(ok?"✅ ":"❌ ")+(QF[L]&&QF[L]["q"+(qi+1)+"_"+(ok?"y":"n")]||"");});});});
-</script></body></html>
+// ============ ELBOW + SYNTHETIC DOWNSTREAM ============
+// Build variance ratios that depend on noise level
+function buildVarExp(noiseLvl){
+  // noiseLvl 1..5: lower noise => steeper drop, higher noise => flatter tail
+  const decay=0.78-0.025*(5-noiseLvl); // 1->0.68, 3->0.73, 5->0.78
+  const tailFloor=0.3+0.2*noiseLvl;     // 1->0.5, 5->1.3
+  const arr=[];let v=14;
+  for(let i=0;i<50;i++){arr.push(Math.max(tailFloor,v));v*=(decay+Math.random()*0.06);}
+  return arr;
+}
+let varExp=buildVarExp(3);
+let totalVar=varExp.reduce((a,b)=>a+b,0);
+
+const elbowChart=new Chart(document.getElementById('elbowChart'),{type:'bar',data:{labels:varExp.map((_,i)=>'PC'+(i+1)),datasets:[{label:'Variance',data:varExp,backgroundColor:varExp.map(()=>'rgba(200,195,185,0.5)'),borderRadius:2}]},options:{responsive:true,maintainAspectRatio:false,animation:false,plugins:{legend:{display:false}},scales:{x:{ticks:{maxTicksLimit:12,font:{size:9}},title:{display:true,text:'PC',font:{size:10}}},y:{title:{display:true,text:'Variance (a.u.)',font:{size:10}},ticks:{font:{size:9}}}}}});
+
+// Synthetic downstream scatter: 6 base cell-type clusters (with 1 rare population)
+const downCenters=[{x:-6,y:3,n:80,rare:false,name:'T cells'},{x:5,y:4,n:70,rare:false,name:'B cells'},{x:0,y:-5,n:90,rare:false,name:'Monocytes'},{x:-4,y:-3,n:60,rare:false,name:'NK'},{x:4,y:-2,n:55,rare:false,name:'DC'},{x:6,y:6,n:15,rare:true,name:'Rare (pDC)'}];
+const downCols=['#1a6b5a','#c0392b','#2980b9','#d4a03c','#8e44ad','#e67e22'];
+const noiseCol='#7f8c8d';
+function randn(){let u=0,v=0;while(u===0)u=Math.random();while(v===0)v=Math.random();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);}
+// Pre-generate all base points + offsets
+const downBase=[];
+downCenters.forEach((c,ci)=>{for(let i=0;i<c.n;i++){downBase.push({x:c.x+randn()*0.8,y:c.y+randn()*0.8,ci,rare:c.rare});}});
+
+const downDs=downCenters.map((c,i)=>({label:c.name,data:[],backgroundColor:downCols[i]+'aa',pointRadius:c.rare?3.5:2.8}));
+downDs.push({label:'Noise',data:[],backgroundColor:noiseCol+'66',pointRadius:1.8});
+const downChart=new Chart(document.getElementById('downChart'),{type:'scatter',data:{datasets:downDs},options:{responsive:true,maintainAspectRatio:false,animation:false,plugins:{legend:{position:'right',labels:{font:{size:9},boxWidth:8}}},scales:{x:{min:-12,max:12,title:{display:true,text:'sim-UMAP1',font:{size:10}},ticks:{font:{size:9}}},y:{min:-10,max:10,title:{display:true,text:'sim-UMAP2',font:{size:10}},ticks:{font:{size:9}}}}}});
+
+function update(){
+  const n=+document.getElementById('sliderPC').value;
+  const noise=+document.getElementById('sliderNoise').value;
+  document.getElementById('valPC').textContent=n;
+  const L=I18n.get();
+  const noiseLabels=L==='zh'?['極低','低','中','高','極高']:['Very low','Low','Mid','High','Very high'];
+  document.getElementById('valNoise').textContent=noiseLabels[noise-1];
+
+  // Regenerate variance if noise level changed
+  if(window._lastNoise!==noise){varExp=buildVarExp(noise);totalVar=varExp.reduce((a,b)=>a+b,0);elbowChart.data.datasets[0].data=varExp;window._lastNoise=noise;}
+
+  // Highlight selected PCs in blue
+  elbowChart.data.datasets[0].backgroundColor=varExp.map((_,i)=>i<n?'rgba(26,107,90,0.78)':'rgba(200,195,185,0.4)');
+  elbowChart.update('none');
+
+  const cap=varExp.slice(0,n).reduce((a,b)=>a+b,0);
+  const pct=(cap/totalVar*100).toFixed(1);
+  document.getElementById('statNPC').textContent=(L==='zh'?'已選 PC：':'Selected PCs: ')+n;
+  document.getElementById('statVar').textContent=(L==='zh'?'累積方差 ':'Cum. variance ')+pct+'%';
+
+  // Decide downstream effect:
+  //  - Too few PCs (n<10): collapse clusters (merge half), rare population invisible
+  //  - Mid range (10-30): healthy clusters, rare visible
+  //  - Too many PCs (n>35 + high noise): add noise points
+  const clusterAlive=downCenters.map(c=>true);
+  let collapseFactor=1.0;
+  let merge=false;
+  if(n<8){merge=true;collapseFactor=0.55;clusterAlive[5]=false;clusterAlive[4]=false;}
+  else if(n<12){collapseFactor=0.75;clusterAlive[5]=false;}
+  const noisePts=[];
+  if(n>35){const noiseN=(n-35)*3+(noise-3)*15;for(let i=0;i<Math.max(0,noiseN);i++){noisePts.push({x:(Math.random()-0.5)*22,y:(Math.random()-0.5)*18});}}
+
+  const buckets=downCenters.map(()=>[]);
+  downBase.forEach(p=>{if(!clusterAlive[p.ci])return;
+    let tx=p.x,ty=p.y;
+    if(merge){
+      // Merge T+NK and B+DC for visual demo
+      if(p.ci===3){const t=downCenters[0];tx=t.x+(p.x-downCenters[3].x)*0.7;ty=t.y+(p.y-downCenters[3].y)*0.7;buckets[0].push({x:tx,y:ty});return;}
+      if(p.ci===4){const b=downCenters[1];tx=b.x+(p.x-downCenters[4].x)*0.7;ty=b.y+(p.y-downCenters[4].y)*0.7;buckets[1].push({x:tx,y:ty});return;}
+    }
+    tx*=collapseFactor;ty*=collapseFactor;
+    buckets[p.ci].push({x:tx,y:ty});
+  });
+  buckets.forEach((b,i)=>{downChart.data.datasets[i].data=b;downChart.data.datasets[i].hidden=!clusterAlive[i];});
+  downChart.data.datasets[6].data=noisePts;
+  downChart.update('none');
+
+  // Description
+  const nC=clusterAlive.filter(x=>x).length;
+  document.getElementById('statClust').textContent=(L==='zh'?'下游 cluster：':'Downstream clusters: ')+nC+(noisePts.length?' (+'+(L==='zh'?'雜訊':'noise')+')':'');
+
+  const desc=L==='zh'?
+    (n<8?'<strong style="color:#c0392b;">⚠️ PC 太少：</strong>群體被合併、稀有族群（pDC）<strong>遺失</strong>。':
+     n<12?'<strong style="color:#d4a03c;">⚠️ PC 偏少：</strong>稀有族群可能消失。':
+     n<=30?'<strong style="color:#1a6b5a;">✅ 合理範圍：</strong>所有族群可見，分群乾淨。累積方差 '+pct+'%。':
+     n<=40?'<strong style="color:#d4a03c;">注意：</strong>PC 偏多，多餘 PC 開始引入噪音。':
+            '<strong style="color:#8e44ad;">⚠️ PC 太多：</strong>UMAP 出現雜訊散點，掩蓋真實結構。')
+   :(n<8?'<strong style="color:#c0392b;">⚠️ Too few PCs:</strong> clusters merged; rare population (pDC) <strong>lost</strong>.':
+     n<12?'<strong style="color:#d4a03c;">⚠️ Borderline low:</strong> rare population may disappear.':
+     n<=30?'<strong style="color:#1a6b5a;">✅ Sweet spot:</strong> all populations visible, clean clusters. Cum variance '+pct+'%.':
+     n<=40?'<strong style="color:#d4a03c;">Watch:</strong> nPCs on the high side — extra PCs start adding noise.':
+            '<strong style="color:#8e44ad;">⚠️ Too many PCs:</strong> noise scatter appears on UMAP, masking true structure.');
+  document.getElementById('pcDesc').innerHTML=desc;
+}
+['sliderPC','sliderNoise'].forEach(id=>document.getElementById(id).addEventListener('input',update));
+document.addEventListener('langchange',update);
+update();
+
+// ============ QUIZ ============
+const QF={
+  zh:{q1_y:'PCA 壓縮的是基因（特徵）維度。2D 視覺化是 UMAP/t-SNE 的工作。',q1_n:'答案是 B。PCA 作用於特徵維度壓縮。',
+      q2_y:'高表現基因絕對方差大，未 scale 會直接主導 PC1。',q2_n:'答案是 C。一定要先做 ScaleData。',
+      q3_y:'從 ElbowPlot 出發、多選一點、用 DimHeatmap 驗證——這是 Seurat 官方推薦的工作流。',q3_n:'答案是 C。',
+      q4_y:'單細胞有上萬細胞，完整特徵分解太慢；randomized SVD 只算 top k，速度提升一個數量級。',q4_n:'答案是 B。'},
+  en:{q1_y:'PCA compresses gene (feature) dimensions. 2D visualization is UMAP/t-SNE’s job.',q1_n:'Answer is B. PCA compresses feature dimensions.',
+      q2_y:'High-expression genes have large absolute variance and dominate PC1 if not scaled.',q2_n:'Answer is C. Always run ScaleData first.',
+      q3_y:'Start from Elbow Plot, lean to more PCs, validate with DimHeatmap — Seurat’s recommended workflow.',q3_n:'Answer is C.',
+      q4_y:'With 10⁴–10⁶ cells, full eigendecomposition is too slow; randomized SVD computes only top k, an order of magnitude faster.',q4_n:'Answer is B.'}
+};
+document.querySelectorAll(".quiz-q").forEach((q,qi)=>{const ans=+q.dataset.answer;q.querySelectorAll(".quiz-opt").forEach(o=>{o.addEventListener("click",()=>{if(q.classList.contains("answered"))return;q.classList.add("answered");const fb=document.getElementById("fb"+(qi+1));const ok=+o.dataset.idx===ans;o.classList.add(ok?"correct":"wrong");if(!ok)q.querySelectorAll(".quiz-opt")[ans].classList.add("correct");const L=I18n.get();fb.className="quiz-feedback show "+(ok?"correct-fb":"wrong-fb");fb.textContent=(ok?"✅ ":"❌ ")+(QF[L]&&QF[L]["q"+(qi+1)+"_"+(ok?"y":"n")]||"");});});});
+</script>
+</body></html>

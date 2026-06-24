@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="zh-Hant"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>variable-features — scRNA-seq Tutorial</title><link rel="stylesheet" href="styles.css"></head><body><nav class="top-nav"><div class="top-nav-inner"><a href="index.html" class="top-nav-brand"><span>🧬</span> <span data-zh="scRNA-seq 教學" data-en="scRNA-seq Tutorial">scRNA-seq 教學</span></a><ul class="top-nav-links"><li><a href="qc.html">QC</a></li><li><a href="normalization.html">Norm.</a></li><li><a href="variable-features.html" class=active>Features</a></li><li><a href="scaling.html">Scaling</a></li><li><a href="pca.html">PCA</a></li><li><a href="clustering.html">Clustering</a></li><li><a href="umap.html">UMAP</a></li><li><a href="annotation.html">Annot.</a></li><li><a href="differential-expression.html">DE</a></li><li><a href="integration.html">Integ.</a></li><li><a href="cellchat.html">CellChat</a></li><li><a href="trajectory.html">Traj.</a></li>
+<!DOCTYPE html><html lang="zh-Hant"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Step 3: Variable Features — scRNA-seq Tutorial</title><link rel="stylesheet" href="styles.css"><script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script></head><body><nav class="top-nav"><div class="top-nav-inner"><a href="index.html" class="top-nav-brand"><span>🧬</span> <span data-zh="scRNA-seq 教學" data-en="scRNA-seq Tutorial">scRNA-seq 教學</span></a><ul class="top-nav-links"><li><a href="qc.html">QC</a></li><li><a href="normalization.html">Norm.</a></li><li><a href="variable-features.html" class="active">Features</a></li><li><a href="scaling.html">Scaling</a></li><li><a href="pca.html">PCA</a></li><li><a href="clustering.html">Clustering</a></li><li><a href="umap.html">UMAP</a></li><li><a href="annotation.html">Annot.</a></li><li><a href="differential-expression.html">DE</a></li><li><a href="integration.html">Integ.</a></li><li><a href="cellchat.html">CellChat</a></li><li><a href="trajectory.html">Traj.</a></li>
     <li><a href="references/index.html" data-zh="📚 參考資料" data-en="📚 References">📚 參考資料</a></li>
   </ul></div></nav><div class="progress-bar-container"><div class="progress-bar" id="progressBar"></div></div>
 <header class="page-hero"><div class="step-badge">STEP 3 / 9</div>
@@ -6,74 +6,396 @@
 <p class="subtitle" data-lang="zh">從數萬個基因中篩選出最具「分辨力」的特徵，聚焦生物學訊號、過濾噪音。</p>
 <p class="subtitle" data-lang="en">Select the most discriminative features from tens of thousands of genes — focus on biological signal, filter noise.</p></header>
 <main class="content-wrap">
-<section class="section"><div class="section-label" data-zh="核心概念" data-en="CONCEPT">核心概念</div>
-<h2 data-zh="為什麼不用所有基因？" data-en="Why not use all genes?">為什麼不用所有基因？</h2>
-<div data-lang="zh"><p>典型的 scRNA-seq 數據集包含 2–3 萬個基因，但大多數基因在細胞間的變異極小——例如<strong>管家基因</strong>（如 GAPDH、ACTB）在每個細胞都差不多表達。這些基因對區分細胞類型沒有幫助，反而會增加運算負擔與噪音。</p><p>我們需要的是那些<strong>在某些細胞中高度表達、在其他細胞中低表達</strong>的基因——這些<strong>高變異基因 (HVGs)</strong> 攜帶了區分不同細胞群體的關鍵訊號。</p></div>
-<div data-lang="en"><p>A typical scRNA-seq dataset contains 20,000–30,000 genes, but most show minimal variation across cells — <strong>housekeeping genes</strong> (GAPDH, ACTB) are expressed at similar levels everywhere. They don't help distinguish cell types and add computational burden and noise.</p><p>We need genes that are <strong>highly expressed in some cells but lowly expressed in others</strong> — these <strong>Highly Variable Genes (HVGs)</strong> carry key signals for distinguishing cell populations.</p></div></section>
 
-<section class="section"><div class="section-label" data-zh="互動模擬" data-en="INTERACTIVE">互動模擬</div>
-<h2 data-zh="Mean-Variance 關係圖" data-en="Mean-Variance Plot">Mean-Variance 關係圖</h2>
-<div data-lang="zh"><p>下圖模擬了基因的平均表達量與變異度之間的關係。紅色點為被選中的高變異基因。拖動滑桿調整選取數量，觀察如何影響覆蓋範圍。</p></div>
-<div data-lang="en"><p>The plot below simulates the relationship between gene mean expression and variance. Red dots are selected HVGs. Drag the slider to adjust selection count.</p></div>
-<div class="interactive-panel"><div class="slider-group"><label><span data-zh="選取基因數" data-en="Number of genes">選取基因數</span> <span id="valHVG">2000</span></label><input type="range" id="sliderHVG" min="500" max="5000" value="2000" step="100"></div>
-<div class="chart-container" style="height:320px;"><canvas id="hvgChart"></canvas></div></div>
+<!-- ===== Section 1: Why HVG ===== -->
+<section class="section"><div class="section-label" data-zh="概覽" data-en="OVERVIEW">概覽</div>
+<h2 data-zh="一、為什麼不用所有基因？" data-en="I. Why not use all genes?">一、為什麼不用所有基因？</h2>
+<div data-lang="zh">
+<p>典型 scRNA-seq 數據包含 2–3 萬個基因，但其中 80% 以上對「區分細胞類型」沒有貢獻。它們可能是：<strong>(1) 管家基因</strong>（GAPDH、ACTB、HPRT1、TBP）——在所有細胞穩定表達；<strong>(2) 完全不表達的基因</strong>（嗅覺受體在血細胞、Hox 在成熟組織）；<strong>(3) 雜訊主導的低表達基因</strong>——平均表達 &lt; 0.1，主要是測序錯誤與技術 dropout。</p>
+<p><strong>HVG 選擇做了什麼？</strong>在 mean-variance 空間中，找出「變異度<strong>超過深度與技術噪音預期</strong>」的基因。這些基因攜帶最強的<strong>細胞型別 / 狀態</strong>訊號，讓後續 PCA / clustering / UMAP 聚焦於有意義的差異，同時把運算量縮減 10 倍以上。</p>
+<p><strong>為什麼選 2000 個？</strong>經驗值：PBMC、骨髓等典型免疫圖譜常用 2000；複雜組織（腫瘤微環境、發育、神經）可調到 3000–5000；單一純化 lineage 1000 即可。Seurat 文章驗證 2000 在多數常見組合下能保留 &gt; 95% 的下游分群結構。</p>
+</div>
+<div data-lang="en">
+<p>A typical scRNA-seq dataset has 20,000–30,000 genes, but over 80% contribute nothing to distinguishing cell types. They fall into: <strong>(1) housekeeping genes</strong> (GAPDH, ACTB, HPRT1, TBP) — stably expressed everywhere; <strong>(2) fully off genes</strong> (olfactory receptors in blood, Hox in mature tissues); <strong>(3) noise-dominated low-expression genes</strong> — mean &lt; 0.1, mostly sequencing errors and technical dropouts.</p>
+<p><strong>What does HVG selection do?</strong> In mean-variance space, it finds genes whose variability <strong>exceeds the noise expected from depth alone</strong>. These genes carry the strongest <strong>cell-type / state</strong> signal, focusing downstream PCA/clustering/UMAP on meaningful differences and reducing compute by 10× or more.</p>
+<p><strong>Why 2000?</strong> Empirically: PBMC, bone-marrow and typical immune atlases use 2000; complex tissues (tumor TME, development, neural) bump to 3000–5000; a single purified lineage works fine with 1000. The Seurat paper shows 2000 retains &gt; 95% of downstream cluster structure across typical combinations.</p>
+</div>
+
 <div class="callout tip"><span class="callout-icon">💡</span><div>
-<span data-lang="zh"><strong>選多少個？</strong>2000–3000 個是常見經驗值。若數據細胞異質性很高（如腫瘤微環境），可調高到 3000–5000；若較單純（如純化的某一系 lineage），2000 通常足夠。</span>
-<span data-lang="en"><strong>How many?</strong> 2000–3000 is the common range. For highly heterogeneous data (tumor microenvironment), increase to 3000–5000; for simpler datasets (purified lineage), 2000 usually suffices.</span>
-</div></div></section>
+<span data-lang="zh"><strong>HVG ≠ 重要基因。</strong>HVG 篩出的是「方差大」基因，不一定具生物學重要性；可能包含應激基因、線粒體相關、核醣體等。實際 marker 篩選應在 DE 步驟結合差異表現倍數與生物意義。</span>
+<span data-lang="en"><strong>HVG ≠ important genes.</strong> HVG selects "high-variance" genes, not necessarily biologically important ones — may include stress, mitochondrial, ribosomal genes. Real marker identification belongs to the DE step combining fold-change with biological meaning.</span>
+</div></div>
+</section>
 
+<!-- ===== Section 2: Math ===== -->
+<section class="section"><div class="section-label" data-zh="核心數學" data-en="MATH">核心數學</div>
+<h2 data-zh="二、Mean-Variance 關係與 VST" data-en="II. Mean-Variance Relationship & VST">二、核心數學</h2>
+<div data-lang="zh">
+<p><strong>關鍵觀察：</strong>在計數型數據中，<strong>方差會隨平均值線性甚至超線性增長</strong>（Poisson 為 var = mean；負二項則 var = mean + mean²/θ）。如果直接按 variance 排序，將永遠是高表達基因贏出，但這只是「技術上方差大」不代表生物有意義。</p>
+<p><strong>解法 — Variance Stabilizing Transformation (VST)：</strong></p>
+<ol style="margin:6px 0 0 20px;color:var(--c-ink-light);">
+<li>對所有基因計算 log10(mean) 與 log10(variance)。</li>
+<li>用 <strong>local polynomial regression (loess)</strong> 擬合 log(var) ~ log(mean) 的趨勢線——這是「技術噪音預期」。</li>
+<li>計算每個基因的<strong>標準化殘差</strong>：observed variance 與擬合曲線的差異，並除以擬合 SD。</li>
+<li>排名取 top-N（預設 2000）作為 HVG。</li>
+</ol>
+<p>這樣低表達基因若異常變異（罕見 marker）也能被選中；高表達但變異「正常」的基因（如 RPL18）則被排除。</p>
+<p style="font-family:var(--font-mono);font-size:.95rem;background:var(--c-bg-alt);padding:10px;border-radius:6px;margin-top:8px;">
+standardized_variance<sub>i</sub> = Var(log<sub>10</sub>(x<sub>i</sub>)) / loess_fit(log<sub>10</sub>(mean<sub>i</sub>))<br>
+HVG = top-N gene by descending standardized_variance
+</p>
+</div>
+<div data-lang="en">
+<p><strong>Key observation:</strong> In count data, <strong>variance scales with mean</strong>, often linearly or super-linearly (Poisson: var = mean; NB: var = mean + mean²/θ). Sorting by raw variance always favors high-expression genes — yet "high variance" here is just technical, not biological.</p>
+<p><strong>Solution — Variance Stabilizing Transformation (VST):</strong></p>
+<ol style="margin:6px 0 0 20px;color:var(--c-ink-light);">
+<li>For all genes, compute log10(mean) and log10(variance).</li>
+<li>Fit <strong>local polynomial regression (loess)</strong> for log(var) ~ log(mean) — this trend is the "expected technical noise".</li>
+<li>Compute each gene's <strong>standardized residual</strong>: observed variance minus fit, divided by fit SD.</li>
+<li>Rank and take top-N (default 2000) as HVG.</li>
+</ol>
+<p>This way, low-expression genes with unusual variance (rare markers) can still be selected; high-expression but "normally variable" genes (RPL18) are filtered out.</p>
+<p style="font-family:var(--font-mono);font-size:.95rem;background:var(--c-bg-alt);padding:10px;border-radius:6px;margin-top:8px;">
+standardized_variance<sub>i</sub> = Var(log<sub>10</sub>(x<sub>i</sub>)) / loess_fit(log<sub>10</sub>(mean<sub>i</sub>))<br>
+HVG = top-N genes by descending standardized_variance
+</p>
+</div>
+</section>
+
+<!-- ===== Section 3: Comparison ===== -->
 <section class="section"><div class="section-label" data-zh="方法比較" data-en="METHODS">方法比較</div>
-<h2 data-zh="選擇方法比較" data-en="Method Comparison">選擇方法比較</h2>
-<table class="comp-table"><thead><tr><th data-zh="方法" data-en="Method">方法</th><th data-zh="說明" data-en="Description">說明</th><th data-zh="使用場景" data-en="Use Case">使用場景</th></tr></thead><tbody>
-<tr><td><strong>VST</strong> (Seurat default)</td><td data-lang="zh">用局部回歸擬合 mean-variance 關係，取殘差最大的基因</td><td data-lang="zh">NormalizeData 後使用</td><td data-lang="en">Local regression fitting mean-variance, select genes with largest residuals</td><td data-lang="en">After NormalizeData</td></tr>
-<tr><td><strong>SCTransform built-in</strong></td><td data-lang="zh">負二項回歸直接輸出殘差方差排名</td><td data-lang="zh">使用 SCTransform 時自動完成</td><td data-lang="en">NB regression outputs residual variance ranking directly</td><td data-lang="en">Auto-completed with SCTransform</td></tr>
-<tr><td><strong>Scanpy default</strong></td><td data-lang="zh">按 dispersion 排名，或 Seurat-flavored VST</td><td data-lang="zh">Scanpy 流程</td><td data-lang="en">Rank by dispersion, or Seurat-flavored VST</td><td data-lang="en">Scanpy pipeline</td></tr>
-</tbody></table></section>
+<h2 data-zh="三、三大方法詳細比較" data-en="III. Detailed Method Comparison">三、方法比較</h2>
+<table class="comp-table"><thead><tr>
+<th data-zh="方法" data-en="Method">方法</th>
+<th data-zh="演算法核心" data-en="Algorithm">演算法</th>
+<th data-zh="輸出 metric" data-en="Output metric">輸出 metric</th>
+<th data-zh="預設 N" data-en="Default N">預設 N</th>
+<th data-zh="適用情境" data-en="Use case">適用</th>
+</tr></thead><tbody>
+<tr><td><strong>vst</strong> <span style="color:var(--c-ink-muted);">(Seurat 預設)</span></td>
+<td data-lang="zh">loess 擬合 log(var)~log(mean)，殘差排名</td>
+<td><code>vst.variance.standardized</code></td>
+<td>2000</td>
+<td data-lang="zh">Norm. + Log 流程；通用首選</td>
+<td data-lang="en">loess fit of log(var)~log(mean); rank by residual</td>
+<td data-lang="en">After NormalizeData; general-purpose default</td></tr>
 
+<tr><td><strong>mean.var.plot</strong></td>
+<td data-lang="zh">舊 Seurat 法；分箱計算 dispersion = log(var/mean)</td>
+<td><code>mvp.dispersion.scaled</code></td>
+<td>~1000-2000</td>
+<td data-lang="zh">已過時，僅用於相容舊腳本</td>
+<td data-lang="en">Old Seurat method; bin-based dispersion = log(var/mean)</td>
+<td data-lang="en">Deprecated; legacy compatibility only</td></tr>
+
+<tr><td><strong>dispersion</strong></td>
+<td data-lang="zh">log(var)/log(mean) 比值排名</td>
+<td><code>dispersion</code></td>
+<td>2000</td>
+<td data-lang="zh">早期 Scanpy；不推薦新項目</td>
+<td data-lang="en">Rank by log(var)/log(mean) ratio</td>
+<td data-lang="en">Early Scanpy; not recommended for new work</td></tr>
+
+<tr><td><strong>seurat_v3</strong> <span style="color:var(--c-ink-muted);">(Scanpy 推薦)</span></td>
+<td data-lang="zh">Scanpy 內建 Seurat VST 等效演算法，可批次感知</td>
+<td><code>variances_norm</code></td>
+<td>2000</td>
+<td data-lang="zh">Scanpy 主流；可加 <code>batch_key</code></td>
+<td data-lang="en">Scanpy port of Seurat VST; batch-aware via <code>batch_key</code></td>
+<td data-lang="en">Scanpy default; supports batch correction</td></tr>
+
+<tr><td><strong>SCT-residual</strong></td>
+<td data-lang="zh">SCTransform 內建：NB 殘差方差排名</td>
+<td><code>SCT@var.features</code></td>
+<td>3000</td>
+<td data-lang="zh">SCTransform 流程自動完成</td>
+<td data-lang="en">Built into SCTransform: rank by NB residual variance</td>
+<td data-lang="en">Auto-completed within SCTransform pipeline</td></tr>
+
+<tr><td><strong>Pearson residual</strong></td>
+<td data-lang="zh">Analytical NB residuals (Lause 2021)，速度極快</td>
+<td><code>residual_variances</code></td>
+<td>2000-4000</td>
+<td data-lang="zh">百萬細胞 atlas、無需擬合</td>
+<td data-lang="en">Analytical NB residuals (Lause 2021); ultra-fast</td>
+<td data-lang="en">Million-cell atlases, no fitting needed</td></tr>
+</tbody></table>
+
+<div class="decision-tree"><h4>🌳 <span data-zh="決策樹" data-en="Decision Tree">決策樹</span></h4>
+<div data-lang="zh">
+<div class="dt-node"><span class="dt-q">Q1:</span><div>用 Seurat + LogNormalize？<span class="dt-arrow">→</span> <code>FindVariableFeatures(method='vst', nfeatures=2000)</code></div></div>
+<div class="dt-node"><span class="dt-q">Q2:</span><div>用 Scanpy？<span class="dt-arrow">→</span> <code>sc.pp.highly_variable_genes(flavor='seurat_v3', n_top_genes=2000)</code></div></div>
+<div class="dt-node"><span class="dt-q">Q3:</span><div>多樣本 / 批次？<span class="dt-arrow">→</span> Scanpy 加 <code>batch_key='sample'</code>；Seurat 用 <code>SelectIntegrationFeatures()</code> 跨樣本取交集</div></div>
+<div class="dt-node"><span class="dt-q">Q4:</span><div>用 SCTransform？<span class="dt-arrow">→</span> 不用手動 FindVariableFeatures；SCT 自動回傳 3000 HVG</div></div>
+</div>
+<div data-lang="en">
+<div class="dt-node"><span class="dt-q">Q1:</span><div>Seurat + LogNormalize? <span class="dt-arrow">→</span> <code>FindVariableFeatures(method='vst', nfeatures=2000)</code></div></div>
+<div class="dt-node"><span class="dt-q">Q2:</span><div>Scanpy? <span class="dt-arrow">→</span> <code>sc.pp.highly_variable_genes(flavor='seurat_v3', n_top_genes=2000)</code></div></div>
+<div class="dt-node"><span class="dt-q">Q3:</span><div>Multi-sample? <span class="dt-arrow">→</span> Scanpy: add <code>batch_key='sample'</code>; Seurat: use <code>SelectIntegrationFeatures()</code> for cross-sample intersect</div></div>
+<div class="dt-node"><span class="dt-q">Q4:</span><div>SCTransform? <span class="dt-arrow">→</span> No manual FindVariableFeatures needed; SCT auto-returns 3000 HVG</div></div>
+</div></div>
+</section>
+
+<!-- ===== Section 4: Interactive ===== -->
+<section class="section"><div class="section-label" data-zh="互動模擬" data-en="INTERACTIVE">互動模擬</div>
+<h2 data-zh="四、Mean-Variance 模擬器" data-en="IV. Mean-Variance Simulator">四、互動：Mean-Variance 模擬器</h2>
+<div data-lang="zh"><p>下圖模擬基因的 <strong>log mean × log variance</strong> 散佈。橫向<strong>背景灰雲</strong>是技術噪音預期（loess 擬合線）；<strong>紅色點</strong>是 standardized residual 排前 N 的 HVG。拖動三條滑桿觀察：① N 改變時誰被選中；② 技術噪音放大時 HVG 範圍如何收縮；③ 基因總數變動的效應。</p></div>
+<div data-lang="en"><p>The plot simulates genes in <strong>log mean × log variance</strong> space. The grey cloud is technical noise expectation (loess fit); <strong>red dots</strong> are top-N HVGs by standardized residual. Use the three sliders: ① N changes which genes are selected; ② amplifying noise shrinks the HVG region; ③ total gene count effect.</p></div>
+<div class="interactive-panel">
+<div class="sim-stats"><span class="sim-stat pass" id="hvgPass">—</span><span class="sim-stat" style="background:var(--c-bg-alt);color:var(--c-ink-light);" id="hvgFrac">—</span></div>
+<div class="slider-group"><label><span data-zh="選取 N 個 HVG" data-en="Top-N HVGs">選取 N</span> <span id="valHVG">2000</span></label><input type="range" id="sliderHVG" min="200" max="5000" value="2000" step="100"></div>
+<div class="slider-group"><label><span data-zh="技術噪音強度" data-en="Technical noise level">技術噪音強度</span> <span id="valNoise">1.0</span></label><input type="range" id="sliderNoise" min="5" max="30" value="10" step="1"></div>
+<div class="slider-group"><label><span data-zh="基因總數" data-en="Total genes">基因總數</span> <span id="valTotal">5000</span></label><input type="range" id="sliderTotal" min="2000" max="10000" value="5000" step="500"></div>
+<div class="chart-container" style="height:340px;"><canvas id="hvgChart"></canvas></div>
+<p style="font-size:.78rem;color:var(--c-ink-muted);text-align:center;margin-top:6px;"><span data-zh="紅色：HVG / 灰色：non-HVG / 藍線：loess 擬合的「噪音預期」" data-en="Red: HVG / grey: non-HVG / blue line: loess-fit noise expectation">紅: HVG / 灰: non-HVG / 藍線: loess 噪音預期</span></p>
+</div>
+</section>
+
+<!-- ===== Section 5: Code ===== -->
 <section class="section"><div class="section-label" data-zh="程式碼" data-en="CODE">程式碼</div>
-<h2 data-zh="實作範例" data-en="Code Examples">實作範例</h2>
-<div class="code-tabs"><div class="code-tab-btns"><button class="code-tab-btn active" onclick="switchTab(this,'r1')">R / Seurat</button><button class="code-tab-btn" onclick="switchTab(this,'py1')">Python / Scanpy</button></div>
-<div class="code-tab-content active" id="r1"><pre><span class="comment"># NormalizeData 流程</span>
-pbmc &lt;- <span class="func">FindVariableFeatures</span>(pbmc, selection.method = <span class="str">"vst"</span>, nfeatures = <span class="num">2000</span>)
+<h2 data-zh="五、實作範例" data-en="V. Code Examples">五、實作範例</h2>
+<div class="code-tabs"><div class="code-tab-btns"><button class="code-tab-btn active" onclick="switchTab(this,'r1')">R / Seurat</button><button class="code-tab-btn" onclick="switchTab(this,'py1')">Python / Scanpy</button><button class="code-tab-btn" onclick="switchTab(this,'r2')">R / Multi-sample</button></div>
+<div class="code-tab-content active" id="r1"><pre><span class="comment"># ===== Seurat: VST 標準流程 =====</span>
+pbmc &lt;- <span class="func">FindVariableFeatures</span>(pbmc,
+  selection.method = <span class="str">"vst"</span>,
+  nfeatures = <span class="num">2000</span>)
+
+<span class="comment"># 看 top-10 HVG</span>
 top10 &lt;- <span class="func">head</span>(<span class="func">VariableFeatures</span>(pbmc), <span class="num">10</span>)
-<span class="func">VariableFeaturePlot</span>(pbmc)  <span class="comment"># 視覺化 mean-variance 圖</span>
-<span class="func">LabelPoints</span>(plot, points = top10)  <span class="comment"># 標記 top 基因</span>
+<span class="func">print</span>(top10)
 
-<span class="comment"># 注意：若使用 SCTransform，此步驟已自動完成</span></pre></div>
-<div class="code-tab-content" id="py1"><pre><span class="comment"># 選擇高變異基因</span>
-sc.pp.highly_variable_genes(adata, n_top_genes=<span class="num">2000</span>, flavor=<span class="str">"seurat_v3"</span>)
-sc.pl.highly_variable_genes(adata)  <span class="comment"># 視覺化</span>
+<span class="comment"># 視覺化 mean-variance plot</span>
+plot1 &lt;- <span class="func">VariableFeaturePlot</span>(pbmc)
+plot2 &lt;- <span class="func">LabelPoints</span>(plot = plot1, points = top10, repel = <span class="kw">TRUE</span>)
+plot2
 
-<span class="comment"># 後續分析只用 HVGs</span>
-adata = adata[:, adata.var.highly_variable]</pre></div></div></section>
+<span class="comment"># 排除特定基因（如 MT/RPS/RPL/HBB）</span>
+hvg &lt;- <span class="func">VariableFeatures</span>(pbmc)
+hvg &lt;- hvg[!<span class="func">grepl</span>(<span class="str">"^MT-|^RP[SL]|^HB[ABZ]"</span>, hvg)]
+<span class="func">VariableFeatures</span>(pbmc) &lt;- hvg
 
+<span class="comment"># 若使用 SCTransform：HVG 自動完成</span>
+<span class="comment"># pbmc &lt;- SCTransform(pbmc, variable.features.n = 3000)</span></pre></div>
+
+<div class="code-tab-content" id="py1"><pre><span class="kw">import</span> scanpy <span class="kw">as</span> sc
+
+<span class="comment"># ===== Scanpy: seurat_v3 flavor 流程 =====</span>
+<span class="comment"># 注意 seurat_v3 需要 raw counts → 在 normalize 之前呼叫</span>
+sc.pp.highly_variable_genes(adata,
+    flavor=<span class="str">"seurat_v3"</span>,
+    n_top_genes=<span class="num">2000</span>,
+    batch_key=<span class="kw">None</span>)  <span class="comment"># 多樣本時改成 'sample'</span>
+
+<span class="comment"># 視覺化</span>
+sc.pl.highly_variable_genes(adata)
+
+<span class="comment"># 排除特定 gene 家族（黑名單）</span>
+blocklist = adata.var_names.str.startswith((<span class="str">"MT-"</span>, <span class="str">"RPS"</span>, <span class="str">"RPL"</span>, <span class="str">"HB"</span>))
+adata.var.loc[blocklist, <span class="str">"highly_variable"</span>] = <span class="kw">False</span>
+
+<span class="comment"># 後續分析只用 HVG（可選；亦可保留全部僅在 PCA 用 HVG）</span>
+adata_hvg = adata[:, adata.var.highly_variable].copy()</pre></div>
+
+<div class="code-tab-content" id="r2"><pre><span class="comment"># ===== 多樣本 / 批次感知 HVG (Seurat v5) =====</span>
+samples &lt;- <span class="func">SplitObject</span>(pbmc, split.by = <span class="str">"orig.ident"</span>)
+
+<span class="comment"># 每個樣本各自選 HVG</span>
+samples &lt;- <span class="func">lapply</span>(samples, <span class="kw">function</span>(x) {
+  x &lt;- <span class="func">NormalizeData</span>(x)
+  x &lt;- <span class="func">FindVariableFeatures</span>(x, nfeatures = <span class="num">2000</span>)
+  x
+})
+
+<span class="comment"># 跨樣本選共識 features（用於 IntegrateData）</span>
+shared_hvg &lt;- <span class="func">SelectIntegrationFeatures</span>(
+  object.list = samples,
+  nfeatures = <span class="num">3000</span>)
+
+<span class="comment"># shared_hvg 即為跨樣本最常出現的 HVG 排名</span>
+<span class="func">length</span>(shared_hvg)  <span class="comment"># 3000</span></pre></div>
+</div>
+</section>
+
+<!-- ===== Section 6: Best Practices ===== -->
+<section class="section"><div class="section-label" data-zh="最佳實務" data-en="BEST PRACTICES">最佳實務</div>
+<h2 data-zh="六、最佳實務" data-en="VI. Best Practices">六、最佳實務</h2>
+<div class="card-grid cols-2">
+
+<div class="card"><h4>🎯 <span data-zh="N 該選多少？" data-en="How many?">N 該選多少？</span></h4>
+<div data-lang="zh"><p><strong>2000</strong> 是 Seurat 預設；PBMC、骨髓等典型免疫常用。<strong>3000–5000</strong> 用於腫瘤微環境、發育、神經組織。<strong>1000</strong> 用於純化 lineage。Atlas-級 dataset 用 <strong>4000+</strong>。寧可多選少用，不要少選漏掉稀有亞群。</p></div>
+<div data-lang="en"><p><strong>2000</strong> is Seurat default — typical immune datasets (PBMC, BM). <strong>3000–5000</strong> for TME, development, neural. <strong>1000</strong> for purified lineage. Atlas-scale: <strong>4000+</strong>. Better over-select than miss rare subpopulations.</p></div></div>
+
+<div class="card"><h4>🚫 <span data-zh="HVG 黑名單" data-en="HVG blocklists">HVG 黑名單</span></h4>
+<div data-lang="zh"><p>建議排除：MT-（^MT-/^mt-）、核醣體（^RP[SL]）、血紅蛋白（^HB[ABZ]）、性染色體（XIST/RPS4Y1）、應激（HSP/JUN/FOS）、細胞週期（依研究目的）。這些常因技術或干擾因素進入 HVG 卻無生物學焦點。</p></div>
+<div data-lang="en"><p>Suggested blocklists: MT- (^MT-/^mt-), ribosomal (^RP[SL]), hemoglobin (^HB[ABZ]), sex chromosome (XIST/RPS4Y1), stress (HSP/JUN/FOS), cell cycle (study-dependent). These often slip into HVG due to technical confounders but aren't the biological focus.</p></div></div>
+
+<div class="card"><h4>🧩 <span data-zh="批次感知" data-en="Batch-aware">批次感知</span></h4>
+<div data-lang="zh"><p>多樣本時：Scanpy 用 <code>batch_key='sample'</code>，會在每樣本內排名後取共識；Seurat 用 <code>SelectIntegrationFeatures()</code>。否則 HVG 可能<strong>主要反映批次差異</strong>而非生物變異。</p></div>
+<div data-lang="en"><p>Multi-sample: Scanpy uses <code>batch_key='sample'</code> to rank within each sample first, then intersect; Seurat uses <code>SelectIntegrationFeatures()</code>. Otherwise HVG may <strong>reflect batch differences</strong> rather than biology.</p></div></div>
+
+<div class="card"><h4>🔄 <span data-zh="整合後是否要重選 HVG？" data-en="Re-select HVG after integration?">整合後重選 HVG？</span></h4>
+<div data-lang="zh"><p>原則上<strong>不需要</strong>：Integration 用的就是初次 HVG 對齊。但若後續發現某個 cluster 不被既有 HVG 區分（DE 找不到 marker），可在該 subset 上重做局部 HVG。</p></div>
+<div data-lang="en"><p>Generally <strong>not needed</strong>: integration aligns the initial HVG. But if a cluster isn't separated by existing HVG (DE finds no markers), redo local HVG on that subset.</p></div></div>
+
+<div class="card"><h4>🔬 <span data-zh="HVG 視覺化驗證" data-en="Validate via plot">視覺化驗證</span></h4>
+<div data-lang="zh"><p>每次選完務必畫 <code>VariableFeaturePlot()</code> 並標記 top-10。檢查：(1) 是否覆蓋整個 mean 範圍（不只是高表達區）；(2) top-10 是否包含預期 marker（如 PBMC 看 MS4A1、CD8A、NKG7、LYZ）。</p></div>
+<div data-lang="en"><p>Always plot <code>VariableFeaturePlot()</code> and label top-10. Check: (1) does the selection span the full mean range (not just high-expression region)? (2) does top-10 include expected markers (e.g., PBMC: MS4A1, CD8A, NKG7, LYZ)?</p></div></div>
+
+<div class="card"><h4>♻️ <span data-zh="HVG vs. SCT/Pearson" data-en="HVG vs. SCT/Pearson">HVG vs. SCT/Pearson</span></h4>
+<div data-lang="zh"><p>SCTransform 與 Pearson residuals 流程<strong>自動內建 HVG 選擇</strong>，不需呼叫 FindVariableFeatures。混用會造成困惑。新項目建議「擇一流程」並貫徹到 PCA。</p></div>
+<div data-lang="en"><p>SCTransform and Pearson residual workflows <strong>build in HVG selection</strong> — don't call FindVariableFeatures. Mixing causes confusion. Pick one workflow and follow it through PCA.</p></div></div>
+
+</div>
+</section>
+
+<!-- ===== Section 7: Pitfalls ===== -->
+<section class="section"><div class="section-label" data-zh="常見陷阱" data-en="PITFALLS">陷阱</div>
+<h2 data-zh="七、常見陷阱與 Troubleshooting" data-en="VII. Common Pitfalls & Troubleshooting">七、常見陷阱</h2>
+
+<div class="callout warn"><span class="callout-icon">⚠️</span><div>
+<div data-lang="zh"><strong>HVG 常見的 4 個系統性失誤：</strong><br>① <strong>HVG 由 1 個極端細胞主導</strong>——某基因僅在 1 個 doublet 高表達就上榜，後續會抓不到真實 marker。<br>② <strong>HVG 由批次差異驅動</strong>——多樣本未使用 batch-aware 選擇，整合後 cluster 全是 sample-driven。<br>③ <strong>HVG 太少漏掉稀有亞群</strong>——只取 500–1000 個會把罕見細胞（&lt; 1% 比例）的 marker 直接排除。<br>④ <strong>沒排除技術 / 雜訊基因</strong>——MT、RPS/RPL、HSPA1A 等常進入 top-100 但無生物意義。</div>
+<div data-lang="en"><strong>Top 4 systematic HVG failures:</strong><br>① <strong>One outlier cell drives HVG</strong> — a gene high only in a single doublet ranks high; downstream misses true markers.<br>② <strong>Batch effects drive HVG</strong> — multi-sample without batch-aware selection; clusters end up sample-driven after integration.<br>③ <strong>Too few HVG misses rare populations</strong> — N=500–1000 excludes markers of cells &lt; 1% frequency.<br>④ <strong>Forgot to remove technical / noise genes</strong> — MT, RPS/RPL, HSPA1A often enter top-100 without biological focus.</div>
+</div></div>
+
+<div class="card-grid cols-2">
+
+<div class="card"><h4>🚨 <span data-zh="症狀：cluster 全是樣本驅動" data-en="Symptom: clusters split by sample">Cluster 按樣本分群</span></h4>
+<div data-lang="zh"><p><strong>原因：</strong>HVG 主要反映批次差異。<br><strong>修正：</strong>Scanpy 加 <code>batch_key</code>；Seurat 改用 <code>SelectIntegrationFeatures()</code>；或先 Harmony / scVI 整合。</p></div>
+<div data-lang="en"><p><strong>Cause:</strong> HVG reflects batch differences.<br><strong>Fix:</strong> Scanpy add <code>batch_key</code>; Seurat use <code>SelectIntegrationFeatures()</code>; or integrate with Harmony/scVI first.</p></div></div>
+
+<div class="card"><h4>🚨 <span data-zh="找不到稀有細胞 marker" data-en="Rare-cell marker missing">稀有細胞 marker 失蹤</span></h4>
+<div data-lang="zh"><p><strong>原因：</strong>該 marker 未進入 HVG，PCA 看不到。<br><strong>修正：</strong>N 從 2000 提高到 4000–5000；或對該 subset 重新 FindVariableFeatures + 子 PCA。</p></div>
+<div data-lang="en"><p><strong>Cause:</strong> Marker isn't in HVG, so PCA doesn't see it.<br><strong>Fix:</strong> Increase N from 2000 to 4000–5000; or re-run FindVariableFeatures + sub-PCA on the subset.</p></div></div>
+
+<div class="card"><h4>🚨 <span data-zh="HVG top-10 全是 RPS/MT" data-en="HVG top-10 dominated by RPS/MT">Top-10 都是 RPS/MT</span></h4>
+<div data-lang="zh"><p><strong>原因：</strong>沒做 QC 或沒套用 blocklist。<br><strong>修正：</strong>QC 收緊 percent.mt；或在 HVG 後手動移除 <code>^MT-|^RP[SL]|^HB</code>。</p></div>
+<div data-lang="en"><p><strong>Cause:</strong> QC too lenient or no blocklist.<br><strong>Fix:</strong> Tighten percent.mt; manually remove <code>^MT-|^RP[SL]|^HB</code> after HVG.</p></div></div>
+
+<div class="card"><h4>🚨 <span data-zh="細胞週期主導 HVG" data-en="Cell cycle dominates HVG">細胞週期主導</span></h4>
+<div data-lang="zh"><p><strong>原因：</strong>樣本含高度增殖細胞（腫瘤、發育）；S/G2M 基因方差最大。<br><strong>修正：</strong>若<strong>不</strong>研究細胞週期：ScaleData 階段 <code>vars.to.regress=c('S.Score','G2M.Score')</code>；或從 HVG 排除 Seurat::cc.genes 列表。</p></div>
+<div data-lang="en"><p><strong>Cause:</strong> Sample contains highly proliferating cells (tumor, development); S/G2M genes have largest variance.<br><strong>Fix:</strong> If <strong>not</strong> studying cell cycle: regress in ScaleData (<code>vars.to.regress=c('S.Score','G2M.Score')</code>); or exclude Seurat::cc.genes list from HVG.</p></div></div>
+
+<div class="card"><h4>🚨 <span data-zh="merge 後 HVG 與單樣本不同" data-en="Merged HVG differs from per-sample">合併後 HVG 不同</span></h4>
+<div data-lang="zh"><p><strong>原因：</strong>合併數據的 mean-variance 結構受批次拉伸。<br><strong>修正：</strong>使用 <code>SelectIntegrationFeatures()</code> 取每樣本 HVG 的共識排名。</p></div>
+<div data-lang="en"><p><strong>Cause:</strong> Merged mean-variance is stretched by batch.<br><strong>Fix:</strong> Use <code>SelectIntegrationFeatures()</code> to consensus-rank per-sample HVGs.</p></div></div>
+
+<div class="card"><h4>🚨 <span data-zh="downstream PCA 只看 HVG" data-en="PCA only sees HVG">PCA 只看 HVG</span></h4>
+<div data-lang="zh"><p><strong>提醒：</strong>HVG 之外的基因仍可用 <code>FeaturePlot()</code> 視覺化（讀 RNA assay），但不會影響 cluster 結構。「未進 HVG」≠「在資料中消失」。</p></div>
+<div data-lang="en"><p><strong>Note:</strong> Non-HVG genes can still be visualized via <code>FeaturePlot()</code> (reads RNA assay) but don't affect clustering. "Not in HVG" ≠ "removed from data".</p></div></div>
+
+</div>
+</section>
+
+<!-- ===== Quiz ===== -->
 <section class="quiz-section"><h3>📝 <span data-zh="自我檢測" data-en="Self-Check">自我檢測</span></h3>
-<div class="quiz-q" data-answer="2"><p data-lang="zh">管家基因（如 GAPDH）通常不會被選為 HVG，原因是？</p><p data-lang="en">Why are housekeeping genes (e.g., GAPDH) typically not selected as HVGs?</p><div class="quiz-options">
-<div class="quiz-opt" data-idx="0"><span data-lang="zh">A. 平均表達量太低</span><span data-lang="en">A. Average expression too low</span></div>
-<div class="quiz-opt" data-idx="1"><span data-lang="zh">B. 只在特定細胞類型中表達</span><span data-lang="en">B. Only expressed in specific cell types</span></div>
-<div class="quiz-opt" data-idx="2"><span data-lang="zh">C. 在所有細胞中穩定表達，細胞間變異小</span><span data-lang="en">C. Stably expressed across all cells, low inter-cell variance</span></div>
-<div class="quiz-opt" data-idx="3"><span data-lang="zh">D. 被 QC 步驟過濾掉了</span><span data-lang="en">D. Filtered out during QC</span></div>
-</div><div class="quiz-feedback" id="fb1"></div></div></section>
+<div class="quiz-q" data-answer="2"><p data-lang="zh">1. 管家基因（GAPDH）通常不會被選為 HVG，原因是？</p><p data-lang="en">1. Why are housekeeping genes (GAPDH) typically not selected as HVGs?</p>
+<div class="quiz-options">
+<div class="quiz-opt" data-idx="0"><span data-lang="zh">A. 平均表達太低</span><span data-lang="en">A. Mean expression too low</span></div>
+<div class="quiz-opt" data-idx="1"><span data-lang="zh">B. 僅在特定細胞表達</span><span data-lang="en">B. Only expressed in specific cells</span></div>
+<div class="quiz-opt" data-idx="2"><span data-lang="zh">C. 在所有細胞穩定表達、細胞間方差小（相對於 mean 預期）</span><span data-lang="en">C. Stably expressed across all cells; variance is small relative to mean expectation</span></div>
+<div class="quiz-opt" data-idx="3"><span data-lang="zh">D. 在 QC 被過濾</span><span data-lang="en">D. Filtered during QC</span></div>
+</div><div class="quiz-feedback" id="fb1"></div></div>
+
+<div class="quiz-q" data-answer="1"><p data-lang="zh">2. VST 為什麼需要對 mean 做 log-linear 回歸後再排殘差？</p><p data-lang="en">2. Why does VST regress log-variance on log-mean before ranking residuals?</p>
+<div class="quiz-options">
+<div class="quiz-opt" data-idx="0"><span data-lang="zh">A. 加速計算</span><span data-lang="en">A. To speed up computation</span></div>
+<div class="quiz-opt" data-idx="1"><span data-lang="zh">B. 移除 variance 隨 mean 增長的技術性效應，讓低/高表達基因公平比較</span><span data-lang="en">B. To remove the technical effect of variance scaling with mean, so low- and high-expression genes compete fairly</span></div>
+<div class="quiz-opt" data-idx="2"><span data-lang="zh">C. 使結果服從常態分佈</span><span data-lang="en">C. To make results normally distributed</span></div>
+<div class="quiz-opt" data-idx="3"><span data-lang="zh">D. 為了符合 SCTransform 的要求</span><span data-lang="en">D. To meet SCTransform requirements</span></div>
+</div><div class="quiz-feedback" id="fb2"></div></div>
+
+<div class="quiz-q" data-answer="0"><p data-lang="zh">3. 多樣本實驗中，正確的 HVG 選擇做法是？</p><p data-lang="en">3. For multi-sample experiments, correct HVG approach is?</p>
+<div class="quiz-options">
+<div class="quiz-opt" data-idx="0"><span data-lang="zh">A. Seurat：每樣本各自 HVG 後用 SelectIntegrationFeatures()；Scanpy：傳 batch_key</span><span data-lang="en">A. Seurat: per-sample HVG then SelectIntegrationFeatures(); Scanpy: pass batch_key</span></div>
+<div class="quiz-opt" data-idx="1"><span data-lang="zh">B. 全部合併後跑一次 FindVariableFeatures</span><span data-lang="en">B. Merge all then run FindVariableFeatures once</span></div>
+<div class="quiz-opt" data-idx="2"><span data-lang="zh">C. 跳過 HVG，直接全基因 PCA</span><span data-lang="en">C. Skip HVG, run PCA on all genes</span></div>
+<div class="quiz-opt" data-idx="3"><span data-lang="zh">D. 在 UMAP 後再選 HVG</span><span data-lang="en">D. Select HVG after UMAP</span></div>
+</div><div class="quiz-feedback" id="fb3"></div></div>
+
+<div class="quiz-q" data-answer="1"><p data-lang="zh">4. 發現某稀有 cluster 找不到 marker，最可能的修正方向？</p><p data-lang="en">4. A rare cluster has no detectable marker. Most likely fix?</p>
+<div class="quiz-options">
+<div class="quiz-opt" data-idx="0"><span data-lang="zh">A. 降低 logfc.threshold</span><span data-lang="en">A. Lower logfc.threshold</span></div>
+<div class="quiz-opt" data-idx="1"><span data-lang="zh">B. HVG 提高到 4000-5000，並可在該 subset 上重做局部 HVG + PCA</span><span data-lang="en">B. Increase HVG to 4000-5000; optionally redo local HVG + PCA on the subset</span></div>
+<div class="quiz-opt" data-idx="2"><span data-lang="zh">C. 直接刪除該 cluster</span><span data-lang="en">C. Delete that cluster</span></div>
+<div class="quiz-opt" data-idx="3"><span data-lang="zh">D. 重新做 QC</span><span data-lang="en">D. Re-run QC</span></div>
+</div><div class="quiz-feedback" id="fb4"></div></div>
+</section>
 
 <nav class="page-nav"><a href="normalization.html"><span class="nav-dir" data-zh="← 上一步" data-en="← Previous">← 上一步</span><span class="nav-title" data-zh="Step 2：標準化" data-en="Step 2: Normalization">Step 2：標準化</span></a><a href="scaling.html"><span class="nav-dir" data-zh="下一步 →" data-en="Next →">下一步 →</span><span class="nav-title" data-zh="Step 4：Scaling" data-en="Step 4: Scaling">Step 4：Scaling</span></a></nav>
-</main><footer class="site-footer">© Charlene — scRNA-seq Interactive Tutorial</footer><script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script><script src="i18n.js"></script><script>
+</main><footer class="site-footer">© Charlene — scRNA-seq Interactive Tutorial</footer>
+<script src="i18n.js"></script>
+<script>
 window.addEventListener('scroll',()=>{const h=document.documentElement;document.getElementById('progressBar').style.width=(h.scrollTop/(h.scrollHeight-h.clientHeight))*100+'%';});
 function switchTab(b,id){const p=b.closest('.code-tabs');p.querySelectorAll('.code-tab-btn').forEach(x=>x.classList.remove('active'));p.querySelectorAll('.code-tab-content').forEach(x=>x.classList.remove('active'));b.classList.add('active');document.getElementById(id).classList.add('active');}
+
 function randn2(){let u=0,v=0;while(u===0)u=Math.random();while(v===0)v=Math.random();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);}
-const genes=[];for(let i=0;i<3000;i++){
-  // Mean: log-normal-ish distribution (more genes at low expression)
-  const m=Math.exp(Math.random()*3.5-1.5); // range ~0.2 to ~8
-  // Baseline variance follows mean (Poisson-like floor) + technical noise
-  const baseVar=m*0.15+0.1+Math.abs(randn2()*0.15);
-  // Some genes have extra biological variance (HVGs)
-  const bioVar=Math.random()<0.2? Math.abs(randn2())*1.5+0.8 : Math.abs(randn2()*0.2);
-  const variance=baseVar+bioVar;
-  genes.push({mean:Math.min(m,8),variance:Math.min(variance,6)});
+
+// Pre-generate up to 10000 genes; subset by slider
+const MAXGENES=10000;
+const allGenes=[];
+for(let i=0;i<MAXGENES;i++){
+  // log10(mean) uniformly spread from -1.2 to 1.8
+  const logMean=-1.2+Math.random()*3.0;
+  const mean=Math.pow(10,logMean);
+  // Baseline log10 variance follows linear trend on logMean (slope ~0.8) + noise
+  const baseLogVar=0.5+0.8*logMean+randn2()*0.18;
+  // 20% genes get extra biological variance
+  const bio=Math.random()<0.2? Math.abs(randn2())*0.6 : 0;
+  const logVar=baseLogVar+bio;
+  // Stash the noise/bio fit centerline for later residual computation
+  allGenes.push({logMean,logVar,fitLogVar:0.5+0.8*logMean,bio});
 }
-genes.sort((a,b)=>b.variance-a.variance);
-const hvgChart=new Chart(document.getElementById('hvgChart'),{type:'scatter',data:{datasets:[{label:'HVG',data:[],backgroundColor:'rgba(192,57,43,0.5)',pointRadius:3},{label:'Non-HVG',data:[],backgroundColor:'rgba(180,180,170,0.3)',pointRadius:2}]},options:{responsive:true,maintainAspectRatio:false,animation:false,scales:{x:{title:{display:true,text:'Mean Expression'}},y:{title:{display:true,text:'Variance'}}},plugins:{legend:{position:'top'}}}});
-function upHVG(){const n=+document.getElementById('sliderHVG').value;document.getElementById('valHVG').textContent=n;const s=[],r=[];genes.forEach((g,i)=>{(i<n?s:r).push({x:g.mean,y:g.variance});});hvgChart.data.datasets[0].data=s;hvgChart.data.datasets[1].data=r;hvgChart.update('none');}
-document.getElementById('sliderHVG').addEventListener('input',upHVG);upHVG();
-window._QF={zh:{q1_y:'管家基因在各細胞間穩定表達，變異度低，不會被選為高變異基因。',q1_n:'答案是 C。管家基因的特徵就是在所有細胞中穩定表達。'},en:{q1_y:'Housekeeping genes are stably expressed across all cells with low variance.',q1_n:'Answer is C. Housekeeping genes are stably expressed everywhere.'}};
-const QF=window._QF||{};document.querySelectorAll('.quiz-q').forEach((q,qi)=>{const ans=+q.dataset.answer;q.querySelectorAll('.quiz-opt').forEach(o=>{o.addEventListener('click',()=>{if(q.classList.contains('answered'))return;q.classList.add('answered');const fb=document.getElementById('fb'+(qi+1));const ok=+o.dataset.idx===ans;o.classList.add(ok?'correct':'wrong');if(!ok)q.querySelectorAll('.quiz-opt')[ans].classList.add('correct');const L=I18n.get();fb.className='quiz-feedback show '+(ok?'correct-fb':'wrong-fb');fb.textContent=(ok?'✅ ':'❌ ')+(QF[L]&&QF[L]['q'+(qi+1)+'_'+(ok?'y':'n')]||'');});});});
+
+const hvgChart=new Chart(document.getElementById('hvgChart'),{type:'scatter',data:{datasets:[
+  {label:'HVG',data:[],backgroundColor:'rgba(192,57,43,0.6)',pointRadius:2.5},
+  {label:'Non-HVG',data:[],backgroundColor:'rgba(160,160,150,0.28)',pointRadius:1.8},
+  {label:'Noise expectation (loess)',data:[],type:'line',borderColor:'rgba(41,128,185,0.85)',backgroundColor:'transparent',borderWidth:2,pointRadius:0,showLine:true}
+]},options:{responsive:true,maintainAspectRatio:false,animation:false,plugins:{legend:{position:'top',labels:{font:{size:10}}}},scales:{x:{title:{display:true,text:'log10(mean expression)'},ticks:{font:{size:9}}},y:{title:{display:true,text:'log10(variance)'},ticks:{font:{size:9}}}}}});
+
+function upHVG(){
+  const N=+document.getElementById('sliderHVG').value;
+  const noise=+document.getElementById('sliderNoise').value/10; // 0.5–3.0
+  const total=+document.getElementById('sliderTotal').value;
+  document.getElementById('valHVG').textContent=N;
+  document.getElementById('valNoise').textContent=noise.toFixed(1);
+  document.getElementById('valTotal').textContent=total;
+  // Subset the gene pool
+  const pool=allGenes.slice(0,total).map(g=>{
+    // Recompute log variance with noise multiplier and residual = (logVar - fit)
+    const fit=g.fitLogVar*noise; // scale the trend (cheap way to mimic stronger tech noise floor)
+    const resid=g.logVar - fit;
+    return {x:g.logMean,y:g.logVar,resid};
+  });
+  // Rank by residual descending, take top-N
+  const sorted=[...pool].sort((a,b)=>b.resid-a.resid);
+  const cutoff=sorted[Math.min(N,sorted.length-1)-1]?sorted[Math.min(N,sorted.length-1)-1].resid:0;
+  const hvg=[],non=[];
+  pool.forEach(p=>(p.resid>=cutoff?hvg:non).push({x:p.x,y:p.y}));
+  // Loess curve
+  const line=[];
+  for(let lm=-1.2;lm<=1.8;lm+=0.1){line.push({x:lm,y:(0.5+0.8*lm)*noise});}
+  hvgChart.data.datasets[0].data=hvg;
+  hvgChart.data.datasets[1].data=non;
+  hvgChart.data.datasets[2].data=line;
+  hvgChart.update('none');
+  const L=I18n.get();
+  document.getElementById('hvgPass').textContent=(L==='zh'?'HVG ':'HVG ')+hvg.length;
+  document.getElementById('hvgFrac').textContent=(L==='zh'?'佔比 ':'fraction ')+(hvg.length/pool.length*100).toFixed(1)+'%';
+}
+['sliderHVG','sliderNoise','sliderTotal'].forEach(id=>document.getElementById(id).addEventListener('input',upHVG));
+document.addEventListener('langchange',upHVG);
+upHVG();
+
+window._QF={
+  zh:{q1_y:'管家基因在各細胞穩定表達；其 variance 對 mean 的比值落在 loess 預期附近，標準化殘差小。',q1_n:'答案是 C。',
+      q2_y:'計數資料 var ∝ mean 是技術現象。先擬合再排殘差才不會獨厚高表達基因。',q2_n:'答案是 B。',
+      q3_y:'批次感知選法可避免 HVG 反映 sample 效應。',q3_n:'答案是 A。',
+      q4_y:'稀有 marker 可能未進 HVG；加大 N 或對 subset 重做 HVG/PCA 是常見作法。',q4_n:'答案是 B。'},
+  en:{q1_y:'Housekeeping genes are stably expressed; their var/mean ratio lies on the loess fit, giving small standardized residuals.',q1_n:'Answer is C.',
+      q2_y:'In count data, var ∝ mean is a technical artifact. Fitting first ensures fair comparison across expression levels.',q2_n:'Answer is B.',
+      q3_y:'Batch-aware selection prevents HVG from reflecting sample effects.',q3_n:'Answer is A.',
+      q4_y:'Rare-cell markers may not enter HVG; increase N or redo HVG/PCA on the subset.',q4_n:'Answer is B.'}
+};
+const QF=window._QF;
+document.querySelectorAll('.quiz-q').forEach((q,qi)=>{const ans=+q.dataset.answer;q.querySelectorAll('.quiz-opt').forEach(o=>{o.addEventListener('click',()=>{if(q.classList.contains('answered'))return;q.classList.add('answered');const fb=document.getElementById('fb'+(qi+1));const ok=+o.dataset.idx===ans;o.classList.add(ok?'correct':'wrong');if(!ok)q.querySelectorAll('.quiz-opt')[ans].classList.add('correct');const L=I18n.get();fb.className='quiz-feedback show '+(ok?'correct-fb':'wrong-fb');fb.textContent=(ok?'✅ ':'❌ ')+(QF[L]['q'+(qi+1)+'_'+(ok?'y':'n')]||'');});});});
 </script></body></html>

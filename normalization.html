@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="zh-Hant"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>normalization — scRNA-seq Tutorial</title><link rel="stylesheet" href="styles.css"></head><body><nav class="top-nav"><div class="top-nav-inner"><a href="index.html" class="top-nav-brand"><span>🧬</span> <span data-zh="scRNA-seq 教學" data-en="scRNA-seq Tutorial">scRNA-seq 教學</span></a><ul class="top-nav-links"><li><a href="qc.html">QC</a></li><li><a href="normalization.html" class=active>Norm.</a></li><li><a href="variable-features.html">Features</a></li><li><a href="scaling.html">Scaling</a></li><li><a href="pca.html">PCA</a></li><li><a href="clustering.html">Clustering</a></li><li><a href="umap.html">UMAP</a></li><li><a href="annotation.html">Annot.</a></li><li><a href="differential-expression.html">DE</a></li><li><a href="integration.html">Integ.</a></li><li><a href="cellchat.html">CellChat</a></li><li><a href="trajectory.html">Traj.</a></li>
+<!DOCTYPE html><html lang="zh-Hant"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Step 2: Normalization — scRNA-seq Tutorial</title><link rel="stylesheet" href="styles.css"><script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script></head><body><nav class="top-nav"><div class="top-nav-inner"><a href="index.html" class="top-nav-brand"><span>🧬</span> <span data-zh="scRNA-seq 教學" data-en="scRNA-seq Tutorial">scRNA-seq 教學</span></a><ul class="top-nav-links"><li><a href="qc.html">QC</a></li><li><a href="normalization.html" class="active">Norm.</a></li><li><a href="variable-features.html">Features</a></li><li><a href="scaling.html">Scaling</a></li><li><a href="pca.html">PCA</a></li><li><a href="clustering.html">Clustering</a></li><li><a href="umap.html">UMAP</a></li><li><a href="annotation.html">Annot.</a></li><li><a href="differential-expression.html">DE</a></li><li><a href="integration.html">Integ.</a></li><li><a href="cellchat.html">CellChat</a></li><li><a href="trajectory.html">Traj.</a></li>
     <li><a href="references/index.html" data-zh="📚 參考資料" data-en="📚 References">📚 參考資料</a></li>
   </ul></div></nav><div class="progress-bar-container"><div class="progress-bar" id="progressBar"></div></div>
 <header class="page-hero"><div class="step-badge">STEP 2 / 9</div>
@@ -6,115 +6,410 @@
 <p class="subtitle" data-lang="zh">消除技術偏差，揭示真實的生物學差異。探索從傳統 LogNormalize 到現代 SCTransform 的演進。</p>
 <p class="subtitle" data-lang="en">Remove technical biases to reveal true biological differences. Explore the evolution from LogNormalize to SCTransform.</p></header>
 <main class="content-wrap">
-<section class="section"><div class="section-label" data-zh="為什麼" data-en="WHY">為什麼</div>
-<h2 data-zh="一、為什麼需要標準化？" data-en="I. Why Normalize?">一、為什麼需要標準化？</h2>
-<div data-lang="zh"><p>在實驗過程中，即使是相同的細胞，也會因為以下技術原因導致觀測到的 Read Counts 不同。標準化的核心任務就是校正這些誤差，確保後續分析的準確性。</p></div>
-<div data-lang="en"><p>During experiments, even identical cells will show different read counts due to technical factors. Normalization corrects these biases to ensure accurate downstream analysis.</p></div>
-<div class="card-grid cols-2">
-<div class="card"><div class="card-icon">📊</div><h4 data-zh="定序深度 (Sequencing Depth)" data-en="Sequencing Depth">定序深度</h4><div data-lang="zh"><p>不同細胞在測序儀上獲得的總 Reads 數不同，導致整體信號強度的基線差異。一個細胞可能獲得 5000 reads，另一個獲得 50000 reads——這純粹是技術差異。</p></div><div data-lang="en"><p>Different cells receive different total reads from the sequencer, causing baseline signal intensity differences. One cell might get 5,000 reads while another gets 50,000 — a purely technical difference.</p></div></div>
-<div class="card"><div class="card-icon">🧲</div><h4 data-zh="捕獲效率 (Capture Efficiency)" data-en="Capture Efficiency">捕獲效率</h4><div data-lang="zh"><p>不同細胞在逆轉錄成 cDNA 或文庫備製過程中的效率存在隨機差異，並非每個 RNA 分子都能被成功捕獲和測量。</p></div><div data-lang="en"><p>Random differences in reverse transcription and library preparation efficiency mean not every RNA molecule is successfully captured and measured.</p></div></div>
-<div class="card"><div class="card-icon">💧</div><h4 data-zh="液滴大小 (Droplet Size)" data-en="Droplet Size">液滴大小</h4><div data-lang="zh"><p>在 10x Genomics 等基於微流控的技術中，每個液滴包含的試劑量可能有微小差異，影響反應效率。</p></div><div data-lang="en"><p>In microfluidics-based technologies (10x Genomics), each droplet may contain slightly different reagent volumes, affecting reaction efficiency.</p></div></div>
-<div class="card"><div class="card-icon">🧬</div><h4 data-zh="RNA 含量差異" data-en="RNA Content Variation">RNA 含量差異</h4><div data-lang="zh"><p>不同大小或類型的細胞（如靜止的淋巴細胞 vs. 活躍分裂的腫瘤細胞）本身攜帶的總體 RNA 絕對量就不同。這既是技術問題也是生物學問題。</p></div><div data-lang="en"><p>Cells of different sizes/types (quiescent lymphocyte vs. actively dividing tumor cell) carry different total RNA amounts — both a technical and biological issue.</p></div></div>
-</div></section>
 
+<!-- ===== Section 1: Why Normalize ===== -->
+<section class="section"><div class="section-label" data-zh="概覽" data-en="OVERVIEW">概覽</div>
+<h2 data-zh="一、為什麼需要標準化？" data-en="I. Why Normalize?">一、為什麼需要標準化？</h2>
+<div data-lang="zh">
+<p>在 scRNA-seq 中，即使是<strong>同一個細胞</strong>，如果分別重新捕獲、建庫、定序兩次，得到的 UMI 計數也會明顯不同。這些技術性差異混雜在真實生物訊號裡，必須先<strong>校正掉捕獲深度</strong>，才能比較細胞間的「相對表達」。</p>
+<p>更棘手的是，scRNA-seq 數據有三個獨特特性：(1) <strong>極度稀疏</strong>——多數基因對多數細胞讀數為 0；(2) <strong>計數型分佈</strong>——非連續、右偏、過離散 (overdispersed) 的負二項分佈；(3) <strong>異質方差</strong>——高表達基因的方差遠大於低表達基因。傳統 bulk RNA-seq 的 TPM/CPM 並不能直接套用，這也是 SCTransform 等專屬方法誕生的原因。</p>
+</div>
+<div data-lang="en">
+<p>In scRNA-seq, even <strong>the same cell</strong>, if re-captured/library-prepped/sequenced twice, will yield noticeably different UMI counts. These technical differences are entangled with real biological signal, so <strong>capture depth must be corrected</strong> before we can compare "relative expression" across cells.</p>
+<p>What makes it harder: scRNA-seq data has three unique features — (1) <strong>extreme sparsity</strong> (most genes are zero in most cells); (2) <strong>count distribution</strong> — discrete, right-skewed, overdispersed negative-binomial; (3) <strong>heteroskedasticity</strong> — high-expression genes have far larger variance than low ones. Bulk RNA-seq's TPM/CPM doesn't transfer, which is why dedicated methods like SCTransform were developed.</p>
+</div>
+<div class="card-grid cols-2">
+<div class="card"><div class="card-icon">📊</div><h4 data-zh="定序深度 (Sequencing Depth)" data-en="Sequencing Depth">定序深度</h4><div data-lang="zh"><p>不同細胞在測序儀上獲得的總 Reads 數不同——一個細胞可能 5000 reads，另一個 50000 reads。這是純粹的技術偏差。</p></div><div data-lang="en"><p>Different cells receive different total reads — one cell might get 5,000 reads while another gets 50,000. Pure technical bias.</p></div></div>
+<div class="card"><div class="card-icon">🧲</div><h4 data-zh="捕獲效率 (Capture Efficiency)" data-en="Capture Efficiency">捕獲效率</h4><div data-lang="zh"><p>逆轉錄、PCR 擴增、二代定序各步驟都有隨機損失。實際 mRNA 分子被偵測到的比例僅 10–30%。</p></div><div data-lang="en"><p>Reverse transcription, PCR amplification and sequencing each lose molecules randomly. Only 10–30% of original mRNAs are detected.</p></div></div>
+<div class="card"><div class="card-icon">💧</div><h4 data-zh="零膨脹 (Zero Inflation)" data-en="Zero Inflation">零膨脹</h4><div data-lang="zh"><p>單細胞數據中 70–95% 的數值是 0。許多 0 是「技術性 dropout」（基因實際表達但未被捕獲），少數是真正不表達。LogNormalize 不區分兩者。</p></div><div data-lang="en"><p>70–95% of values in a single-cell matrix are zero. Many are "technical dropouts" (gene is expressed but missed); few are true zeros. LogNormalize cannot distinguish them.</p></div></div>
+<div class="card"><div class="card-icon">🧬</div><h4 data-zh="RNA 總量差異" data-en="RNA Content Variation">RNA 總量差異</h4><div data-lang="zh"><p>靜止淋巴細胞 vs. 增殖中的腫瘤細胞，本身 mRNA 總量就差數倍。這既是技術問題也是生物學議題——「等比例縮放」會把大細胞的真實高表達削弱。</p></div><div data-lang="en"><p>Quiescent lymphocytes vs. proliferating tumor cells differ in total mRNA by several-fold. This is both technical and biological — proportional scaling can mask true high expression in large cells.</p></div></div>
+</div>
+<div class="callout tip"><span class="callout-icon">💡</span><div>
+<span data-lang="zh"><strong>記住：</strong>Normalization 校正的是<strong>捕獲深度</strong>，不是<strong>批次效應</strong>。批次差異（不同樣本、不同 lane、不同建庫日期）需要 Integration / Harmony / scVI 等專門方法處理。</span>
+<span data-lang="en"><strong>Remember:</strong> Normalization corrects <strong>capture depth</strong>, not <strong>batch effects</strong>. Batch differences (different samples/lanes/library days) require dedicated integration methods like Harmony or scVI.</span>
+</div></div>
+</section>
+
+<!-- ===== Section 2: Three Methods Deep Dive ===== -->
+<section class="section"><div class="section-label" data-zh="原理深入" data-en="PRINCIPLES">原理</div>
+<h2 data-zh="二、三大主流方法的數學原理" data-en="II. The Math Behind the Three Mainstream Methods">二、三大主流方法的數學原理</h2>
+
+<div class="card">
+<h4>① LogNormalize <span style="font-weight:400;color:var(--c-ink-muted);font-size:.85em;">(Seurat default · Scanpy normalize_total+log1p)</span></h4>
+<div data-lang="zh">
+<p><strong>公式：</strong> <code>x'<sub>ij</sub> = log( x<sub>ij</sub> / Σ<sub>j</sub> x<sub>ij</sub> × 10000 + 1 )</code></p>
+<p>對細胞 j 的每個基因 i 的原始計數 x<sub>ij</sub>，先除以該細胞的<strong>總計數</strong>（library size），乘以 scale factor（通常 10000），最後 log(x+1) 壓縮動態範圍。輸出存於 <code>data</code> slot。</p>
+<p><strong>優點：</strong>計算極快、概念直觀、與 bulk CPM 一脈相承。<br><strong>缺點：</strong>(a) 全細胞共用同一 size factor 估計（總 UMI），對極端細胞不準；(b) log 後仍有<strong>異質方差</strong>——高表達基因方差較大；(c) 假設所有細胞 mRNA 總量相同，違反生物學事實。</p>
+</div>
+<div data-lang="en">
+<p><strong>Formula:</strong> <code>x'<sub>ij</sub> = log( x<sub>ij</sub> / Σ<sub>j</sub> x<sub>ij</sub> × 10000 + 1 )</code></p>
+<p>For each gene i in cell j, divide by the cell's <strong>total counts</strong> (library size), multiply by a scale factor (usually 10000), then log(x+1) to compress dynamic range. Output stored in the <code>data</code> slot.</p>
+<p><strong>Pros:</strong> Extremely fast, intuitive, continuous with bulk CPM logic.<br><strong>Cons:</strong> (a) Same size factor for all cells (total UMI) — inaccurate for extreme cells; (b) Residual <strong>heteroskedasticity</strong> after log — high-expression genes still have larger variance; (c) Assumes equal total mRNA across cells, violating biology.</p>
+</div>
+</div>
+
+<div class="card">
+<h4>② Scran pooling deconvolution <span style="font-weight:400;color:var(--c-ink-muted);font-size:.85em;">(Lun et al. 2016)</span></h4>
+<div data-lang="zh">
+<p><strong>核心想法：</strong>單個細胞的 UMI 太稀疏無法穩定估計 size factor。Scran 先把相似細胞<strong>合併成 pool</strong>（如 20–100 個一組）做穩健估計，再用<strong>線性反卷積（deconvolution）</strong>把 pool size factor 拆回到每個細胞。</p>
+<p><strong>數學流程：</strong>對細胞 i ∈ S（pool S）的計數總和 t<sub>S</sub> = Σ<sub>i∈S</sub> x<sub>ij</sub> / x<sub>ref,j</sub>，建立線性方程組求解每個 θ<sub>i</sub>（cell-specific size factor）。實際使用會先 quickCluster() 把細胞依表達相似度分群，避免跨型別混 pool 造成偏差。</p>
+<p><strong>優點：</strong>對 RNA 總量差異大的數據集（如肝臟+免疫混合）顯著優於簡單除以 total UMI。<br><strong>缺點：</strong>對極稀疏的 droplet 數據（如平均 < 500 UMI/cell）可能不穩。</p>
+</div>
+<div data-lang="en">
+<p><strong>Idea:</strong> A single cell's UMI vector is too sparse to estimate a stable size factor. Scran <strong>pools similar cells</strong> (e.g., groups of 20–100) for a robust estimate, then uses <strong>linear deconvolution</strong> to recover each cell's size factor.</p>
+<p><strong>Procedure:</strong> For cells i in pool S, sum t<sub>S</sub> = Σ<sub>i∈S</sub> x<sub>ij</sub> / x<sub>ref,j</sub> and solve a linear system for θ<sub>i</sub> (cell-specific size factor). In practice, run quickCluster() first to group similar cells and avoid mixing cell types into the same pool.</p>
+<p><strong>Pros:</strong> Far better than dividing-by-total-UMI when RNA content varies a lot (e.g., hepatocytes + immune).<br><strong>Cons:</strong> Can be unstable on very sparse droplet data (mean < 500 UMI/cell).</p>
+</div>
+</div>
+
+<div class="card">
+<h4>③ SCTransform <span style="font-weight:400;color:var(--c-ink-muted);font-size:.85em;">(Hafemeister & Satija 2019 · Choudhary & Satija 2022 v2)</span></h4>
+<div data-lang="zh">
+<p><strong>核心想法：</strong>對<strong>每個基因</strong>擬合一個<strong>負二項 (NB) 廣義線性模型</strong>，以 log(total UMI) 為唯一解釋變數，再對所有基因的擬合參數（β<sub>0</sub>, β<sub>1</sub>, θ）做<strong>核迴歸正則化 (kernel regularization)</strong>——同表達區間基因共享平滑後的參數，避免過擬合與稀有基因的不穩定估計。</p>
+<p><strong>輸出：</strong>Pearson residuals — <code>r<sub>ij</sub> = (x<sub>ij</sub> − μ̂<sub>ij</sub>) / √(μ̂<sub>ij</sub> + μ̂<sub>ij</sub>²/θ̂)</code>。直觀理解：每個 (gene, cell) 殘差代表「該細胞表達超出深度可預測的多少標準差」，理論上應為均值 0、方差 1 的均質化分佈，非常適合直接送 PCA。</p>
+<p><strong>v2 改進 (2022)：</strong>使用 glmGamPoi 加速 NB 擬合（快約 10×）、預設用 <code>vst.flavor='v2'</code>、更穩健的離散參數估計。<br><strong>優點：</strong>同時處理深度校正 + 異質方差 + 過離散。<br><strong>缺點：</strong>計算耗時（v2 後緩解）、產出 SCT assay 與原 RNA assay 並存容易混淆 downstream slot 操作。</p>
+</div>
+<div data-lang="en">
+<p><strong>Idea:</strong> Fit a <strong>negative binomial (NB) GLM</strong> for each gene with log(total UMI) as the sole covariate, then apply <strong>kernel regularization</strong> to the fitted parameters (β<sub>0</sub>, β<sub>1</sub>, θ) — genes with similar expression share smoothed parameters, avoiding overfit on rare genes.</p>
+<p><strong>Output:</strong> Pearson residuals — <code>r<sub>ij</sub> = (x<sub>ij</sub> − μ̂<sub>ij</sub>) / √(μ̂<sub>ij</sub> + μ̂<sub>ij</sub>²/θ̂)</code>. Intuitively each (gene, cell) residual is "how many SDs the cell's expression exceeds what depth alone predicts". Theoretically mean=0, variance=1 — homoskedastic and perfect for PCA.</p>
+<p><strong>v2 (2022):</strong> Uses glmGamPoi to accelerate NB fitting (~10×); default <code>vst.flavor='v2'</code>; more robust dispersion estimation.<br><strong>Pros:</strong> Handles depth + heteroskedasticity + overdispersion in one step.<br><strong>Cons:</strong> Slower than LogNorm (alleviated in v2); SCT assay coexists with original RNA assay — easy to confuse downstream slot operations.</p>
+</div>
+</div>
+</section>
+
+<!-- ===== Section 3: Comparison Table ===== -->
+<section class="section"><div class="section-label" data-zh="方法比較" data-en="COMPARISON">方法比較</div>
+<h2 data-zh="三、方法比較矩陣" data-en="III. Method Comparison Matrix">三、方法比較矩陣</h2>
+<table class="comp-table"><thead><tr>
+<th data-zh="特性" data-en="Feature">特性</th>
+<th>LogNormalize</th><th>Scran</th><th>SCTransform v2</th><th>Pearson residuals (Scanpy)</th>
+</tr></thead><tbody>
+<tr><td><strong data-zh="統計假設" data-en="Assumption">統計假設</strong></td>
+<td data-lang="zh">各細胞 mRNA 總量相同</td><td data-lang="zh">同型細胞 size factor 相近</td><td data-lang="zh">基因服從 NB 分佈</td><td data-lang="zh">基因服從 NB 分佈（簡化版）</td>
+<td data-lang="en">Equal mRNA per cell</td><td data-lang="en">Similar cells share size factors</td><td data-lang="en">Gene counts follow NB</td><td data-lang="en">Gene counts follow NB (simplified)</td></tr>
+<tr><td><strong data-zh="細胞數規模" data-en="Cell scale">細胞數規模</strong></td>
+<td data-zh="任意" data-en="Any">任意</td>
+<td data-zh="100–10萬" data-en="100–100k">100–100k</td>
+<td data-zh="1k–50萬 (v2 後可擴展)" data-en="1k–500k (v2)">1k–500k</td>
+<td data-zh="任意大規模" data-en="Any large scale">任意大規模</td></tr>
+<tr><td><strong data-zh="輸出 slot" data-en="Output slot">輸出 slot</strong></td>
+<td><code>data</code></td>
+<td><code>logcounts</code></td>
+<td><code>SCT@scale.data</code> + <code>data</code> + <code>counts</code></td>
+<td><code>layers['pearson_residuals']</code></td></tr>
+<tr><td><strong data-zh="速度" data-en="Speed">速度</strong></td>
+<td>⚡⚡⚡</td><td>⚡⚡</td><td>⚡⚡ (v2)</td><td>⚡⚡⚡</td></tr>
+<tr><td><strong data-zh="優點" data-en="Pros">優點</strong></td>
+<td data-lang="zh">快、簡單、與舊流程相容</td><td data-lang="zh">處理 RNA 總量差異</td><td data-lang="zh">同時處理深度+方差，PCA 友善</td><td data-lang="zh">同類效果、速度更快</td>
+<td data-lang="en">Fast, simple, legacy-compatible</td><td data-lang="en">Handles RNA content diff</td><td data-lang="en">Depth + variance in one shot</td><td data-lang="en">Similar effect, faster</td></tr>
+<tr><td><strong data-zh="缺點" data-en="Cons">缺點</strong></td>
+<td data-lang="zh">仍有異質方差</td><td data-lang="zh">droplet 數據易不穩</td><td data-lang="zh">SCT assay 易混淆</td><td data-lang="zh">較新、生態不成熟</td>
+<td data-lang="en">Heteroskedastic</td><td data-lang="en">Unstable on sparse droplets</td><td data-lang="en">SCT assay confusion</td><td data-lang="en">Newer, less ecosystem support</td></tr>
+<tr><td><strong data-zh="建議用法" data-en="Suggested use">建議用法</strong></td>
+<td data-lang="zh">初步探索、教學、小數據</td><td data-lang="zh">大細胞 / 多型別混合</td><td data-lang="zh">正式分析、發表前流程</td><td data-lang="zh">超大型 atlas（百萬細胞）</td>
+<td data-lang="en">Initial exploration, small data</td><td data-lang="en">Multi-cell-size, mixed types</td><td data-lang="en">Formal / publication-grade</td><td data-lang="en">Atlas-scale (millions cells)</td></tr>
+</tbody></table>
+
+<div class="decision-tree"><h4>🌳 <span data-zh="決策樹：我該用哪一個？" data-en="Decision Tree: Which one?">決策樹</span></h4>
+<div data-lang="zh">
+<div class="dt-node"><span class="dt-q">Q1:</span><div>細胞數 < 5000 且僅做探索？<span class="dt-arrow">→ 是 →</span> <strong>LogNormalize</strong> 就夠了。</div></div>
+<div class="dt-node"><span class="dt-q">Q2:</span><div>要發表 / 多型別混合？<span class="dt-arrow">→ 是 →</span> <strong>SCTransform v2</strong>。</div></div>
+<div class="dt-node"><span class="dt-q">Q3:</span><div>細胞型別 size 差異極大（肝細胞 + T 細胞）？<span class="dt-arrow">→ 是 →</span> <strong>Scran</strong> 或 SCTransform。</div></div>
+<div class="dt-node"><span class="dt-q">Q4:</span><div>百萬等級 atlas？<span class="dt-arrow">→ 是 →</span> <strong>Scanpy Pearson residuals</strong> 或 scVI。</div></div>
+</div>
+<div data-lang="en">
+<div class="dt-node"><span class="dt-q">Q1:</span><div>Cells < 5000 and just exploring? <span class="dt-arrow">→ Yes →</span> <strong>LogNormalize</strong> is enough.</div></div>
+<div class="dt-node"><span class="dt-q">Q2:</span><div>Publishing or mixed cell types? <span class="dt-arrow">→ Yes →</span> <strong>SCTransform v2</strong>.</div></div>
+<div class="dt-node"><span class="dt-q">Q3:</span><div>Huge size differences (hepatocytes + T cells)? <span class="dt-arrow">→ Yes →</span> <strong>Scran</strong> or SCTransform.</div></div>
+<div class="dt-node"><span class="dt-q">Q4:</span><div>Million-cell atlas? <span class="dt-arrow">→ Yes →</span> <strong>Scanpy Pearson residuals</strong> or scVI.</div></div>
+</div></div>
+</section>
+
+<!-- ===== Section 4: Interactive ===== -->
 <section class="section"><div class="section-label" data-zh="互動模擬" data-en="INTERACTIVE">互動模擬</div>
-<h2 data-zh="二、標準化方法與數據分佈" data-en="II. Methods & Data Distribution">二、標準化方法與數據分佈</h2>
-<div data-lang="zh"><p>點擊下方按鈕，觀察不同標準化方法如何改變數據的數學分布。單細胞數據極度稀疏（充滿 0），傳統方法逐漸顯露不足，促使了進階演算法的誕生。</p></div>
-<div data-lang="en"><p>Click buttons to observe how different normalization methods change the data distribution. Single-cell data is extremely sparse (full of zeros), and traditional methods have shown limitations, driving the development of advanced algorithms.</p></div>
-<div class="interactive-panel"><div class="toggle-row">
+<h2 data-zh="四、互動模擬：數據分佈 + 深度校正效果" data-en="IV. Interactive: Distribution & Depth Correction">四、互動模擬</h2>
+<div data-lang="zh"><p>下面有兩個互動圖。<strong>① 分佈轉換</strong>：點選按鈕觀察 raw → log → scran → SCT 的分佈形狀。<strong>② 深度校正模擬器</strong>：拖動 <em>raw depth variance</em> 滑桿模擬細胞間 library size 差異，比較三種方法對「同一基因在不同深度細胞中」的校正效果——理想情況下，校正後同基因在不同深度細胞間的分佈應該重疊。</p></div>
+<div data-lang="en"><p>Two interactives below. <strong>① Distribution Shape</strong>: click buttons to see raw → log → scran → SCT shapes. <strong>② Depth-correction simulator</strong>: drag the <em>raw depth variance</em> slider to vary cell library sizes; compare how each method corrects "the same gene across cells of different depths" — ideally, the corrected distributions should overlap.</p></div>
+
+<div class="interactive-panel">
+<div class="toggle-row">
 <button class="toggle-btn active" id="btn-raw" onclick="showDist('raw')">Raw</button>
 <button class="toggle-btn" id="btn-log" onclick="showDist('log')">LogNormalize</button>
 <button class="toggle-btn" id="btn-scran" onclick="showDist('scran')">Scran</button>
 <button class="toggle-btn" id="btn-sct" onclick="showDist('sct')">SCTransform</button>
-</div><div id="distDesc" style="font-size:.92rem;color:var(--c-ink-light);margin-bottom:12px;"></div>
-<div class="chart-container" style="height:300px;"><canvas id="distChart"></canvas></div></div></section>
-
-<section class="section"><div class="section-label" data-zh="方法比較" data-en="COMPARISON">方法比較</div>
-<h2 data-zh="三、關鍵特性比較矩陣" data-en="III. Method Comparison Matrix">三、關鍵特性比較矩陣</h2>
-<div data-lang="zh"><p>以下對比三種主要標準化方法的核心邏輯與適用場景。</p></div>
-<div data-lang="en"><p>Comparison of core logic and use cases for the three main normalization methods.</p></div>
-<table class="comp-table"><thead><tr><th data-zh="特性" data-en="Feature">特性</th><th>LogNormalize</th><th>Scran</th><th>SCTransform</th></tr></thead><tbody>
-<tr><td><strong data-zh="核心邏輯" data-en="Core Logic">核心邏輯</strong></td><td data-lang="zh">線性縮放 + 對數轉換</td><td data-lang="zh">基於細胞池的解卷積</td><td data-lang="zh">正則化負二項回歸殘差</td><td data-lang="en">Linear scaling + log transform</td><td data-lang="en">Pool-based deconvolution</td><td data-lang="en">Regularized NB regression residuals</td></tr>
-<tr><td><strong data-zh="計算速度" data-en="Speed">速度</strong></td><td>⚡ <span data-zh="極快" data-en="Very fast">極快</span></td><td>🔵 <span data-zh="中等" data-en="Medium">中等</span></td><td>🐢 <span data-zh="較慢（需建模）" data-en="Slower (requires modeling)">較慢</span></td></tr>
-<tr><td><strong data-zh="處理零值能力" data-en="Zero Handling">零值處理</strong></td><td data-zh="一般" data-en="Average">一般</td><td data-zh="較好" data-en="Better">較好</td><td data-zh="最佳" data-en="Best">最佳</td></tr>
-<tr><td><strong data-zh="適用場景" data-en="Best For">適用場景</strong></td><td data-lang="zh">快速探索、簡單數據</td><td data-lang="zh">細胞間 RNA 含量差異極大</td><td data-lang="zh">正式分析（目前主流推薦）</td><td data-lang="en">Quick exploration, simple datasets</td><td data-lang="en">Large RNA content variation across cells</td><td data-lang="en">Formal analysis (currently recommended)</td></tr>
-</tbody></table>
-
-<div class="decision-tree"><h4>🌳 <span data-zh="我該用哪種方法？" data-en="Which method should I use?">我該用哪種方法？</span></h4>
-<div data-lang="zh">
-<div class="dt-node"><span class="dt-q">Q1:</span><div>你用 Seurat 嗎？ <span class="dt-arrow">→ 是 →</span> 預設 LogNormalize 可用於初步探索；正式分析建議 <strong>SCTransform</strong>。</div></div>
-<div class="dt-node"><span class="dt-q">Q2:</span><div>你用 Scanpy 嗎？ <span class="dt-arrow">→ 是 →</span> 預設 <code>normalize_total</code> + <code>log1p</code>（等同 LogNormalize）。</div></div>
-<div class="dt-node"><span class="dt-q">Q3:</span><div>數據中有極端大小不同的細胞？（如腫瘤 + 免疫細胞混合）<span class="dt-arrow">→ 是 →</span> 考慮 <strong>Scran</strong> 的 pooling deconvolution。</div></div>
 </div>
-<div data-lang="en">
-<div class="dt-node"><span class="dt-q">Q1:</span><div>Using Seurat? <span class="dt-arrow">→ Yes →</span> Default LogNormalize for exploration; <strong>SCTransform</strong> for formal analysis.</div></div>
-<div class="dt-node"><span class="dt-q">Q2:</span><div>Using Scanpy? <span class="dt-arrow">→ Yes →</span> Default <code>normalize_total</code> + <code>log1p</code> (equivalent to LogNormalize).</div></div>
-<div class="dt-node"><span class="dt-q">Q3:</span><div>Extreme cell size differences? (e.g., tumor + immune mixed) <span class="dt-arrow">→ Yes →</span> Consider <strong>Scran</strong> pooling deconvolution.</div></div>
-</div></div></section>
+<div id="distDesc" style="font-size:.92rem;color:var(--c-ink-light);margin-bottom:12px;"></div>
+<div class="chart-container" style="height:260px;"><canvas id="distChart"></canvas></div>
+</div>
 
-<section class="section"><div class="section-label" data-zh="工作流程" data-en="WORKFLOW">工作流程</div>
-<h2 data-zh="四、建議的標準化工作流" data-en="IV. Recommended Workflow">四、建議的標準化工作流</h2>
-<div class="workflow">
-<div class="workflow-step" data-step="1"><h4 data-zh="初步過濾 (QC)" data-en="Initial Filtering (QC)">初步過濾</h4><div data-lang="zh"><p>除去線粒體比例過高或總基因數過少的無效數據。</p></div><div data-lang="en"><p>Remove cells with high MT% or too few genes.</p></div></div>
-<div class="workflow-step" data-step="2"><h4 data-zh="執行 SCTransform" data-en="Run SCTransform">執行 SCTransform</h4><div data-lang="zh"><p>利用負二項回歸模型過濾技術雜訊。<code>SCTransform(object, vars.to.regress = "percent.mt")</code></p></div><div data-lang="en"><p>Use NB regression to filter technical noise. <code>SCTransform(object, vars.to.regress = "percent.mt")</code></p></div></div>
-<div class="workflow-step" data-step="3"><h4 data-zh="降維與聚類" data-en="Dimensionality Reduction & Clustering">降維與聚類</h4><div data-lang="zh"><p>利用 SCTransform 產生的 Pearson Residuals 直接進行 PCA 與分群。</p></div><div data-lang="en"><p>Use SCTransform's Pearson residuals directly for PCA and clustering.</p></div></div>
-</div></section>
+<div class="interactive-panel" style="margin-top:18px;">
+<div style="font-size:.92rem;color:var(--c-ink-light);margin-bottom:6px;"><span data-zh="② 深度校正模擬器：模擬同一基因在 3 種深度細胞 (Low / Mid / High library size) 的表達分佈" data-en="② Depth-correction simulator: same gene across 3 cell-depth groups (Low / Mid / High library size)">② 深度校正模擬器</span></div>
+<div class="slider-group"><label><span data-zh="Raw depth 變異度" data-en="Raw depth variability">Raw depth 變異</span> <span id="valDepth">3.0×</span></label><input type="range" id="sliderDepth" min="10" max="60" value="30" step="2"></div>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin-top:14px;">
+  <div><div style="font-size:.82rem;font-weight:600;text-align:center;margin-bottom:4px;color:var(--c-ink-light);">Raw counts</div><div class="chart-container" style="height:200px;"><canvas id="depthRaw"></canvas></div></div>
+  <div><div style="font-size:.82rem;font-weight:600;text-align:center;margin-bottom:4px;color:var(--c-ink-light);">LogNormalize</div><div class="chart-container" style="height:200px;"><canvas id="depthLog"></canvas></div></div>
+  <div><div style="font-size:.82rem;font-weight:600;text-align:center;margin-bottom:4px;color:var(--c-ink-light);">SCTransform residual</div><div class="chart-container" style="height:200px;"><canvas id="depthSct"></canvas></div></div>
+</div>
+<p style="font-size:.78rem;color:var(--c-ink-muted);text-align:center;margin-top:8px;"><span data-zh="紅 = 低深度細胞 / 綠 = 中深度 / 藍 = 高深度。理想情況下校正後三組應重疊。" data-en="Red = low-depth / Green = mid / Blue = high-depth cells. Ideally the three groups should overlap after correction.">紅=低深度 / 綠=中 / 藍=高深度；理想結果：三組重疊。</span></p>
+</div>
+</section>
 
-<section class="section"><div class="section-label" data-zh="常見問題" data-en="FAQ">FAQ</div>
-<h2 data-zh="五、常見問題與注意事項" data-en="V. FAQ & Caveats">五、常見問題</h2>
-<div class="accordion-item"><button class="accordion-btn" onclick="this.classList.toggle('open');this.nextElementSibling.classList.toggle('open')"><span data-zh="Normalization 和 Scaling 是一樣的嗎？" data-en="Are Normalization and Scaling the same?">Normalization 和 Scaling 一樣嗎？</span></button><div class="accordion-body">
-<div data-lang="zh"><p><strong>Normalization</strong> 處理定序深度差異，讓不同細胞的基線一致。<strong>Scaling</strong>（如 ScaleData）是將基因調整為平均值 0、方差 1 (Z-score)，主要給 PCA 使用。兩者是不同步驟。</p></div>
-<div data-lang="en"><p><strong>Normalization</strong> addresses sequencing depth differences to equalize baselines across cells. <strong>Scaling</strong> (e.g., ScaleData) transforms genes to mean=0, variance=1 (Z-score), primarily for PCA. They are different steps.</p></div>
-</div></div>
-<div class="accordion-item"><button class="accordion-btn" onclick="this.classList.toggle('open');this.nextElementSibling.classList.toggle('open')"><span data-zh="標準化後的數值可以絕對信任嗎？" data-en="Can normalized values be fully trusted?">標準化後的數值可以絕對信任嗎？</span></button><div class="accordion-body">
-<div data-lang="zh"><p><strong>請勿過度解讀！</strong>所有標準化本質上是數學模擬與推斷。特別是極端低表達基因，經轉換後可能產生假陽性。始終需結合生物學背景驗證。</p></div>
-<div data-lang="en"><p><strong>Don't over-interpret!</strong> All normalization is essentially mathematical estimation. Extremely low-expression genes may produce false positives after transformation. Always validate with biological context.</p></div>
-</div></div>
-<div class="accordion-item"><button class="accordion-btn" onclick="this.classList.toggle('open');this.nextElementSibling.classList.toggle('open')"><span data-zh="標準化能解決批次效應嗎？" data-en="Can normalization fix batch effects?">標準化能解決批次效應嗎？</span></button><div class="accordion-body">
-<div data-lang="zh"><p><strong>不能。</strong>標準化處理的是單個樣本內的技術差異。跨批次的系統性偏差需要專門的數據整合方法（如 Harmony、RPCA、scVI），詳見 <a href="integration.html">Integration 章節</a>。</p></div>
-<div data-lang="en"><p><strong>No.</strong> Normalization handles within-sample technical differences. Cross-batch systematic biases require dedicated integration methods (Harmony, RPCA, scVI), covered in the <a href="integration.html">Integration chapter</a>.</p></div>
-</div></div></section>
-
+<!-- ===== Section 5: Code Tabs ===== -->
 <section class="section"><div class="section-label" data-zh="程式碼" data-en="CODE">程式碼</div>
-<h2 data-zh="六、實作範例" data-en="VI. Code Examples">六、實作範例</h2>
-<div class="code-tabs"><div class="code-tab-btns"><button class="code-tab-btn active" onclick="switchTab(this,'r1')">R / Seurat</button><button class="code-tab-btn" onclick="switchTab(this,'py1')">Python / Scanpy</button></div>
-<div class="code-tab-content active" id="r1"><pre><span class="comment"># 方法一：LogNormalize（預設）</span>
-pbmc &lt;- <span class="func">NormalizeData</span>(pbmc, normalization.method = <span class="str">"LogNormalize"</span>, scale.factor = <span class="num">10000</span>)
+<h2 data-zh="五、實作範例" data-en="V. Code Examples">五、實作範例</h2>
+<div class="code-tabs"><div class="code-tab-btns"><button class="code-tab-btn active" onclick="switchTab(this,'r1')">R / Seurat</button><button class="code-tab-btn" onclick="switchTab(this,'py1')">Python / Scanpy</button><button class="code-tab-btn" onclick="switchTab(this,'r2')">R / scran</button></div>
+<div class="code-tab-content active" id="r1"><pre><span class="comment"># ===== Seurat: 兩條主流路線 =====</span>
+<span class="func">library</span>(Seurat)
 
-<span class="comment"># 方法二：SCTransform（推薦正式分析）</span>
-<span class="comment"># 同時完成 normalization + feature selection + scaling</span>
-pbmc &lt;- <span class="func">SCTransform</span>(pbmc, vars.to.regress = <span class="str">"percent.mt"</span>, verbose = <span class="kw">FALSE</span>)
+<span class="comment"># A. 傳統路線：LogNormalize → FindVariableFeatures → ScaleData</span>
+pbmc &lt;- <span class="func">NormalizeData</span>(pbmc,
+  normalization.method = <span class="str">"LogNormalize"</span>,
+  scale.factor = <span class="num">10000</span>)
+<span class="comment"># 預設僅做 log1p(x / total_UMI × 10000)；scale.factor 通常無需改</span>
 
-<span class="comment"># SCTransform v2（更快更穩定）</span>
-pbmc &lt;- <span class="func">SCTransform</span>(pbmc, vst.flavor = <span class="str">"v2"</span>)</pre></div>
-<div class="code-tab-content" id="py1"><pre><span class="comment"># LogNormalize equivalent</span>
+<span class="comment"># B. 推薦路線：SCTransform v2 (一次完成 norm + HVG + scale)</span>
+pbmc &lt;- <span class="func">SCTransform</span>(pbmc,
+  vst.flavor = <span class="str">"v2"</span>,
+  vars.to.regress = <span class="str">"percent.mt"</span>,
+  verbose = <span class="kw">FALSE</span>)
+
+<span class="comment"># ⚠ 之後 PCA / Clustering 都會自動使用 SCT assay</span>
+<span class="func">DefaultAssay</span>(pbmc) <span class="comment"># 確認當前 assay</span>
+pbmc &lt;- <span class="func">RunPCA</span>(pbmc) <span class="comment"># 自動讀 SCT@scale.data</span>
+
+<span class="comment"># 差異表現分析建議切回 RNA assay (LogNormalize-based)</span>
+<span class="func">DefaultAssay</span>(pbmc) &lt;- <span class="str">"RNA"</span>
+pbmc &lt;- <span class="func">NormalizeData</span>(pbmc) <span class="comment"># DE 用 log-norm 值</span></pre></div>
+
+<div class="code-tab-content" id="py1"><pre><span class="kw">import</span> scanpy <span class="kw">as</span> sc
+
+<span class="comment"># ===== Scanpy: 兩條主流路線 =====</span>
+
+<span class="comment"># A. 傳統 LogNormalize</span>
 sc.pp.normalize_total(adata, target_sum=<span class="num">1e4</span>)
 sc.pp.log1p(adata)
-adata.raw = adata.copy()  <span class="comment"># 保存原始 normalized 數據</span>
+adata.raw = adata.copy()  <span class="comment"># 保存 log-norm 副本 (DE 用)</span>
 
-<span class="comment"># Scran (需要 R 互通或使用 scran wrapper)</span>
-<span class="comment"># import scran; size_factors = scran.computeSumFactors(adata)</span></pre></div></div>
-<div class="callout tip"><span class="callout-icon">💡</span><div><span data-lang="zh"><strong>Normalization ≠ Scaling。</strong>Normalization 處理細胞間定序深度差異；Scaling 是基因做 Z-score 轉換。兩者互補、不可混淆。</span><span data-lang="en"><strong>Normalization ≠ Scaling.</strong> Normalization corrects cell-level depth differences; Scaling is gene-level Z-score transformation. Complementary but distinct steps.</span></div></div></section>
+<span class="comment"># B. Analytic Pearson residuals (NB-residual, SCT 等效)</span>
+sc.experimental.pp.normalize_pearson_residuals(adata)
+<span class="comment"># 殘差存於 adata.X；可後接 sc.pp.pca() 直接降維</span>
 
+<span class="comment"># 也可用單一步驟完成 norm + HVG + PCA</span>
+sc.experimental.pp.recipe_pearson_residuals(
+    adata, n_top_genes=<span class="num">2000</span>)</pre></div>
+
+<div class="code-tab-content" id="r2"><pre><span class="comment"># ===== scran: pool deconvolution 流程 =====</span>
+<span class="func">library</span>(scran); <span class="func">library</span>(scater)
+
+sce &lt;- <span class="func">as.SingleCellExperiment</span>(pbmc)
+
+<span class="comment"># Step 1: quickCluster 把相似細胞分群</span>
+clusters &lt;- <span class="func">quickCluster</span>(sce, min.size = <span class="num">100</span>)
+
+<span class="comment"># Step 2: 計算 cell-specific size factor</span>
+sce &lt;- <span class="func">computeSumFactors</span>(sce,
+  clusters = clusters, min.mean = <span class="num">0.1</span>)
+
+<span class="comment"># Step 3: log-normalize 套用 size factor</span>
+sce &lt;- <span class="func">logNormCounts</span>(sce)
+<span class="comment"># 結果存於 assay(sce, "logcounts")</span>
+
+<span class="comment"># ⚠ 確認 size factor 分佈，若有負值代表 pool 太小要調整</span>
+<span class="func">summary</span>(<span class="func">sizeFactors</span>(sce))</pre></div>
+</div>
+</section>
+
+<!-- ===== Section 6: Best Practices ===== -->
+<section class="section"><div class="section-label" data-zh="最佳實務" data-en="BEST PRACTICES">最佳實務</div>
+<h2 data-zh="六、最佳實務" data-en="VI. Best Practices">六、最佳實務</h2>
+<div class="card-grid cols-2">
+
+<div class="card"><h4>📏 <span data-zh="依資料規模選方法" data-en="Pick by data size">依規模選方法</span></h4>
+<div data-lang="zh"><p>細胞 &lt; 5k：LogNormalize 即可；5k–100k：SCTransform v2；&gt; 100k：考慮 Pearson residuals 或 scVI（GPU 加速 + 內建批次校正）。</p></div>
+<div data-lang="en"><p>&lt; 5k cells: LogNormalize is fine. 5k–100k: SCTransform v2. &gt; 100k: consider Pearson residuals or scVI (GPU + built-in batch correction).</p></div></div>
+
+<div class="card"><h4>🧯 <span data-zh="vars.to.regress 慎用" data-en="Regress out wisely">回歸變數慎用</span></h4>
+<div data-lang="zh"><p>SCTransform 的 <code>vars.to.regress</code> 常見回歸 percent.mt；<strong>不要</strong>回歸 nCount_RNA（已被 NB 模型吸收）；研究細胞週期時<strong>不要</strong>回歸 S/G2M.Score。</p></div>
+<div data-lang="en"><p>Common: regress percent.mt in SCTransform. <strong>Don't</strong> regress nCount_RNA (already absorbed by NB model). <strong>Don't</strong> regress S/G2M.Score if studying cell cycle.</p></div></div>
+
+<div class="card"><h4>🧩 <span data-zh="與 Integration 的順序" data-en="Norm × Integration order">與整合順序</span></h4>
+<div data-lang="zh"><p>多樣本流程順序：<strong>每樣本各自 Normalize</strong> → SelectIntegrationFeatures → PrepSCTIntegration → IntegrateData。<strong>不要</strong>先 merge 再做一次大 SCTransform——會抹除批次資訊。</p></div>
+<div data-lang="en"><p>Multi-sample order: <strong>normalize per sample</strong> → SelectIntegrationFeatures → PrepSCTIntegration → IntegrateData. <strong>Don't</strong> merge then SCTransform once — that destroys batch info.</p></div></div>
+
+<div class="card"><h4>🎯 <span data-zh="不同 assay 用在不同步驟" data-en="Right assay per step">分清 assay</span></h4>
+<div data-lang="zh"><p>SCT assay 用於 PCA / Clustering / UMAP；<strong>RNA assay (LogNormalize)</strong> 用於 FindMarkers / DotPlot / FeaturePlot——這些可視化在 NB residual 上會出現負值，不直觀。</p></div>
+<div data-lang="en"><p>SCT assay → PCA / Clustering / UMAP. <strong>RNA assay (LogNormalize)</strong> → FindMarkers / DotPlot / FeaturePlot — residuals would show negative values which are hard to interpret in plots.</p></div></div>
+
+<div class="card"><h4>🔬 <span data-zh="不同物種設定" data-en="Species-specific">物種設定</span></h4>
+<div data-lang="zh"><p>scale.factor=10000 是 Seurat 預設經驗值，無需更改。<strong>percent.mt 偵測</strong>：人類 <code>^MT-</code>、小鼠 <code>^mt-</code>、斑馬魚 <code>^mt-</code>，注意大小寫。</p></div>
+<div data-lang="en"><p>scale.factor=10000 is Seurat's default — don't change. <strong>percent.mt pattern</strong>: human <code>^MT-</code>, mouse <code>^mt-</code>, zebrafish <code>^mt-</code> — mind the case.</p></div></div>
+
+<div class="card"><h4>🧪 <span data-zh="驗證標準化是否成功" data-en="Validate the normalization">驗證標準化</span></h4>
+<div data-lang="zh"><p>畫一張<strong>校正後 nCount_RNA vs. PC1/PC2</strong>。若 PC1 仍強烈與 depth 相關，代表標準化不夠；換 SCTransform 或加入回歸。</p></div>
+<div data-lang="en"><p>Plot <strong>post-norm nCount_RNA vs. PC1/PC2</strong>. If PC1 still correlates strongly with depth, normalization failed — switch to SCTransform or regress more.</p></div></div>
+
+</div>
+</section>
+
+<!-- ===== Section 7: Pitfalls ===== -->
+<section class="section"><div class="section-label" data-zh="常見陷阱" data-en="PITFALLS">陷阱</div>
+<h2 data-zh="七、常見陷阱與 Troubleshooting" data-en="VII. Common Pitfalls & Troubleshooting">七、常見陷阱</h2>
+
+<div class="callout warn"><span class="callout-icon">⚠️</span><div>
+<div data-lang="zh"><strong>最常見的 5 個錯誤：</strong><br>① 對已 SCTransform 的對象再跑 NormalizeData——雙重標準化會把信號壓得失真。<br>② 在 FindMarkers 時用 SCT assay——SCT v1 對 DE 不友善；應切回 RNA assay 並重新 NormalizeData。<br>③ 先 merge 多樣本後再 SCTransform——應每樣本各自 SCT，再用 PrepSCTIntegration。<br>④ vars.to.regress 加入 nCount_RNA——已被模型吸收，重複校正會 over-correct。<br>⑤ 用 scale.factor=1e6（CPM 慣性）——Seurat 預設 1e4 不要動。</div>
+<div data-lang="en"><strong>Top 5 mistakes:</strong><br>① Running NormalizeData on an SCTransformed object — double normalization distorts signal.<br>② Calling FindMarkers on SCT assay — SCT v1 is not DE-friendly; switch to RNA assay and re-run NormalizeData.<br>③ Merging samples then SCTransforming — should SCT per sample then PrepSCTIntegration.<br>④ Adding nCount_RNA to vars.to.regress — already absorbed by the model; double-correction is harmful.<br>⑤ Using scale.factor=1e6 (CPM habit) — Seurat default 1e4 should not be changed.</div>
+</div></div>
+
+<div class="card-grid cols-2">
+
+<div class="card"><h4>🚨 <span data-zh="症狀：cluster 完全按 depth 分群" data-en="Symptom: clusters split by depth">Cluster 按 depth 分群</span></h4>
+<div data-lang="zh"><p><strong>原因：</strong>LogNormalize 沒清除深度影響。<br><strong>解決：</strong>改用 SCTransform，或檢查是否漏做 ScaleData，或 PCA 把第一個 PC 排除（DimPlot 從 PC2 開始）。</p></div>
+<div data-lang="en"><p><strong>Cause:</strong> LogNormalize didn't fully remove depth effect.<br><strong>Fix:</strong> Switch to SCTransform, ensure ScaleData was run, or skip PC1 in DimPlot.</p></div></div>
+
+<div class="card"><h4>🚨 <span data-zh="SCTransform 報錯：theta 估計失敗" data-en="SCT error: theta estimation failed">SCT theta 失敗</span></h4>
+<div data-lang="zh"><p><strong>原因：</strong>細胞數太少（&lt; 200）或極稀疏。<br><strong>解決：</strong>用 LogNormalize 或 <code>min.cells</code> 提高基因過濾門檻。</p></div>
+<div data-lang="en"><p><strong>Cause:</strong> Too few cells (&lt; 200) or extreme sparsity.<br><strong>Fix:</strong> Use LogNormalize or raise <code>min.cells</code> filter.</p></div></div>
+
+<div class="card"><h4>🚨 <span data-zh="SCT v1 vs. v2 結果不同" data-en="SCT v1 vs v2 differs">v1 vs v2 差異</span></h4>
+<div data-lang="zh"><p><strong>原因：</strong>v2 使用 glmGamPoi 與不同 dispersion 估計策略。<br><strong>建議：</strong>新項目用 v2；若延續舊分析需鎖定版本 (<code>vst.flavor='v1'</code>)。</p></div>
+<div data-lang="en"><p><strong>Cause:</strong> v2 uses glmGamPoi with different dispersion strategy.<br><strong>Suggestion:</strong> Use v2 for new projects; if continuing legacy, pin <code>vst.flavor='v1'</code>.</p></div></div>
+
+<div class="card"><h4>🚨 <span data-zh="FindMarkers 找不到 marker" data-en="FindMarkers returns nothing">FindMarkers 空結果</span></h4>
+<div data-lang="zh"><p><strong>原因：</strong>使用了 SCT assay，但 SCT residuals 不適合 DE。<br><strong>解決：</strong><code>DefaultAssay(obj) &lt;- "RNA"</code>，再執行 <code>NormalizeData()</code> 後做 FindMarkers。</p></div>
+<div data-lang="en"><p><strong>Cause:</strong> SCT assay used, but residuals aren't DE-friendly.<br><strong>Fix:</strong> <code>DefaultAssay(obj) &lt;- "RNA"</code>, run <code>NormalizeData()</code>, then FindMarkers.</p></div></div>
+
+<div class="card"><h4>🚨 <span data-zh="Integration 後 SCT 報錯" data-en="SCT error after integration">整合後 SCT 出錯</span></h4>
+<div data-lang="zh"><p><strong>原因：</strong>未跑 <code>PrepSCTIntegration()</code> 或 <code>PrepSCTFindMarkers()</code>。<br><strong>解決：</strong>整合前後分別加上對應 Prep* 函數。</p></div>
+<div data-lang="en"><p><strong>Cause:</strong> Missing <code>PrepSCTIntegration()</code> or <code>PrepSCTFindMarkers()</code>.<br><strong>Fix:</strong> Add the corresponding Prep* function before/after integration.</p></div></div>
+
+<div class="card"><h4>🚨 <span data-zh="Scran size factor 出現負值" data-en="Scran negative size factors">Scran size factor 負值</span></h4>
+<div data-lang="zh"><p><strong>原因：</strong>pool 太小或細胞過度稀疏。<br><strong>解決：</strong>增大 <code>quickCluster</code> 的 <code>min.size</code>、提高 <code>min.mean</code>，或改用 LogNormalize。</p></div>
+<div data-lang="en"><p><strong>Cause:</strong> Pool too small or cells too sparse.<br><strong>Fix:</strong> Increase <code>quickCluster</code>'s <code>min.size</code>, raise <code>min.mean</code>, or fall back to LogNormalize.</p></div></div>
+
+</div>
+</section>
+
+<!-- ===== Quiz ===== -->
 <section class="quiz-section"><h3>📝 <span data-zh="自我檢測" data-en="Self-Check">自我檢測</span></h3>
-<div class="quiz-q" data-answer="1"><p data-lang="zh">1. LogNormalize 的核心三步驟是？</p><p data-lang="en">1. What are the three core steps of LogNormalize?</p><div class="quiz-options">
-<div class="quiz-opt" data-idx="0"><span data-lang="zh">A. 減去平均值，除以標準差，取 log</span><span data-lang="en">A. Subtract mean, divide by std, take log</span></div>
-<div class="quiz-opt" data-idx="1"><span data-lang="zh">B. 除以細胞總計數，乘以 scale factor (10000)，取 log(x+1)</span><span data-lang="en">B. Divide by cell total counts, multiply by scale factor (10000), take log(x+1)</span></div>
-<div class="quiz-opt" data-idx="2"><span data-lang="zh">C. 用負二項回歸模型擬合每個基因的殘差</span><span data-lang="en">C. Fit negative binomial regression for each gene</span></div>
-<div class="quiz-opt" data-idx="3"><span data-lang="zh">D. 把所有基因縮放到 0–1 之間</span><span data-lang="en">D. Scale all genes to 0–1 range</span></div>
-</div><div class="quiz-feedback" id="fb1"></div></div></section>
+<div class="quiz-q" data-answer="1"><p data-lang="zh">1. LogNormalize 的三步驟是？</p><p data-lang="en">1. What are the three steps of LogNormalize?</p>
+<div class="quiz-options">
+<div class="quiz-opt" data-idx="0"><span data-lang="zh">A. 減平均值，除以 sd，取 log</span><span data-lang="en">A. Subtract mean, divide by SD, log</span></div>
+<div class="quiz-opt" data-idx="1"><span data-lang="zh">B. 除以細胞總 UMI，乘 scale factor (10000)，取 log(x+1)</span><span data-lang="en">B. Divide by cell total UMI, multiply by scale factor (10000), log(x+1)</span></div>
+<div class="quiz-opt" data-idx="2"><span data-lang="zh">C. 用 NB 模型擬合殘差</span><span data-lang="en">C. Fit NB residuals</span></div>
+<div class="quiz-opt" data-idx="3"><span data-lang="zh">D. 縮放到 0–1 區間</span><span data-lang="en">D. Scale to 0–1</span></div>
+</div><div class="quiz-feedback" id="fb1"></div></div>
+
+<div class="quiz-q" data-answer="2"><p data-lang="zh">2. 為什麼 SCTransform 的 Pearson residuals 對 PCA 更友善？</p><p data-lang="en">2. Why are SCTransform's Pearson residuals more PCA-friendly?</p>
+<div class="quiz-options">
+<div class="quiz-opt" data-idx="0"><span data-lang="zh">A. 它移除了所有 0 值</span><span data-lang="en">A. It removes all zeros</span></div>
+<div class="quiz-opt" data-idx="1"><span data-lang="zh">B. 它讓所有基因都標準化到 [0,1]</span><span data-lang="en">B. It scales every gene to [0,1]</span></div>
+<div class="quiz-opt" data-idx="2"><span data-lang="zh">C. 殘差在不同表達水準近似均值 0、方差 1，消除異質方差</span><span data-lang="en">C. Residuals are approximately mean=0, var=1 across expression levels (homoskedastic)</span></div>
+<div class="quiz-opt" data-idx="3"><span data-lang="zh">D. 它增大了高表達基因的權重</span><span data-lang="en">D. It increases the weight of high-expression genes</span></div>
+</div><div class="quiz-feedback" id="fb2"></div></div>
+
+<div class="quiz-q" data-answer="0"><p data-lang="zh">3. 多樣本流程中，正確的順序是？</p><p data-lang="en">3. Correct multi-sample workflow order is?</p>
+<div class="quiz-options">
+<div class="quiz-opt" data-idx="0"><span data-lang="zh">A. 每樣本各自 SCTransform → SelectIntegrationFeatures → PrepSCTIntegration → IntegrateData</span><span data-lang="en">A. Per-sample SCTransform → SelectIntegrationFeatures → PrepSCTIntegration → IntegrateData</span></div>
+<div class="quiz-opt" data-idx="1"><span data-lang="zh">B. 先 merge 所有樣本 → 跑一次 SCTransform → 開始下游</span><span data-lang="en">B. Merge all → run one SCTransform → downstream</span></div>
+<div class="quiz-opt" data-idx="2"><span data-lang="zh">C. 跳過標準化直接 Harmony</span><span data-lang="en">C. Skip normalization, use Harmony directly</span></div>
+<div class="quiz-opt" data-idx="3"><span data-lang="zh">D. 先 PCA 再 SCTransform</span><span data-lang="en">D. PCA first, then SCTransform</span></div>
+</div><div class="quiz-feedback" id="fb3"></div></div>
+
+<div class="quiz-q" data-answer="2"><p data-lang="zh">4. 跑完 SCTransform，呼叫 FindMarkers 出現空結果或警告，該怎麼辦？</p><p data-lang="en">4. After SCTransform, FindMarkers returns nothing or warnings. What to do?</p>
+<div class="quiz-options">
+<div class="quiz-opt" data-idx="0"><span data-lang="zh">A. 再跑一次 SCTransform</span><span data-lang="en">A. Re-run SCTransform</span></div>
+<div class="quiz-opt" data-idx="1"><span data-lang="zh">B. 直接降低 logfc.threshold</span><span data-lang="en">B. Lower logfc.threshold blindly</span></div>
+<div class="quiz-opt" data-idx="2"><span data-lang="zh">C. 切回 RNA assay (LogNormalize) 再 FindMarkers</span><span data-lang="en">C. Switch to RNA assay (LogNormalize) and FindMarkers</span></div>
+<div class="quiz-opt" data-idx="3"><span data-lang="zh">D. 直接放棄 DE 分析</span><span data-lang="en">D. Give up on DE</span></div>
+</div><div class="quiz-feedback" id="fb4"></div></div>
+</section>
 
 <nav class="page-nav"><a href="qc.html"><span class="nav-dir" data-zh="← 上一步" data-en="← Previous">← 上一步</span><span class="nav-title" data-zh="Step 1：QC" data-en="Step 1: QC">Step 1：QC</span></a><a href="variable-features.html"><span class="nav-dir" data-zh="下一步 →" data-en="Next →">下一步 →</span><span class="nav-title" data-zh="Step 3：高變異基因" data-en="Step 3: Variable Features">Step 3：高變異基因</span></a></nav>
-</main><footer class="site-footer">© Charlene — scRNA-seq Interactive Tutorial</footer><script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script><script src="i18n.js"></script><script>
+</main><footer class="site-footer">© Charlene — scRNA-seq Interactive Tutorial</footer>
+<script src="i18n.js"></script>
+<script>
 window.addEventListener('scroll',()=>{const h=document.documentElement;document.getElementById('progressBar').style.width=(h.scrollTop/(h.scrollHeight-h.clientHeight))*100+'%';});
 function switchTab(b,id){const p=b.closest('.code-tabs');p.querySelectorAll('.code-tab-btn').forEach(x=>x.classList.remove('active'));p.querySelectorAll('.code-tab-content').forEach(x=>x.classList.remove('active'));b.classList.add('active');document.getElementById(id).classList.add('active');}
-const dists={raw:{labels:['0','1-5','5-20','20-100','100-500','500+'],data:[420,180,120,80,40,20],color:'rgba(192,57,43,0.6)'},log:{labels:['0','0-1','1-2','2-3','3-4','4+'],data:[320,90,140,160,100,50],color:'rgba(41,128,185,0.6)'},scran:{labels:['0','0-1','1-2','2-3','3-4','4+'],data:[300,80,130,170,110,70],color:'rgba(142,68,173,0.6)'},sct:{labels:['-3','-2','-1','0','1','2','3'],data:[15,60,180,300,180,55,10],color:'rgba(26,107,90,0.6)'}};
-const desc_zh={raw:'<strong>原始數據 (Raw Counts)：</strong>嚴重右偏分佈，大量零值，少數高表達基因主導長尾。直接比較不同細胞毫無意義。',log:'<strong>LogNormalize：</strong>log(x+1) 壓縮了動態範圍，分佈較為對稱，但仍保留大量零值（zero-inflation）。',scran:'<strong>Scran (Pooling)：</strong>透過細胞池解卷積估算 size factor，能更好處理細胞間 RNA 含量差異。分佈形態與 LogNormalize 類似但 size factor 更精確。',sct:'<strong>SCTransform：</strong>使用負二項回歸殘差，產生近似常態分佈、均值中心化的 Pearson residuals。對下游 PCA 最友善，是目前的主流推薦。'};
-const desc_en={raw:'<strong>Raw Counts:</strong> Heavily right-skewed, many zeros, dominated by few high-expression genes. Comparing different cells directly is meaningless.',log:'<strong>LogNormalize:</strong> log(x+1) compresses dynamic range, more symmetric, but still retains zero-inflation.',scran:'<strong>Scran (Pooling):</strong> Pool-based deconvolution estimates more accurate size factors. Similar shape to LogNormalize but more precise.',sct:'<strong>SCTransform:</strong> Negative binomial regression residuals, approximately normal distribution. Most PCA-friendly — currently the recommended standard.'};
-const distChart=new Chart(document.getElementById('distChart'),{type:'bar',data:{labels:dists.raw.labels,datasets:[{data:dists.raw.data,backgroundColor:dists.raw.color,borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,animation:false,plugins:{legend:{display:false}},scales:{y:{title:{display:true}},x:{title:{display:true}}}}});
+
+// === Distribution shape chart ===
+const dists={
+  raw:{labels:['0','1-5','5-20','20-100','100-500','500+'],data:[420,180,120,80,40,20],color:'rgba(192,57,43,0.6)'},
+  log:{labels:['0','0-1','1-2','2-3','3-4','4+'],data:[320,90,140,160,100,50],color:'rgba(41,128,185,0.6)'},
+  scran:{labels:['0','0-1','1-2','2-3','3-4','4+'],data:[300,80,130,170,110,70],color:'rgba(142,68,173,0.6)'},
+  sct:{labels:['-3','-2','-1','0','1','2','3'],data:[15,60,180,300,180,55,10],color:'rgba(26,107,90,0.6)'}
+};
+const desc_zh={
+  raw:'<strong>Raw Counts：</strong>嚴重右偏，大量 0 值，少數高表達基因主導長尾。直接比較不同細胞無意義。',
+  log:'<strong>LogNormalize：</strong>log(x+1) 壓縮動態範圍、分佈較對稱，但仍保留 zero-inflation 與異質方差。',
+  scran:'<strong>Scran：</strong>透過細胞池解卷積估算更精確的 size factor，對細胞 RNA 含量差異大的資料優於 LogNormalize。',
+  sct:'<strong>SCTransform：</strong>NB 殘差近似常態、均值中心化、消除異質方差，是 PCA 最友善的輸出。'
+};
+const desc_en={
+  raw:'<strong>Raw Counts:</strong> Heavy right-skew, many zeros, few highly-expressed genes dominate the long tail. Cross-cell comparison is meaningless.',
+  log:'<strong>LogNormalize:</strong> log(x+1) compresses range, more symmetric, but retains zero-inflation and heteroskedasticity.',
+  scran:'<strong>Scran:</strong> Pool-based deconvolution produces accurate size factors; better than LogNormalize when RNA content varies a lot.',
+  sct:'<strong>SCTransform:</strong> NB residuals are near-normal, mean-centered, homoskedastic — most PCA-friendly output.'
+};
+const distChart=new Chart(document.getElementById('distChart'),{type:'bar',data:{labels:dists.raw.labels,datasets:[{data:dists.raw.data,backgroundColor:dists.raw.color,borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,animation:false,plugins:{legend:{display:false}},scales:{y:{title:{display:true,text:'gene count'}},x:{title:{display:true,text:'expression value'}}}}});
 let curDist='raw';
 function showDist(k){curDist=k;['raw','log','scran','sct'].forEach(x=>{document.getElementById('btn-'+x).classList.toggle('active',x===k);});const d=dists[k];const L=I18n.get();document.getElementById('distDesc').innerHTML=(L==='zh'?desc_zh:desc_en)[k];distChart.data.labels=d.labels;distChart.data.datasets[0].data=d.data;distChart.data.datasets[0].backgroundColor=d.color;distChart.update('none');}
-document.addEventListener('langchange',()=>showDist(curDist));showDist('raw');
-window._QF={zh:{q1_y:'正確！除以總計數 → 乘以 scale factor → log(x+1) 轉換。',q1_n:'答案是 B。A 描述的是 Scaling (Z-score)，C 是 SCTransform。'},en:{q1_y:'Correct! Divide by total → multiply by scale factor → log(x+1).',q1_n:'Answer is B. A describes Scaling (Z-score), C describes SCTransform.'}};
-const QF=window._QF||{};document.querySelectorAll('.quiz-q').forEach((q,qi)=>{const ans=+q.dataset.answer;q.querySelectorAll('.quiz-opt').forEach(o=>{o.addEventListener('click',()=>{if(q.classList.contains('answered'))return;q.classList.add('answered');const fb=document.getElementById('fb'+(qi+1));const ok=+o.dataset.idx===ans;o.classList.add(ok?'correct':'wrong');if(!ok)q.querySelectorAll('.quiz-opt')[ans].classList.add('correct');const L=I18n.get();fb.className='quiz-feedback show '+(ok?'correct-fb':'wrong-fb');fb.textContent=(ok?'✅ ':'❌ ')+(QF[L]&&QF[L]['q'+(qi+1)+'_'+(ok?'y':'n')]||'');});});});
+document.addEventListener('langchange',()=>{showDist(curDist);updateDepth();});
+
+// === Depth-correction simulator ===
+function randn(){let u=0,v=0;while(u===0)u=Math.random();while(v===0)v=Math.random();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);}
+function bin(vals,bins,minV,maxV){const h=new Array(bins).fill(0);const w=(maxV-minV)/bins;vals.forEach(v=>{if(v<minV||v>maxV)return;const idx=Math.min(bins-1,Math.floor((v-minV)/w));h[idx]++;});return {labels:Array.from({length:bins},(_,i)=>(minV+i*w).toFixed(1)),counts:h};}
+function buildDepthChart(canvasId){
+  return new Chart(document.getElementById(canvasId),{type:'bar',data:{labels:[],datasets:[
+    {label:'Low depth',data:[],backgroundColor:'rgba(192,57,43,0.55)'},
+    {label:'Mid depth',data:[],backgroundColor:'rgba(26,107,90,0.55)'},
+    {label:'High depth',data:[],backgroundColor:'rgba(41,128,185,0.55)'}
+  ]},options:{responsive:true,maintainAspectRatio:false,animation:false,plugins:{legend:{display:false}},scales:{x:{stacked:false,ticks:{font:{size:8},maxRotation:0,autoSkipPadding:6}},y:{stacked:false,ticks:{font:{size:8}}}}}});
+}
+const depthRaw=buildDepthChart('depthRaw'),depthLog=buildDepthChart('depthLog'),depthSct=buildDepthChart('depthSct');
+function updateDepth(){
+  const depthRatio=+document.getElementById('sliderDepth').value/10; // ratio 1.0 -> 6.0
+  document.getElementById('valDepth').textContent=depthRatio.toFixed(1)+'×';
+  // Simulate same biological "true" expression mu_true=5 for one gene; cells split into 3 depth tiers.
+  const muTrue=5;
+  const groups=[{name:'low',depth:1/depthRatio},{name:'mid',depth:1},{name:'high',depth:depthRatio}];
+  const rawArr=[[],[],[]],logArr=[[],[],[]],sctArr=[[],[],[]];
+  groups.forEach((g,gi)=>{
+    for(let i=0;i<200;i++){
+      const lambda=muTrue*g.depth; // expected count given depth
+      // Poisson via inverse CDF approximation using Gaussian for speed
+      const x=Math.max(0,Math.round(lambda+Math.sqrt(lambda)*randn()));
+      rawArr[gi].push(x);
+      logArr[gi].push(Math.log1p(x/(lambda+1)*10)); // mimics depth-normalized log
+      // Pearson residual approx: (x - mu)/sqrt(mu + mu^2/theta), theta=10
+      const theta=10;
+      sctArr[gi].push((x-lambda)/Math.sqrt(lambda+lambda*lambda/theta));
+    }
+  });
+  function fill(chart,arrs,bins,minV,maxV){
+    const bs=arrs.map(a=>bin(a,bins,minV,maxV));
+    chart.data.labels=bs[0].labels;
+    chart.data.datasets[0].data=bs[0].counts;chart.data.datasets[1].data=bs[1].counts;chart.data.datasets[2].data=bs[2].counts;
+    chart.update('none');
+  }
+  fill(depthRaw,rawArr,18,0,60);
+  fill(depthLog,logArr,18,0,3.5);
+  fill(depthSct,sctArr,18,-3,3);
+}
+document.getElementById('sliderDepth').addEventListener('input',updateDepth);
+updateDepth();
+showDist('raw');
+
+// === Quiz feedback ===
+window._QF={
+  zh:{q1_y:'正確！除以總 UMI → 乘 scale factor (10000) → log(x+1)。',q1_n:'答案是 B。A 是 Z-score scaling，C 是 SCTransform。',
+      q2_y:'NB 殘差在所有表達水準近似 N(0,1)，移除異質方差，避免高表達基因主導 PC。',q2_n:'答案是 C。Pearson residual = (x − μ̂) / √(μ̂ + μ̂²/θ̂)，本質是同質化方差。',
+      q3_y:'每樣本各自 SCT 才能保留樣本內變異供 IntegrateData 對齊。',q3_n:'答案是 A。先 merge 會抹除批次資訊。',
+      q4_y:'SCT residuals 不適合 DE；切回 RNA assay 跑 NormalizeData 後再 FindMarkers。',q4_n:'答案是 C。'},
+  en:{q1_y:'Correct! Divide by total UMI → multiply by scale factor (10000) → log(x+1).',q1_n:'Answer is B. A is Z-score scaling, C is SCTransform.',
+      q2_y:'Pearson residuals are approximately N(0,1) across expression levels, removing heteroskedasticity so high-expression genes don\'t dominate PCs.',q2_n:'Answer is C. Pearson residual = (x − μ̂) / √(μ̂ + μ̂²/θ̂) equalizes variance.',
+      q3_y:'Per-sample SCT preserves within-sample variance for IntegrateData to align across.',q3_n:'Answer is A. Merging first destroys batch info.',
+      q4_y:'SCT residuals are not DE-friendly; switch to RNA assay, NormalizeData, then FindMarkers.',q4_n:'Answer is C.'}
+};
+const QF=window._QF;
+document.querySelectorAll('.quiz-q').forEach((q,qi)=>{const ans=+q.dataset.answer;q.querySelectorAll('.quiz-opt').forEach(o=>{o.addEventListener('click',()=>{if(q.classList.contains('answered'))return;q.classList.add('answered');const fb=document.getElementById('fb'+(qi+1));const ok=+o.dataset.idx===ans;o.classList.add(ok?'correct':'wrong');if(!ok)q.querySelectorAll('.quiz-opt')[ans].classList.add('correct');const L=I18n.get();fb.className='quiz-feedback show '+(ok?'correct-fb':'wrong-fb');fb.textContent=(ok?'✅ ':'❌ ')+(QF[L]['q'+(qi+1)+'_'+(ok?'y':'n')]||'');});});});
 </script></body></html>

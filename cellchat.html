@@ -1,59 +1,569 @@
-<!DOCTYPE html><html lang="zh-Hant"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>cellchat — scRNA-seq Tutorial</title><link rel="stylesheet" href="styles.css"></head><body>
-<nav class="top-nav"><div class="top-nav-inner"><a href="index.html" class="top-nav-brand"><span>🧬</span> <span data-zh="scRNA-seq 教學" data-en="scRNA-seq Tutorial">scRNA-seq 教學</span></a><ul class="top-nav-links"><li><a href="qc.html">QC</a></li><li><a href="normalization.html">Norm.</a></li><li><a href="variable-features.html">Features</a></li><li><a href="scaling.html">Scaling</a></li><li><a href="pca.html">PCA</a></li><li><a href="clustering.html">Clustering</a></li><li><a href="umap.html">UMAP</a></li><li><a href="annotation.html">Annot.</a></li><li><a href="differential-expression.html">DE</a></li><li><a href="integration.html">Integ.</a></li><li><a href="cellchat.html" class=active>CellChat</a></li><li><a href="trajectory.html">Traj.</a></li>
+<!DOCTYPE html><html lang="zh-Hant"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>CellChat — scRNA-seq Tutorial</title>
+<link rel="stylesheet" href="styles.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+</head><body>
+<nav class="top-nav"><div class="top-nav-inner">
+  <a href="index.html" class="top-nav-brand"><span>🧬</span> <span data-zh="scRNA-seq 教學" data-en="scRNA-seq Tutorial">scRNA-seq 教學</span></a>
+  <ul class="top-nav-links"><li><a href="qc.html">QC</a></li><li><a href="normalization.html">Norm.</a></li><li><a href="variable-features.html">Features</a></li><li><a href="scaling.html">Scaling</a></li><li><a href="pca.html">PCA</a></li><li><a href="clustering.html">Clustering</a></li><li><a href="umap.html">UMAP</a></li><li><a href="annotation.html">Annot.</a></li><li><a href="differential-expression.html">DE</a></li><li><a href="integration.html">Integ.</a></li><li><a href="cellchat.html" class="active">CellChat</a></li><li><a href="trajectory.html">Traj.</a></li>
     <li><a href="references/index.html" data-zh="📚 參考資料" data-en="📚 References">📚 參考資料</a></li>
-  </ul></div></nav><div class="progress-bar-container"><div class="progress-bar" id="progressBar"></div></div>
-<header class="page-hero"><div class="step-badge">ADVANCED</div><h1 data-zh="細胞通訊 (Cell-Cell Communication)" data-en="Cell-Cell Communication">細胞通訊</h1><p class="subtitle" data-lang="zh">透過 ligand-receptor interaction 分析，探索細胞間的訊號傳遞與微環境調控。</p><p class="subtitle" data-lang="en">Explore intercellular signaling and microenvironment regulation through ligand-receptor interaction analysis.</p></header><main class="content-wrap">
-<section class="section"><div class="section-label" data-zh="核心概念" data-en="CONCEPT">核心概念</div><h2 data-zh="一、細胞如何「對話」？" data-en="I. How Do Cells Communicate?">一、細胞通訊</h2>
-<div data-lang="zh"><p>在組織微環境中，細胞透過分泌<strong>配體 (Ligand)</strong>與鄰近細胞表面的<strong>受體 (Receptor)</strong>結合，觸發下游訊號傳導。scRNA-seq 能同時測量所有細胞的基因表達，因此可以推斷哪些細胞在「發送」什麼訊號、哪些在「接收」。</p></div>
-<div data-lang="en"><p>In tissue microenvironments, cells communicate by secreting <strong>ligands</strong> that bind to <strong>receptors</strong> on neighboring cells, triggering downstream signaling. scRNA-seq measures all cells simultaneously, enabling inference of who is "sending" and who is "receiving."</p></div></section>
+  </ul>
+</div></nav>
+<div class="progress-bar-container"><div class="progress-bar" id="progressBar"></div></div>
+<header class="page-hero"><div class="step-badge">ADVANCED</div>
+<h1 data-zh="細胞通訊 (Cell-Cell Communication)" data-en="Cell-Cell Communication">細胞通訊 (Cell-Cell Communication)</h1>
+<p class="subtitle" data-lang="zh">透過 ligand-receptor 推論細胞間訊號傳遞，繪製組織微環境的「對話地圖」。</p>
+<p class="subtitle" data-lang="en">Infer intercellular signaling from ligand-receptor expression to map the "conversation network" of a tissue microenvironment.</p>
+</header>
+<main class="content-wrap">
 
-<section class="section"><div class="section-label" data-zh="互動模擬" data-en="INTERACTIVE">互動模擬</div><h2 data-zh="二、通訊網絡探索器" data-en="II. Communication Network Explorer">二、網絡探索器</h2>
-<div data-lang="zh"><p>選擇一個「發送方」細胞類型，觀察與各接收方之間的通訊強度和代表性 L-R pairs。</p></div><div data-lang="en"><p>Select a "sender" cell type to view communication strength with each receiver and representative L-R pairs.</p></div>
-<div class="interactive-panel"><div class="toggle-row">
-<button class="toggle-btn active" id="src-0" onclick="showSrc(0)">CD4 T</button><button class="toggle-btn" id="src-1" onclick="showSrc(1)">CD8 T</button><button class="toggle-btn" id="src-2" onclick="showSrc(2)">B cell</button><button class="toggle-btn" id="src-3" onclick="showSrc(3)">Monocyte</button><button class="toggle-btn" id="src-4" onclick="showSrc(4)">DC</button>
-</div><div id="srcDesc" style="font-size:.92rem;font-weight:600;color:var(--c-accent-dark);margin-bottom:8px;"></div>
-<div style="display:flex;gap:20px;flex-wrap:wrap;"><div style="flex:1;min-width:250px;"><div class="chart-container" style="height:240px;"><canvas id="netChart"></canvas></div></div>
-<div style="flex:1;min-width:200px;"><h4 style="font-size:.9rem;margin-bottom:8px;" data-zh="主要 L-R pairs" data-en="Key L-R Pairs">主要 L-R pairs</h4><div id="lrList" style="font-size:.85rem;color:var(--c-ink-light);line-height:1.8;"></div></div></div></div></section>
+<!-- ===== Section 1: Overview ===== -->
+<section class="section">
+<div class="section-label" data-zh="概覽" data-en="OVERVIEW">概覽</div>
+<h2 data-zh="一、為什麼研究細胞間通訊？" data-en="I. Why Study Cell-Cell Communication?">一、為什麼研究細胞間通訊？</h2>
+<div data-lang="zh">
+<p>多細胞生物並非「細胞各做各的」——組織恆定 (tissue homeostasis)、發育、免疫反應與腫瘤微環境，全部依賴細胞之間綿密的<strong>訊號交換</strong>。最常見的通訊機制是分泌型分子（如 cytokine、growth factor）與細胞表面受體結合，觸發下游 signaling cascade。</p>
+<p>scRNA-seq 同時測量所有細胞的 transcriptome，提供史無前例的機會：<strong>從一張快照推論「誰在跟誰講話」</strong>。代表工具有 CellChat (Jin et al., <em>Nat Commun</em> 2021)、CellPhoneDB (Efremova 2020)、NicheNet (Browaeys 2020)、LIANA (Dimitrov 2022) 等。本章以 CellChat 為主軸，並比較各工具差異。</p>
+</div>
+<div data-lang="en">
+<p>Multicellular organisms are not "each cell doing its own thing" — <strong>tissue homeostasis</strong>, development, immune responses, and tumor microenvironments all rely on dense networks of <strong>intercellular signaling</strong>. The most common mechanism is secreted molecules (cytokines, growth factors) binding to surface receptors, triggering downstream signaling cascades.</p>
+<p>scRNA-seq simultaneously measures every cell's transcriptome, offering unprecedented opportunity: <strong>inferring "who is talking to whom" from a single snapshot</strong>. Major tools include CellChat (Jin et al., <em>Nat Commun</em> 2021), CellPhoneDB (Efremova 2020), NicheNet (Browaeys 2020), and LIANA (Dimitrov 2022). This chapter centers on CellChat with comparisons across tools.</p>
+</div>
 
-<section class="section"><div class="section-label" data-zh="方法比較" data-en="METHODS">方法比較</div><h2 data-zh="三、主流工具" data-en="III. Major Tools">三、工具比較</h2>
-<table class="comp-table"><thead><tr><th data-zh="工具" data-en="Tool">工具</th><th data-zh="核心邏輯" data-en="Core Logic">邏輯</th><th data-zh="特色" data-en="Features">特色</th></tr></thead><tbody>
-<tr><td><strong>CellChat</strong> (R)</td><td data-lang="zh">質量作用定律建模 L-R 交互機率</td><td data-lang="zh">豐富視覺化；支援跨條件比較</td><td data-lang="en">Mass action law for L-R interaction probability</td><td data-lang="en">Rich visualization; cross-condition comparison</td></tr>
-<tr><td><strong>CellPhoneDB</strong> (Py)</td><td data-lang="zh">排列檢定的 L-R 配對篩選</td><td data-lang="zh">支援多亞基複合體</td><td data-lang="en">Permutation-based L-R pair screening</td><td data-lang="en">Supports multi-subunit complexes</td></tr>
-<tr><td><strong>NicheNet</strong> (R)</td><td data-lang="zh">從配體追蹤到下游調控基因</td><td data-lang="zh">不只看 L-R 配對，還追蹤下游效應</td><td data-lang="en">Traces ligand to downstream target genes</td><td data-lang="en">Goes beyond L-R pairs to downstream effects</td></tr>
-<tr><td><strong>LIANA</strong> (R/Py)</td><td data-lang="zh">整合多種方法的統一框架</td><td data-lang="zh">同時跑多種演算法取共識</td><td data-lang="en">Unified framework integrating multiple methods</td><td data-lang="en">Run multiple algorithms, take consensus</td></tr>
-</tbody></table></section>
+<div class="card-grid cols-3">
+<div class="card"><div class="card-icon">🧬</div><h4 data-zh="發育生物學" data-en="Developmental Biology">發育生物學</h4>
+<div data-lang="zh"><p>胚胎發育依賴 Wnt、BMP、Notch、SHH 等 morphogen 梯度。L-R 分析能還原組織發育中誘導訊號的方向與強度。</p></div>
+<div data-lang="en"><p>Embryonic development relies on Wnt, BMP, Notch, SHH morphogen gradients. L-R analysis reconstructs the direction and strength of inductive signaling.</p></div>
+</div>
+<div class="card"><div class="card-icon">🛡️</div><h4 data-zh="免疫微環境" data-en="Immune Microenvironment">免疫微環境</h4>
+<div data-lang="zh"><p>T 細胞、B 細胞、樹突細胞、巨噬細胞透過 cytokine、checkpoint 分子 (PD-L1/PD-1) 互動。L-R 分析揭示免疫抑制或活化網絡。</p></div>
+<div data-lang="en"><p>T cells, B cells, DCs, and macrophages interact via cytokines and checkpoint molecules (PD-L1/PD-1). L-R analysis reveals immunosuppressive or activating networks.</p></div>
+</div>
+<div class="card"><div class="card-icon">🧪</div><h4 data-zh="腫瘤微環境" data-en="Tumor Microenvironment">腫瘤微環境</h4>
+<div data-lang="zh"><p>癌細胞、CAF、TAM、T 細胞之間的 cross-talk 決定腫瘤進程與免疫逃脫。CellChat 是分析 TME 的常用利器。</p></div>
+<div data-lang="en"><p>Cross-talk among cancer cells, CAFs, TAMs, and T cells dictates tumor progression and immune escape. CellChat is a standard tool for TME analysis.</p></div>
+</div>
+</div>
 
-<section class="section"><div class="section-label" data-zh="程式碼" data-en="CODE">程式碼</div><h2 data-zh="四、實作範例" data-en="IV. Code Examples">四、實作範例</h2>
-<div class="code-tabs"><div class="code-tab-btns"><button class="code-tab-btn active" onclick="switchTab(this,'r1')">R / CellChat</button><button class="code-tab-btn" onclick="switchTab(this,'py1')">Python / CellPhoneDB</button></div>
-<div class="code-tab-content active" id="r1"><pre><span class="func">library</span>(CellChat)
-cellchat &lt;- <span class="func">createCellChat</span>(pbmc, group.by = <span class="str">"cell_type"</span>)
-CellChatDB &lt;- <span class="func">CellChatDB.human</span>
-cellchat@DB &lt;- CellChatDB
+<div class="callout tip"><span class="callout-icon">💡</span><div>
+<span data-lang="zh"><strong>核心原則：</strong>L-R 分析是「推論」而非「測量」。scRNA-seq 只能觀察到 mRNA 是否存在，無法保證蛋白質真的被翻譯、修飾、運送到細胞表面、與 receptor 形成功能性結合。<strong>L-R hit 是 hypothesis-generating，不是 ground truth。</strong></span>
+<span data-lang="en"><strong>Core principle:</strong> L-R analysis is <strong>inference</strong>, not measurement. scRNA-seq only sees whether mRNA exists — it cannot confirm that the protein is translated, modified, surface-localized, or engaged in a functional binding. <strong>An L-R hit is hypothesis-generating, not ground truth.</strong></span>
+</div></div>
+</section>
+
+<!-- ===== Section 2: L-R Database ===== -->
+<section class="section">
+<div class="section-label" data-zh="核心原理" data-en="CORE PRINCIPLE">核心原理</div>
+<h2 data-zh="二、Ligand-Receptor 資料庫與訊號路徑" data-en="II. Ligand-Receptor Database & Signaling Pathways">二、Ligand-Receptor 資料庫與訊號路徑</h2>
+<div data-lang="zh">
+<p>每個工具背後最關鍵的資產是<strong>策展好的 L-R 資料庫</strong>。CellChatDB v2 包含人類超過 <strong>3,300 個</strong>、小鼠超過 <strong>2,000 個</strong>已驗證的 L-R interactions，涵蓋多亞基複合體 (multi-subunit complexes) 與 co-factor（增強子 / 抑制子）。資料庫將互動依生理機制分成四大類：</p>
+</div>
+<div data-lang="en">
+<p>The most critical asset behind each tool is its <strong>curated L-R database</strong>. CellChatDB v2 contains over <strong>3,300 human</strong> and <strong>2,000 mouse</strong> validated L-R interactions, including multi-subunit complexes and co-factors (agonists/antagonists). It groups interactions into four physiological categories:</p>
+</div>
+
+<div class="card-grid cols-2">
+<div class="card"><h4>💨 <span data-zh="分泌型訊號 (Secreted Signaling)" data-en="Secreted Signaling">分泌型訊號</span></h4>
+<div data-lang="zh"><p>細胞分泌可擴散的分子，如 cytokines、chemokines、growth factors，可作用於鄰近或遠端細胞（paracrine / endocrine）。</p><p><em>例：TGF-β、IL-6、VEGF、TNF。</em></p></div>
+<div data-lang="en"><p>Cells secrete diffusible molecules (cytokines, chemokines, growth factors) acting on nearby or distant cells (paracrine/endocrine).</p><p><em>e.g., TGF-β, IL-6, VEGF, TNF.</em></p></div>
+</div>
+<div class="card"><h4>🤝 <span data-zh="細胞-細胞接觸 (Cell-Cell Contact)" data-en="Cell-Cell Contact">細胞接觸型</span></h4>
+<div data-lang="zh"><p>需要直接物理接觸，受體與配體都嵌在細胞膜上。</p><p><em>例：Notch-DLL/JAG、PD-L1/PD-1、CD40L/CD40。</em></p></div>
+<div data-lang="en"><p>Requires direct physical contact — ligand and receptor are both membrane-anchored.</p><p><em>e.g., Notch-DLL/JAG, PD-L1/PD-1, CD40L/CD40.</em></p></div>
+</div>
+<div class="card"><h4>🕸️ <span data-zh="ECM-Receptor 互動" data-en="ECM-Receptor">ECM-Receptor</span></h4>
+<div data-lang="zh"><p>細胞外基質 (collagen、laminin、fibronectin) 與細胞表面 integrin、CD44 等結合，傳遞機械與位置資訊。</p></div>
+<div data-lang="en"><p>Extracellular matrix (collagen, laminin, fibronectin) binds surface integrins, CD44 etc., relaying mechanical and positional cues.</p></div>
+</div>
+<div class="card"><h4>🔄 <span data-zh="非分類其他 (Non-protein signaling)" data-en="Non-protein signaling">非分類其他</span></h4>
+<div data-lang="zh"><p>包含代謝物（如 lipids、amino acids）作為訊號的互動，部分新版資料庫已納入（CellChat v2 / NeuronChat）。</p></div>
+<div data-lang="en"><p>Includes metabolites (lipids, amino acids) as signaling molecules — partially included in newer DB versions (CellChat v2, NeuronChat).</p></div>
+</div>
+</div>
+
+<div data-lang="zh">
+<p style="margin-top:14px;">資料庫進一步把 L-R 互動<strong>分組成 signaling pathway</strong>，例如 TGF-β pathway 同時包含 TGFB1→TGFBR1/TGFBR2、TGFB2→… 等多對 L-R；分析時除了單一 L-R，更常用<strong>路徑層級</strong>（pathway-level）的訊號強度與分布，因為單一 L-R 容易受 dropout 影響，路徑層級結果更穩定也更具生物學意義。CellChat 預設提供 <code>TGF-β、Notch、Wnt、BMP、CCL、CXCL、PD-L1、HLA、COLLAGEN、LAMININ</code> 等數十個 pathway。</p>
+</div>
+<div data-lang="en">
+<p style="margin-top:14px;">The DB further <strong>groups interactions into signaling pathways</strong>: e.g., the TGF-β pathway contains TGFB1→TGFBR1/TGFBR2, TGFB2→…, etc. Beyond individual L-R, <strong>pathway-level</strong> signaling is usually more robust because single L-R pairs suffer from dropout. CellChat ships with dozens of preset pathways — <code>TGF-β, Notch, Wnt, BMP, CCL, CXCL, PD-L1, HLA, COLLAGEN, LAMININ</code> and many more.</p>
+</div>
+</section>
+
+<!-- ===== Section 3: Scoring math ===== -->
+<section class="section">
+<div class="section-label" data-zh="計算邏輯" data-en="SCORING">計算邏輯</div>
+<h2 data-zh="三、CellChat 如何計算通訊機率？" data-en="III. How CellChat Scores Communication Probability">三、CellChat 如何計算通訊機率？</h2>
+<div data-lang="zh">
+<p>CellChat 採用<strong>質量作用定律 (Law of Mass Action)</strong> 對 L-R interaction 建模。對於某一 L-R 對在「來源細胞群 (source) → 目標細胞群 (target)」之間的通訊機率 P，本質上是：</p>
+<p style="background:var(--c-bg-alt);padding:12px 16px;border-radius:8px;font-family:var(--font-mono);font-size:.9rem;">P (source → target) = <strong>f(L̄_source)</strong> × <strong>f(R̄_target)</strong> × <strong>(co-factor 修正)</strong></p>
+<ul style="margin:8px 0 8px 20px;color:var(--c-ink-light);">
+<li><strong>L̄_source</strong>：source group 中 ligand 的平均表達（Hill 函數轉換為飽和效應）。</li>
+<li><strong>R̄_target</strong>：target group 中 receptor 的平均表達。多亞基複合體取幾何平均。</li>
+<li><strong>Co-factor 修正</strong>：考慮 agonists / antagonists 對配對交互的增強或抑制。</li>
+<li><strong>排列檢定 (permutation test)</strong>：將細胞標籤打散 n=100 次，計算實際 P 大於隨機 P 的次數，得到 p-value。</li>
+</ul>
+<p>核心直覺：兩群細胞要被認定有訊號連結，<strong>ligand 必須真的在 source 中表達、receptor 必須真的在 target 中表達</strong>——只有單邊高表達不算 hit。Permutation 確保 hit 不是因為某個 group 細胞數很多、表達看起來就會偏高的偽影。</p>
+</div>
+<div data-lang="en">
+<p>CellChat models L-R interactions using the <strong>law of mass action</strong>. The communication probability P from a source group to a target group, for a given L-R pair, is essentially:</p>
+<p style="background:var(--c-bg-alt);padding:12px 16px;border-radius:8px;font-family:var(--font-mono);font-size:.9rem;">P (source → target) = <strong>f(L̄_source)</strong> × <strong>f(R̄_target)</strong> × <strong>(co-factor adjustment)</strong></p>
+<ul style="margin:8px 0 8px 20px;color:var(--c-ink-light);">
+<li><strong>L̄_source</strong>: mean ligand expression in the source group (passed through a Hill function for saturation).</li>
+<li><strong>R̄_target</strong>: mean receptor expression in the target group. Multi-subunit complexes use geometric mean.</li>
+<li><strong>Co-factor adjustment</strong>: incorporates agonists/antagonists that enhance or suppress the interaction.</li>
+<li><strong>Permutation test</strong>: shuffle cell labels n=100 times; count how often the observed P exceeds permuted P → p-value.</li>
+</ul>
+<p>Intuition: for two groups to be considered communicating, <strong>the ligand must actually be expressed in source AND the receptor in target</strong> — one side alone does not score. Permutation guards against the artifact where large groups simply look highly expressed.</p>
+</div>
+</section>
+
+<!-- ===== Section 4: Tool comparison ===== -->
+<section class="section">
+<div class="section-label" data-zh="方法比較" data-en="METHOD COMPARISON">方法比較</div>
+<h2 data-zh="四、主流 L-R 工具完整比較" data-en="IV. Comprehensive L-R Tool Comparison">四、主流 L-R 工具完整比較</h2>
+<table class="comp-table">
+<thead><tr>
+<th data-zh="工具" data-en="Tool">工具</th>
+<th data-zh="語言" data-en="Language">語言</th>
+<th data-zh="資料庫" data-en="Database">資料庫</th>
+<th data-zh="評分邏輯" data-en="Scoring">評分邏輯</th>
+<th data-zh="優點" data-en="Pros">優點</th>
+<th data-zh="缺點" data-en="Cons">缺點</th>
+</tr></thead>
+<tbody>
+<tr>
+<td><strong>CellChat</strong></td><td>R</td><td>CellChatDB (~3,300 human)</td>
+<td data-lang="zh">質量作用 + Hill 函數 + permutation</td>
+<td data-lang="zh">路徑層級分析、視覺化最豐富、原生支援跨條件比較</td>
+<td data-lang="zh">R 生態系；對非常大數據集記憶體吃緊</td>
+<td data-lang="en">Mass action + Hill + permutation</td>
+<td data-lang="en">Pathway-level analysis, richest visualization, native cross-condition comparison</td>
+<td data-lang="en">R-only; memory-heavy on very large datasets</td>
+</tr>
+<tr>
+<td><strong>CellPhoneDB</strong></td><td>Python</td><td>CellPhoneDB (~2,900)</td>
+<td data-lang="zh">L、R 平均表達；permutation p-value</td>
+<td data-lang="zh">明確處理多亞基複合體；最廣為人知</td>
+<td data-lang="zh">不做路徑層級；無內建跨條件比較</td>
+<td data-lang="en">Mean L, R expression; permutation p-value</td>
+<td data-lang="en">Explicit multi-subunit complex handling; widely cited</td>
+<td data-lang="en">No pathway-level; no built-in condition comparison</td>
+</tr>
+<tr>
+<td><strong>NicheNet</strong></td><td>R</td><td data-lang="zh">L-R + 下游 regulatory network</td><td data-lang="zh">配體 → target gene 機率（先驗整合）</td><td data-lang="zh">追蹤下游效應；可解釋哪些目標基因被誘導</td><td data-lang="zh">先驗網絡品質決定結果；運算較重</td>
+<td data-lang="en">L-R + downstream regulatory network</td><td data-lang="en">Ligand → target gene probability (prior-integrated)</td><td data-lang="en">Traces downstream effects, explains which target genes are induced</td><td data-lang="en">Quality depends on prior network; computationally heavy</td>
+</tr>
+<tr>
+<td><strong>LIANA</strong></td><td>R + Python</td><td data-lang="zh">OmniPath（統一多個 DB）</td><td data-lang="zh">同時跑多種演算法取共識排序</td><td data-lang="zh">不依賴單一方法，較穩健；支援 spatial</td><td data-lang="zh">需要花時間理解多套指標</td>
+<td data-lang="en">OmniPath (consolidates multiple DBs)</td><td data-lang="en">Runs multiple methods, ranks by consensus</td><td data-lang="en">Method-agnostic and robust; supports spatial data</td><td data-lang="en">Multiple metrics require time to interpret</td>
+</tr>
+</tbody></table>
+
+<div class="callout tip"><span class="callout-icon">💡</span><div>
+<span data-lang="zh"><strong>策略建議：</strong>若你正在做 <em>探索性研究</em>，先用 <strong>CellChat</strong> 取得路徑層級總覽 + 豐富視覺化；若要<em>追下游機制</em>，加用 <strong>NicheNet</strong> 看 ligand → target gene；若想<em>避開單一方法偏誤</em>，用 <strong>LIANA</strong> 跑共識。三者結合最為理想。</span>
+<span data-lang="en"><strong>Strategy:</strong> For <em>exploration</em>, start with <strong>CellChat</strong> (pathway-level overview + best visualization). To <em>trace downstream mechanism</em>, add <strong>NicheNet</strong> for ligand → target gene. To <em>avoid single-method bias</em>, run <strong>LIANA</strong> for consensus. Combining all three is ideal.</span>
+</div></div>
+</section>
+
+<!-- ===== Section 5: Interactive sim — NEW ===== -->
+<section class="section">
+<div class="section-label" data-zh="互動模擬" data-en="INTERACTIVE">互動模擬</div>
+<h2 data-zh="五、通訊機率模擬器" data-en="V. Communication Probability Simulator">五、通訊機率模擬器</h2>
+<div data-lang="zh"><p>拖動滑桿改變 <strong>source 細胞群 ligand 表達</strong>、<strong>target 細胞群 receptor 表達</strong>、<strong>每群細胞數</strong>，觀察 CellChat 風格的通訊機率與 permutation p-value 變化。第二張圖示範<strong>跨條件比較</strong>（如：對照 vs 疾病）下，同一對 source-target 的訊號強度差異——這是 CellChat 最常用的下游分析之一。</p></div>
+<div data-lang="en"><p>Drag sliders to vary <strong>ligand expression in the source group</strong>, <strong>receptor expression in the target group</strong>, and <strong>cells per group</strong>. Watch the CellChat-style communication probability and permutation p-value update. The second chart demonstrates <strong>cross-condition comparison</strong> (e.g., control vs disease) — one of CellChat's most-used downstream analyses.</p></div>
+
+<div class="interactive-panel">
+<div class="sim-stats">
+  <span class="sim-stat pass" id="ccProb">P = —</span>
+  <span class="sim-stat" id="ccPval" style="background:var(--c-bg-alt);color:var(--c-ink-light);">p = —</span>
+  <span class="sim-stat fail" id="ccSig">—</span>
+</div>
+
+<div class="slider-group"><label><span data-zh="Source ligand 平均表達 (L̄)" data-en="Source ligand mean expression (L̄)">L̄ (source)</span> <span id="valL">2.0</span></label><input type="range" id="sldL" min="0" max="5" step="0.1" value="2.0"></div>
+<div class="slider-group"><label><span data-zh="Target receptor 平均表達 (R̄)" data-en="Target receptor mean expression (R̄)">R̄ (target)</span> <span id="valR">1.5</span></label><input type="range" id="sldR" min="0" max="5" step="0.1" value="1.5"></div>
+<div class="slider-group"><label><span data-zh="每群細胞數" data-en="Cells per group">每群細胞數</span> <span id="valN">120</span></label><input type="range" id="sldN" min="10" max="500" step="10" value="120"></div>
+<div class="slider-group"><label><span data-zh="疾病條件下 L̄ 倍率" data-en="L̄ fold-change in disease">疾病條件 L̄ ×</span> <span id="valFc">2.0</span></label><input type="range" id="sldFc" min="0.2" max="5" step="0.1" value="2.0"></div>
+
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px;margin-top:14px;">
+  <div>
+    <div style="font-size:.82rem;font-weight:600;text-align:center;margin-bottom:4px;color:var(--c-ink-light);"><span data-zh="① 通訊機率 vs 隨機分布" data-en="① Probability vs null distribution">① 通訊機率 vs 隨機分布</span></div>
+    <div class="chart-container" style="height:220px;"><canvas id="probChart"></canvas></div>
+  </div>
+  <div>
+    <div style="font-size:.82rem;font-weight:600;text-align:center;margin-bottom:4px;color:var(--c-ink-light);"><span data-zh="② 對照 vs 疾病：跨條件比較" data-en="② Control vs disease comparison">② 對照 vs 疾病</span></div>
+    <div class="chart-container" style="height:220px;"><canvas id="condChart"></canvas></div>
+  </div>
+</div>
+<p style="font-size:.78rem;color:var(--c-ink-muted);text-align:center;margin-top:8px;"><span data-zh="① 紅線為觀察到的通訊機率 P，灰色直方圖為打散標籤後 100 次 permutation 的 null 分布；p-value 為紅線右尾的比例。② 兩個條件下同一 source→target 的訊號強度，可用於 CellChat compareInteractions。" data-en="① The red line is the observed probability P; the gray histogram is the null distribution from 100 label permutations. p-value is the right-tail proportion. ② Signaling for the same source→target across two conditions — analogous to CellChat compareInteractions.">① 紅線=觀察到的 P，灰色=permutation null；② 條件間比較可餵入 compareInteractions。</span></p>
+</div>
+
+<div class="callout warn"><span class="callout-icon">⚠️</span><div>
+<span data-lang="zh"><strong>小群細胞 = 雜訊放大器：</strong>觀察滑桿——當「每群細胞數」拉到 20 以下，permutation null 變得非常寬，p-value 即使在 L̄、R̄ 都中等時也跳得很厲害。實務上 <strong>n &lt; 10 的細胞群通訊推論幾乎不可信</strong>。若有此類群，請合併或從分析中排除。</span>
+<span data-lang="en"><strong>Small groups amplify noise:</strong> push "cells per group" below ~20 and the null distribution widens dramatically — p-values become unstable even at moderate L̄ and R̄. In practice, <strong>communication inference is unreliable for groups with n &lt; 10</strong>. Merge or exclude such groups.</span>
+</div></div>
+</section>
+
+<!-- ===== Section 6: Code examples ===== -->
+<section class="section">
+<div class="section-label" data-zh="程式碼" data-en="CODE">程式碼</div>
+<h2 data-zh="六、實作範例（R / Python 三套）" data-en="VI. Code Examples (3 Stacks)">六、實作範例</h2>
+<div class="code-tabs">
+<div class="code-tab-btns">
+  <button class="code-tab-btn active" onclick="switchTab(this,'r-cc')">R / CellChat</button>
+  <button class="code-tab-btn" onclick="switchTab(this,'py-cpdb')">Py / CellPhoneDB</button>
+  <button class="code-tab-btn" onclick="switchTab(this,'py-liana')">Py / LIANA</button>
+</div>
+
+<div class="code-tab-content active" id="r-cc"><pre><span class="comment"># 1. 建立 CellChat 物件 / Create object</span>
+<span class="func">library</span>(CellChat)
+<span class="comment"># 重要：使用「正規化但未 scale」的 counts（CellChat 內部會 scale）</span>
+<span class="comment"># Important: pass normalized (NOT scaled) data — CellChat scales internally</span>
+data.input &lt;- <span class="func">GetAssayData</span>(pbmc, assay = <span class="str">"RNA"</span>, slot = <span class="str">"data"</span>)
+meta &lt;- pbmc@meta.data
+cellchat &lt;- <span class="func">createCellChat</span>(object = data.input, meta = meta, group.by = <span class="str">"cell_type"</span>)
+
+<span class="comment"># 2. 載入資料庫並過濾 / Load DB and filter</span>
+cellchat@DB &lt;- CellChatDB.human
 cellchat &lt;- <span class="func">subsetData</span>(cellchat)
 cellchat &lt;- <span class="func">identifyOverExpressedGenes</span>(cellchat)
 cellchat &lt;- <span class="func">identifyOverExpressedInteractions</span>(cellchat)
-cellchat &lt;- <span class="func">computeCommunProb</span>(cellchat)
+
+<span class="comment"># 3. 計算通訊機率（核心步驟） / Core step: compute probabilities</span>
+cellchat &lt;- <span class="func">computeCommunProb</span>(cellchat, type = <span class="str">"triMean"</span>, nboot = <span class="num">100</span>)
+cellchat &lt;- <span class="func">filterCommunication</span>(cellchat, min.cells = <span class="num">10</span>)
 cellchat &lt;- <span class="func">computeCommunProbPathway</span>(cellchat)
 cellchat &lt;- <span class="func">aggregateNet</span>(cellchat)
-<span class="func">netVisual_circle</span>(cellchat@net$count)
-<span class="func">netVisual_bubble</span>(cellchat, sources.use = <span class="num">1</span>, targets.use = <span class="func">c</span>(<span class="num">2</span>,<span class="num">3</span>,<span class="num">4</span>))</pre></div>
-<div class="code-tab-content" id="py1"><pre><span class="kw">from</span> cellphonedb.src.core.methods <span class="kw">import</span> cpdb_analysis_method
-results = cpdb_analysis_method.call(
-    cpdb_file_path=<span class="str">"cellphonedb.zip"</span>,
-    meta_file_path=<span class="str">"meta.txt"</span>,
-    counts_file_path=<span class="str">"counts.h5ad"</span>,
-    counts_data=<span class="str">"hgnc_symbol"</span>,
-    output_path=<span class="str">"./output"</span>)</pre></div></div>
-<div class="callout warn"><span class="callout-icon">⚠️</span><div><span data-lang="zh"><strong>重要提醒：</strong>這些分析都是「推斷」，不是直接證據。scRNA-seq 只能告訴我們 L-R 的 RNA 是否表達，但 RNA ≠ 蛋白質 ≠ 真正的物理交互。重要結果務必用實驗（共培養、阻斷實驗）驗證。</span><span data-lang="en"><strong>Important:</strong> These analyses are <strong>inferences</strong>, not direct evidence. scRNA-seq only tells us if L-R RNAs are expressed — RNA ≠ protein ≠ actual physical interaction. Important findings must be validated experimentally (co-culture, blocking experiments).</span></div></div></section>
-<nav class="page-nav"><a href="integration.html"><span class="nav-dir" data-zh="← 上一步" data-en="← Previous">← 上一步</span><span class="nav-title" data-zh="Integration" data-en="Integration">Integration</span></a><a href="trajectory.html"><span class="nav-dir" data-zh="下一步 →" data-en="Next →">下一步 →</span><span class="nav-title" data-zh="Trajectory" data-en="Trajectory">Trajectory</span></a></nav></main>
-<footer class="site-footer">© Charlene — scRNA-seq Interactive Tutorial</footer>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script><script src="i18n.js"></script><script>
-window.addEventListener("scroll",()=>{const h=document.documentElement;document.getElementById("progressBar").style.width=(h.scrollTop/(h.scrollHeight-h.clientHeight))*100+"%";});
-function switchTab(b,id){const p=b.closest(".code-tabs");p.querySelectorAll(".code-tab-btn").forEach(x=>x.classList.remove("active"));p.querySelectorAll(".code-tab-content").forEach(x=>x.classList.remove("active"));b.classList.add("active");document.getElementById(id).classList.add("active");}
 
-const cT=['CD4 T','CD8 T','B cell','Monocyte','DC'];const cDt=[[12,28,8,22,15],[25,8,5,18,12],[15,6,10,8,20],[20,15,12,5,30],[35,22,18,10,5]];const lrs=[['CD40LG→CD40','IFNG→IFNGR','IL2→IL2RA'],['GZMB→...','FASLG→FAS','CCL5→CCR5'],['CD40→CD40LG','IL10→IL10RA','IGHG1→FCGR'],['TNF→TNFRSF1A','CCL2→CCR2','IL1B→IL1R'],['HLA-DRA→CD4','CCL19→CCR7','IL12→IL12RB']];const ccols=['#1a6b5a','#c0392b','#2980b9','#d4a03c','#8e44ad'];
-const netChart=new Chart(document.getElementById('netChart'),{type:'bar',data:{labels:cT,datasets:[{data:cDt[0],backgroundColor:ccols.map(c=>c+'99'),borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,animation:false,plugins:{legend:{display:false}},scales:{y:{min:0,max:40},x:{}}}});
-let curSrc=0;function showSrc(i){curSrc=i;for(let j=0;j<5;j++)document.getElementById('src-'+j).classList.toggle('active',j===i);const L=I18n.get();document.getElementById('srcDesc').textContent=(L==='zh'?'發送方：':'Sender: ')+cT[i];netChart.data.datasets[0].data=cDt[i];netChart.update('none');document.getElementById('lrList').innerHTML=lrs[i].map(lr=>'<div style="padding:4px 0;border-bottom:1px solid var(--c-border-light);">🔗 '+lr+'</div>').join('');}
-document.addEventListener('langchange',()=>showSrc(curSrc));showSrc(0);
-const QF=window._QF||{};document.querySelectorAll(".quiz-q").forEach((q,qi)=>{const ans=+q.dataset.answer;q.querySelectorAll(".quiz-opt").forEach(o=>{o.addEventListener("click",()=>{if(q.classList.contains("answered"))return;q.classList.add("answered");const fb=document.getElementById("fb"+(qi+1));const ok=+o.dataset.idx===ans;o.classList.add(ok?"correct":"wrong");if(!ok)q.querySelectorAll(".quiz-opt")[ans].classList.add("correct");const L=I18n.get();fb.className="quiz-feedback show "+(ok?"correct-fb":"wrong-fb");fb.textContent=(ok?"✅ ":"❌ ")+(QF[L]&&QF[L]["q"+(qi+1)+"_"+(ok?"y":"n")]||"");});});});
-</script></body></html>
+<span class="comment"># 4. 視覺化 / Visualize</span>
+<span class="func">netVisual_circle</span>(cellchat@net$weight, weight.scale = <span class="kw">TRUE</span>)
+<span class="func">netVisual_bubble</span>(cellchat, sources.use = <span class="num">1</span>, targets.use = <span class="func">c</span>(<span class="num">2</span>,<span class="num">3</span>,<span class="num">4</span>))
+<span class="func">netVisual_aggregate</span>(cellchat, signaling = <span class="str">"TGFb"</span>, layout = <span class="str">"chord"</span>)
+
+<span class="comment"># 5. 中心性分析（誰是 hub？） / Centrality: who is a hub?</span>
+cellchat &lt;- <span class="func">netAnalysis_computeCentrality</span>(cellchat, slot.name = <span class="str">"netP"</span>)
+<span class="func">netAnalysis_signalingRole_scatter</span>(cellchat)  <span class="comment"># sender vs receiver score</span></pre></div>
+
+<div class="code-tab-content" id="py-cpdb"><pre><span class="comment"># CellPhoneDB v5 — Python statistical method</span>
+<span class="kw">from</span> cellphonedb.src.core.methods <span class="kw">import</span> cpdb_statistical_analysis_method
+
+results = cpdb_statistical_analysis_method.call(
+    cpdb_file_path     = <span class="str">"cellphonedb.zip"</span>,
+    meta_file_path     = <span class="str">"meta.tsv"</span>,           <span class="comment"># cell_id, cell_type 兩欄</span>
+    counts_file_path   = <span class="str">"counts.h5ad"</span>,        <span class="comment"># normalized counts</span>
+    counts_data        = <span class="str">"hgnc_symbol"</span>,
+    iterations         = <span class="num">1000</span>,
+    threshold          = <span class="num">0.1</span>,                 <span class="comment"># 10% 細胞表達門檻 / 10% expression threshold</span>
+    threads            = <span class="num">8</span>,
+    output_path        = <span class="str">"./out"</span>
+)
+<span class="comment"># 輸出：significant_means.txt + pvalues.txt + deconvoluted.txt</span>
+<span class="comment"># 用 ktplotspy 或自己畫 dot plot</span>
+<span class="kw">import</span> ktplotspy <span class="kw">as</span> kp
+kp.plot_cpdb(adata=adata, cell_type1=<span class="str">"T"</span>, cell_type2=<span class="str">"Mono"</span>,
+             means=<span class="str">"out/means.txt"</span>, pvals=<span class="str">"out/pvalues.txt"</span>)</pre></div>
+
+<div class="code-tab-content" id="py-liana"><pre><span class="comment"># LIANA-py — 多方法共識排序 / multi-method consensus</span>
+<span class="kw">import</span> liana <span class="kw">as</span> li
+<span class="kw">import</span> scanpy <span class="kw">as</span> sc
+
+<span class="comment"># 跑單一方法</span>
+li.mt.cellphonedb(adata, groupby=<span class="str">"cell_type"</span>, resource_name=<span class="str">"consensus"</span>,
+                  expr_prop=<span class="num">0.1</span>, verbose=<span class="kw">True</span>)
+
+<span class="comment"># 跑全部方法並做 robust rank aggregation</span>
+li.mt.rank_aggregate(adata, groupby=<span class="str">"cell_type"</span>, resource_name=<span class="str">"consensus"</span>,
+                     expr_prop=<span class="num">0.1</span>, n_perms=<span class="num">1000</span>, verbose=<span class="kw">True</span>)
+
+<span class="comment"># 視覺化（dot plot）</span>
+my_p = li.pl.dotplot(adata=adata,
+    colour=<span class="str">"magnitude_rank"</span>, size=<span class="str">"specificity_rank"</span>,
+    source_labels=[<span class="str">"DC"</span>], target_labels=[<span class="str">"T"</span>], top_n=<span class="num">20</span>, orderby=<span class="str">"magnitude_rank"</span>)</pre></div>
+</div>
+
+<div class="callout warn"><span class="callout-icon">⚠️</span><div>
+<span data-lang="zh"><strong>輸入資料格式陷阱：</strong>CellChat <strong>需要 normalized data</strong>（Seurat 的 <code>data</code> slot），而非 <code>counts</code> 或 <code>scale.data</code>。CellPhoneDB v5 預設也用 normalized counts。如果丟錯，Hill 函數的飽和點被破壞，所有 P 值都會偏移。</span>
+<span data-lang="en"><strong>Input-format pitfall:</strong> CellChat <strong>requires normalized data</strong> (Seurat's <code>data</code> slot), not raw <code>counts</code> or <code>scale.data</code>. CellPhoneDB v5 also expects normalized counts by default. Wrong input breaks the Hill function saturation and biases every P value.</span>
+</div></div>
+</section>
+
+<!-- ===== Section 7: Advanced ===== -->
+<section class="section">
+<div class="section-label" data-zh="進階分析" data-en="ADVANCED">進階分析</div>
+<h2 data-zh="七、進階：跨條件比較與訊號中心性" data-en="VII. Advanced: Cross-Condition & Signaling Centrality">七、進階分析</h2>
+
+<div class="card">
+<h4>🔁 <span data-zh="跨條件差異訊號" data-en="Differential Signaling Across Conditions">跨條件差異訊號</span></h4>
+<div data-lang="zh">
+<p>真正有生物學意義的問題往往是「<strong>對照組與治療組的訊號網絡有什麼不同？</strong>」CellChat 提供 <code>mergeCellChat()</code> 與 <code>compareInteractions()</code>，回答兩種尺度：</p>
+<ul style="margin:8px 0 8px 20px;color:var(--c-ink-light);">
+<li><strong>數量差異 (number of interactions)</strong>：哪些 cell pair 在疾病組多了 / 少了訊號。</li>
+<li><strong>強度差異 (interaction strength)</strong>：相同 L-R 在兩條件下的 P 倍率。</li>
+<li><strong>新興 / 喪失 pathway</strong>：<code>rankNet()</code> 對 pathway 排序，找出在某條件下顯著上升的訊號。</li>
+</ul>
+</div>
+<div data-lang="en">
+<p>The biologically meaningful question is often "<strong>How does the signaling network differ between control and disease?</strong>" CellChat answers this with <code>mergeCellChat()</code> and <code>compareInteractions()</code> at two scales:</p>
+<ul style="margin:8px 0 8px 20px;color:var(--c-ink-light);">
+<li><strong>Number of interactions</strong>: which cell pairs gain/lose signaling.</li>
+<li><strong>Interaction strength</strong>: P fold-change of the same L-R between conditions.</li>
+<li><strong>Emerging/lost pathways</strong>: <code>rankNet()</code> ranks pathways to find condition-specific signaling.</li>
+</ul>
+</div>
+</div>
+
+<div class="card">
+<h4>🌐 <span data-zh="訊號角色與中心性 (Sender / Receiver / Influencer)" data-en="Signaling Roles & Centrality">訊號角色與中心性</span></h4>
+<div data-lang="zh">
+<p>CellChat 將每個細胞群在每個 pathway 中的角色拆解為 <strong>sender、receiver、mediator、influencer</strong> 四個 graph-centrality 分數：</p>
+<ul style="margin:8px 0 8px 20px;color:var(--c-ink-light);">
+<li><strong>Sender (outgoing)</strong>：對外發出訊號的能力。</li>
+<li><strong>Receiver (incoming)</strong>：對外來訊號的反應能力。</li>
+<li><strong>Mediator</strong>：是否在網絡中扮演「中介橋樑」。</li>
+<li><strong>Influencer</strong>：對網絡訊息流動的整體影響。</li>
+</ul>
+<p>用 <code>netAnalysis_signalingRole_scatter()</code> 把 sender vs receiver 畫成散佈圖，可一眼識別「主要訊號源」與「主要訊號靶」。</p>
+</div>
+<div data-lang="en">
+<p>CellChat decomposes each cell group's role in each pathway into four graph-centrality scores: <strong>sender, receiver, mediator, influencer</strong>:</p>
+<ul style="margin:8px 0 8px 20px;color:var(--c-ink-light);">
+<li><strong>Sender (outgoing)</strong>: ability to emit signal.</li>
+<li><strong>Receiver (incoming)</strong>: ability to respond to incoming signal.</li>
+<li><strong>Mediator</strong>: bridging role in the network.</li>
+<li><strong>Influencer</strong>: overall impact on information flow.</li>
+</ul>
+<p><code>netAnalysis_signalingRole_scatter()</code> plots sender vs receiver — at a glance you can spot the "major source" and "major sink" of any pathway.</p>
+</div>
+</div>
+</section>
+
+<!-- ===== Section 8: Best practices ===== -->
+<section class="section">
+<div class="section-label" data-zh="最佳實務" data-en="BEST PRACTICES">最佳實務</div>
+<h2 data-zh="八、最佳實務與常見陷阱" data-en="VIII. Best Practices & Common Pitfalls">八、最佳實務與常見陷阱</h2>
+
+<div class="decision-tree">
+<h4>✅ <span data-zh="最佳實務清單" data-en="Best Practice Checklist">最佳實務清單</span></h4>
+<div data-lang="zh">
+<div class="dt-node"><span class="dt-q">①</span><div>使用<strong>正規化但未 scale 的表達矩陣</strong>。CellChat 的 Hill 函數預設 normalized 為輸入，給 raw counts 或 z-score 都會產生錯誤結果。</div></div>
+<div class="dt-node"><span class="dt-q">②</span><div>跨條件比較<strong>務必統一細胞群標籤</strong>。如果對照組叫「CD4_naive」、疾病組叫「naive_CD4」，CellChat 會視為不同細胞群。</div></div>
+<div class="dt-node"><span class="dt-q">③</span><div>解讀以 <strong>pathway-level</strong> 為主，再下鑽到單一 L-R。單一 L-R 受 dropout 影響大；pathway 層級綜合多個冗餘的 L-R，結果穩定許多。</div></div>
+<div class="dt-node"><span class="dt-q">④</span><div>有 spatial transcriptomics 數據時<strong>交叉驗證</strong>——空間鄰近的 sender-receiver pair 才是真正可能發生 paracrine 的 hit。</div></div>
+<div class="dt-node"><span class="dt-q">⑤</span><div>論文 / 報告中<strong>明確標示</strong>：CellChatDB 版本、<code>nboot</code> 次數、p-value cutoff、是否做了 condition harmonization。</div></div>
+</div>
+<div data-lang="en">
+<div class="dt-node"><span class="dt-q">①</span><div>Use <strong>normalized (not scaled) expression</strong>. CellChat's Hill function expects normalized input — passing raw counts or z-scores gives wrong results.</div></div>
+<div class="dt-node"><span class="dt-q">②</span><div><strong>Harmonize cell-type labels</strong> across conditions. If control has "CD4_naive" and disease has "naive_CD4", CellChat treats them as distinct groups.</div></div>
+<div class="dt-node"><span class="dt-q">③</span><div>Interpret at <strong>pathway-level</strong> first, then drill down. Single L-R pairs are noisy under dropout; pathways aggregate redundant pairs and are far more robust.</div></div>
+<div class="dt-node"><span class="dt-q">④</span><div>If spatial transcriptomics is available, <strong>cross-validate</strong> — only spatially adjacent sender-receiver pairs can plausibly engage in paracrine signaling.</div></div>
+<div class="dt-node"><span class="dt-q">⑤</span><div>In manuscripts/reports, <strong>explicitly state</strong>: CellChatDB version, <code>nboot</code>, p-value cutoff, condition harmonization steps.</div></div>
+</div>
+</div>
+
+<div class="card">
+<h4>🚧 <span data-zh="常見陷阱 Top 5" data-en="Top 5 Common Pitfalls">常見陷阱 Top 5</span></h4>
+<div data-lang="zh">
+<ol style="margin:8px 0 0 20px;color:var(--c-ink-light);">
+<li><strong>方向搞反 (source vs target)</strong>：CellChat 規定 ligand 在 source、receptor 在 target。畫 chord diagram 時 sources/targets 對調就會誤判生物學方向。</li>
+<li><strong>用小細胞群推論</strong>：n &lt; 10 的群 permutation null 太寬，hit 多半是 false positive；先合併或排除。</li>
+<li><strong>Batch effect 散播到 L-R</strong>：未做 integration 的多樣本，某 ligand 在某 batch 特別高就被誤推成 hit。建議先做 batch correction 再跑 CellChat。</li>
+<li><strong>把 in vitro 結果套到 in vivo</strong>：器官切片中的 paracrine 需要空間鄰近；2D 培養細胞無空間限制。in vitro hit ≠ in vivo hit。</li>
+<li><strong>Autocrine 主導畫面</strong>：許多 cell type 同時表達 ligand + receptor，autocrine score 常常蓋過 paracrine。如果只關心 cross-talk，請過濾 source == target。</li>
+</ol>
+</div>
+<div data-lang="en">
+<ol style="margin:8px 0 0 20px;color:var(--c-ink-light);">
+<li><strong>Reversed direction (source vs target)</strong>: CellChat assumes ligand=source, receptor=target. Swapping sources/targets in chord diagrams flips biological direction.</li>
+<li><strong>Inferring on small groups</strong>: with n &lt; 10 the null is wide, hits are mostly false positives. Merge or exclude.</li>
+<li><strong>Batch effects bleeding into L-R</strong>: without integration, a ligand inflated in one batch becomes a spurious hit. Run batch correction first.</li>
+<li><strong>Generalizing in vitro to in vivo</strong>: paracrine in tissue requires spatial proximity; 2D culture has none. in vitro hit ≠ in vivo hit.</li>
+<li><strong>Autocrine dominates the view</strong>: many cell types express both L and R, so autocrine scores often overshadow paracrine. Filter source ≠ target if cross-talk is the focus.</li>
+</ol>
+</div>
+</div>
+</section>
+
+<!-- ===== Section 9: Quiz ===== -->
+<section class="quiz-section">
+<h3>📝 <span data-zh="自我檢測" data-en="Self-Check">自我檢測</span></h3>
+
+<div class="quiz-q" data-answer="2">
+<p data-lang="zh">1. CellChat 計算「來源 → 目標」通訊機率 P 時，下列何者最關鍵？</p>
+<p data-lang="en">1. When CellChat computes P (source → target), which is most critical?</p>
+<div class="quiz-options">
+<div class="quiz-opt" data-idx="0"><span data-lang="zh">A. 只看 source 群的 ligand 表達</span><span data-lang="en">A. Source-group ligand expression alone</span></div>
+<div class="quiz-opt" data-idx="1"><span data-lang="zh">B. 只看 target 群的 receptor 表達</span><span data-lang="en">B. Target-group receptor expression alone</span></div>
+<div class="quiz-opt" data-idx="2"><span data-lang="zh">C. source ligand × target receptor，並用 permutation 評估顯著性</span><span data-lang="en">C. Source ligand × target receptor, with permutation-based significance</span></div>
+<div class="quiz-opt" data-idx="3"><span data-lang="zh">D. UMAP 上 source 與 target 的距離</span><span data-lang="en">D. UMAP distance between source and target</span></div>
+</div><div class="quiz-feedback" id="fb1"></div></div>
+
+<div class="quiz-q" data-answer="1">
+<p data-lang="zh">2. 你發現某 cell pair 在疾病組「interaction 數量」暴增。下一步最佳做法？</p>
+<p data-lang="en">2. You find dramatically more interactions in disease for a cell pair. Best next step?</p>
+<div class="quiz-options">
+<div class="quiz-opt" data-idx="0"><span data-lang="zh">A. 直接寫成論文 finding</span><span data-lang="en">A. Write it up as a finding immediately</span></div>
+<div class="quiz-opt" data-idx="1"><span data-lang="zh">B. 用 rankNet 看哪些 pathway 在疾病組增強，並檢查兩組 cell-type 標籤是否一致、細胞數差異是否合理</span><span data-lang="en">B. Use rankNet to identify upregulated pathways and verify label harmonization + cell-count balance</span></div>
+<div class="quiz-opt" data-idx="2"><span data-lang="zh">C. 把 nboot 設為 10 加快運算</span><span data-lang="en">C. Reduce nboot to 10 for speed</span></div>
+<div class="quiz-opt" data-idx="3"><span data-lang="zh">D. 移除全部 autocrine signal 就能得到正確結論</span><span data-lang="en">D. Removing autocrine signal alone gives the correct conclusion</span></div>
+</div><div class="quiz-feedback" id="fb2"></div></div>
+
+<div class="quiz-q" data-answer="3">
+<p data-lang="zh">3. 下列何者「不是」L-R 推論的限制？</p>
+<p data-lang="en">3. Which is NOT a limitation of L-R inference?</p>
+<div class="quiz-options">
+<div class="quiz-opt" data-idx="0"><span data-lang="zh">A. mRNA ≠ 蛋白，可能有翻譯後調控</span><span data-lang="en">A. mRNA ≠ protein; post-translational regulation matters</span></div>
+<div class="quiz-opt" data-idx="1"><span data-lang="zh">B. 無法直接知道兩細胞在組織中是否相鄰</span><span data-lang="en">B. Cannot directly know if cells are spatially adjacent</span></div>
+<div class="quiz-opt" data-idx="2"><span data-lang="zh">C. 小細胞群推論不穩定</span><span data-lang="en">C. Small groups give unstable inference</span></div>
+<div class="quiz-opt" data-idx="3"><span data-lang="zh">D. 無法載入內建資料庫</span><span data-lang="en">D. Cannot load the built-in database</span></div>
+</div><div class="quiz-feedback" id="fb3"></div></div>
+
+<div class="quiz-q" data-answer="2">
+<p data-lang="zh">4. CellChat 期望的輸入表達矩陣應是？</p>
+<p data-lang="en">4. CellChat expects which type of expression matrix?</p>
+<div class="quiz-options">
+<div class="quiz-opt" data-idx="0"><span data-lang="zh">A. 原始 counts（未正規化）</span><span data-lang="en">A. Raw counts (un-normalized)</span></div>
+<div class="quiz-opt" data-idx="1"><span data-lang="zh">B. Scaled (z-score) 表達矩陣</span><span data-lang="en">B. Scaled (z-score) matrix</span></div>
+<div class="quiz-opt" data-idx="2"><span data-lang="zh">C. Normalized 表達矩陣（如 Seurat 的 data slot）</span><span data-lang="en">C. Normalized matrix (e.g., Seurat's data slot)</span></div>
+<div class="quiz-opt" data-idx="3"><span data-lang="zh">D. UMAP 座標</span><span data-lang="en">D. UMAP coordinates</span></div>
+</div><div class="quiz-feedback" id="fb4"></div></div>
+</section>
+
+<nav class="page-nav">
+<a href="integration.html"><span class="nav-dir" data-zh="← 上一步" data-en="← Previous">← 上一步</span><span class="nav-title" data-zh="Integration" data-en="Integration">Integration</span></a>
+<a href="trajectory.html"><span class="nav-dir" data-zh="下一步 →" data-en="Next →">下一步 →</span><span class="nav-title" data-zh="Trajectory" data-en="Trajectory">Trajectory</span></a>
+</nav>
+</main>
+<footer class="site-footer">© Charlene — scRNA-seq Interactive Tutorial</footer>
+<script src="i18n.js"></script>
+<script>
+// Progress bar
+window.addEventListener('scroll',()=>{const h=document.documentElement;document.getElementById('progressBar').style.width=(h.scrollTop/(h.scrollHeight-h.clientHeight))*100+'%';});
+function switchTab(b,id){const p=b.closest('.code-tabs');p.querySelectorAll('.code-tab-btn').forEach(x=>x.classList.remove('active'));p.querySelectorAll('.code-tab-content').forEach(x=>x.classList.remove('active'));b.classList.add('active');document.getElementById(id).classList.add('active');}
+
+// ===== Communication probability simulator =====
+function randn(){let u=0,v=0;while(u===0)u=Math.random();while(v===0)v=Math.random();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);}
+function hill(x,k){return (x*x)/(k*k+x*x);}  // Hill saturation
+
+// Compute one trial probability given mean L, mean R, n cells, with sampling noise
+function trial(meanL,meanR,n){
+  let sumL=0,sumR=0;
+  for(let i=0;i<n;i++){sumL+=Math.max(0,meanL+randn()*0.8);sumR+=Math.max(0,meanR+randn()*0.8);}
+  const Lbar=sumL/n, Rbar=sumR/n;
+  return hill(Lbar,1.5)*hill(Rbar,1.5);
+}
+// Build null distribution by permuting labels (shuffle which cells belong to source/target)
+function nullDist(meanL,meanR,n,nperm){
+  const pool=[];
+  for(let i=0;i<2*n;i++){
+    pool.push(Math.max(0,(i<n?meanL:meanR)+randn()*0.8));
+  }
+  const arr=[];
+  for(let k=0;k<nperm;k++){
+    // shuffle assignment
+    for(let i=pool.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[pool[i],pool[j]]=[pool[j],pool[i]];}
+    let sL=0,sR=0;for(let i=0;i<n;i++){sL+=pool[i];sR+=pool[n+i];}
+    arr.push(hill(sL/n,1.5)*hill(sR/n,1.5));
+  }
+  return arr;
+}
+
+// Histogram helper
+function hist(vals,bins,minV,maxV){
+  const h=new Array(bins).fill(0); const w=(maxV-minV)/bins;
+  vals.forEach(v=>{if(v<minV)return;const idx=Math.min(bins-1,Math.floor((v-minV)/w));h[idx]++;});
+  const labels=h.map((_,i)=>(minV+(i+0.5)*w).toFixed(2));
+  return {labels,counts:h,binW:w};
+}
+
+const probChart=new Chart(document.getElementById('probChart'),{type:'bar',
+  data:{labels:[],datasets:[
+    {label:'null',data:[],backgroundColor:'rgba(160,160,160,0.55)'},
+    {type:'line',label:'observed P',data:[],borderColor:'#c0392b',backgroundColor:'#c0392b',borderWidth:2,pointRadius:0,fill:false}
+  ]},
+  options:{responsive:true,maintainAspectRatio:false,animation:false,
+    plugins:{legend:{display:false}},
+    scales:{x:{title:{display:true,text:'P',font:{size:10}},ticks:{font:{size:9},maxRotation:0,autoSkipPadding:8}},y:{title:{display:true,text:'count',font:{size:10}},ticks:{font:{size:9}}}}}});
+
+const condChart=new Chart(document.getElementById('condChart'),{type:'bar',
+  data:{labels:['Control','Disease'],datasets:[{label:'P',data:[0,0],backgroundColor:['#1a6b5a99','#c0392b99'],borderRadius:4}]},
+  options:{responsive:true,maintainAspectRatio:false,animation:false,
+    plugins:{legend:{display:false}},
+    scales:{y:{min:0,max:1,title:{display:true,text:'Communication probability',font:{size:10}}}}}});
+
+function updateCC(){
+  const L=+document.getElementById('sldL').value;
+  const R=+document.getElementById('sldR').value;
+  const N=+document.getElementById('sldN').value;
+  const Fc=+document.getElementById('sldFc').value;
+  document.getElementById('valL').textContent=L.toFixed(1);
+  document.getElementById('valR').textContent=R.toFixed(1);
+  document.getElementById('valN').textContent=N;
+  document.getElementById('valFc').textContent=Fc.toFixed(1);
+
+  // Observed probability (mean of a few trials for stability)
+  let obs=0; for(let i=0;i<5;i++)obs+=trial(L,R,N); obs/=5;
+
+  // Null distribution
+  const nulls=nullDist(L,R,N,200);
+  const maxV=Math.max(obs,...nulls)*1.1+0.01;
+  const H=hist(nulls,18,0,maxV);
+  probChart.data.labels=H.labels;
+  probChart.data.datasets[0].data=H.counts;
+  // Place red marker at observed P bin
+  const idx=Math.min(H.counts.length-1,Math.floor(obs/H.binW));
+  const marker=H.counts.map((_,i)=>i===idx?Math.max(...H.counts)*1.05:null);
+  probChart.data.datasets[1].data=marker;
+  probChart.update('none');
+
+  // p-value: proportion of null >= obs
+  const pval=nulls.filter(x=>x>=obs).length/nulls.length;
+
+  // Cross-condition: control = (L,R), disease = (L*Fc, R)
+  let pCtrl=0,pDis=0;
+  for(let i=0;i<10;i++){pCtrl+=trial(L,R,N);pDis+=trial(L*Fc,R,N);}
+  pCtrl/=10; pDis/=10;
+  condChart.data.datasets[0].data=[pCtrl,pDis];
+  const cMax=Math.max(pCtrl,pDis,0.2)*1.2;
+  condChart.options.scales.y.max=cMax;
+  condChart.update('none');
+
+  const lang=I18n.get();
+  document.getElementById('ccProb').textContent='P = '+obs.toFixed(3);
+  document.getElementById('ccPval').textContent='p = '+(pval<0.001?'<0.001':pval.toFixed(3));
+  const sig = pval<0.05;
+  const sigTxt = lang==='zh' ? (sig?'顯著 ✓':'不顯著 ✗') : (sig?'Significant ✓':'Not significant ✗');
+  const el=document.getElementById('ccSig');
+  el.textContent=sigTxt;
+  el.style.background = sig?'var(--c-accent-light)':'var(--c-danger-light)';
+  el.style.color = sig?'var(--c-accent-dark)':'var(--c-danger)';
+}
+
+['sldL','sldR','sldN','sldFc'].forEach(id=>document.getElementById(id).addEventListener('input',updateCC));
+document.addEventListener('langchange',updateCC);
+updateCC();
+
+// ===== Quiz =====
+const QF={
+  zh:{
+    q1_y:'CellChat 用 source-ligand × target-receptor 的質量作用模型，並以 permutation 驗證顯著性。',
+    q1_n:'正確答案是 C。',
+    q2_y:'差異訊號最常見於樣本不均、cell-type 標籤不一致導致的偽差異，必須先排除這些因素。',
+    q2_n:'正確答案是 B。',
+    q3_y:'D 不是限制——載入內建資料庫只是一行程式碼，不算分析的固有限制。',
+    q3_n:'正確答案是 D。',
+    q4_y:'CellChat 內部會做飽和處理，預設輸入是正規化後的 data slot。',
+    q4_n:'正確答案是 C。'
+  },
+  en:{
+    q1_y:'CellChat models the interaction as source-ligand × target-receptor (mass-action) and tests significance with permutation.',
+    q1_n:'Correct answer is C.',
+    q2_y:'Differential signaling is most often confounded by sample imbalance or inconsistent labels — rule those out first.',
+    q2_n:'Correct answer is B.',
+    q3_y:'D is not a limitation — loading the DB is a one-liner, not an inherent constraint of inference.',
+    q3_n:'Correct answer is D.',
+    q4_y:'CellChat applies its own saturation; the expected input is normalized expression (Seurat data slot).',
+    q4_n:'Correct answer is C.'
+  }
+};
+document.querySelectorAll('.quiz-q').forEach((q,qi)=>{const ans=+q.dataset.answer;q.querySelectorAll('.quiz-opt').forEach(o=>{o.addEventListener('click',()=>{if(q.classList.contains('answered'))return;q.classList.add('answered');const fb=document.getElementById('fb'+(qi+1));const ok=+o.dataset.idx===ans;o.classList.add(ok?'correct':'wrong');if(!ok)q.querySelectorAll('.quiz-opt')[ans].classList.add('correct');const L=I18n.get();fb.className='quiz-feedback show '+(ok?'correct-fb':'wrong-fb');fb.textContent=(ok?'✅ ':'❌ ')+(QF[L]['q'+(qi+1)+'_'+(ok?'y':'n')]||'');});});});
+</script>
+</body></html>
