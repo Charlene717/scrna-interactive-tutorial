@@ -60,16 +60,21 @@
 <!-- ===== Section 3: Interactive Sim ===== -->
 <section class="section">
 <div class="section-label" data-zh="互動模擬" data-en="INTERACTIVE">互動模擬</div>
-<h2 data-zh="QC 散佈圖模擬器" data-en="QC Scatter Plot Simulator">QC 散佈圖模擬器</h2>
-<div data-lang="zh"><p>拖動下方滑桿，觀察不同閾值如何篩選細胞。<strong>綠色點</strong>為通過 QC 的細胞，<strong>紅色點</strong>為被剔除的細胞。注意好的細胞應沿著對角線分佈；偏離軌跡的通常品質有問題。</p></div>
-<div data-lang="en"><p>Drag the sliders below to see how different thresholds filter cells. <strong>Green dots</strong> pass QC; <strong>red dots</strong> are removed. Note that healthy cells should distribute along the diagonal; those deviating from this trajectory usually have quality issues.</p></div>
+<h2 data-zh="QC 多面板模擬器" data-en="QC Multi-Panel Simulator">QC 多面板模擬器</h2>
+<div data-lang="zh"><p>拖動下方滑桿觀察不同閾值如何篩選細胞。三張<strong>分佈圖</strong>分別呈現 nFeature、nCount、MT% 的單變量分佈與閾值線；右下<strong>散佈圖</strong>呈現 nCount × nFeature 的聯合分佈，點大小代表 MT%。<span style="color:var(--c-success-dark,#175c44);font-weight:600;">綠</span>為通過、<span style="color:var(--c-danger,#c0392b);font-weight:600;">紅</span>為未通過。<strong>注意：「未通過」只代表「在當前閾值下被過濾」，不等於該細胞一定是死的或壞的，需配合生物學情境判斷。</strong></p></div>
+<div data-lang="en"><p>Drag the sliders below to see how thresholds filter cells. The three <strong>distribution plots</strong> show nFeature, nCount, and MT% individually with threshold lines; the <strong>scatter</strong> at bottom-right shows the joint nCount × nFeature distribution (dot size = MT%). <span style="color:var(--c-success-dark,#175c44);font-weight:600;">Green</span> = passed; <span style="color:var(--c-danger,#c0392b);font-weight:600;">red</span> = filtered out. <strong>"Filtered" simply means "removed under the current threshold"; it does not automatically imply the cell is dead — interpret with biological context.</strong></p></div>
 <div class="interactive-panel">
-<div class="sim-stats"><span class="sim-stat pass" id="statPass">—</span><span class="sim-stat fail" id="statFail">—</span></div>
+<div class="sim-stats"><span class="sim-stat pass" id="statPass">—</span><span class="sim-stat fail" id="statFail">—</span><span class="sim-stat" style="background:var(--c-bg-alt);color:var(--c-ink-light);" id="statRate">—</span></div>
 <div class="slider-group"><label><span data-zh="最少基因數 (Min nFeature)" data-en="Min genes (Min nFeature)">最少基因數</span> <span id="valMinFeat">200</span></label><input type="range" id="sliderMinFeat" min="50" max="500" value="200" step="10"></div>
 <div class="slider-group"><label><span data-zh="最多基因數 (Max nFeature)" data-en="Max genes (Max nFeature)">最多基因數</span> <span id="valMaxFeat">4000</span></label><input type="range" id="sliderMaxFeat" min="2000" max="6000" value="4000" step="100"></div>
 <div class="slider-group"><label><span data-zh="最高粒線體比例 (Max MT%)" data-en="Max mitochondrial % (Max MT%)">最高 MT%</span> <span id="valMT">10%</span></label><input type="range" id="sliderMT" min="3" max="25" value="10" step="1"></div>
-<div class="chart-container"><canvas id="qcChart"></canvas></div>
-<p style="font-size:.82rem;color:var(--c-ink-muted);text-align:center;">X: nCount_RNA | Y: nFeature_RNA | <span data-zh="點大小：MT%" data-en="Dot size: MT%">點大小：MT%</span></p>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px;margin-top:14px;">
+  <div><div style="font-size:.82rem;font-weight:600;text-align:center;margin-bottom:4px;color:var(--c-ink-light);"><span data-zh="① nFeature 分佈" data-en="① nFeature distribution">① nFeature 分佈</span></div><div class="chart-container" style="height:200px;"><canvas id="distFeat"></canvas></div></div>
+  <div><div style="font-size:.82rem;font-weight:600;text-align:center;margin-bottom:4px;color:var(--c-ink-light);"><span data-zh="② nCount 分佈" data-en="② nCount distribution">② nCount 分佈</span></div><div class="chart-container" style="height:200px;"><canvas id="distCount"></canvas></div></div>
+  <div><div style="font-size:.82rem;font-weight:600;text-align:center;margin-bottom:4px;color:var(--c-ink-light);"><span data-zh="③ MT% 分佈" data-en="③ MT% distribution">③ MT% 分佈</span></div><div class="chart-container" style="height:200px;"><canvas id="distMt"></canvas></div></div>
+  <div><div style="font-size:.82rem;font-weight:600;text-align:center;margin-bottom:4px;color:var(--c-ink-light);"><span data-zh="④ nCount × nFeature 散佈" data-en="④ nCount × nFeature scatter">④ nCount × nFeature 散佈</span></div><div class="chart-container" style="height:200px;"><canvas id="qcChart"></canvas></div></div>
+</div>
+<p style="font-size:.78rem;color:var(--c-ink-muted);text-align:center;margin-top:8px;"><span data-zh="散佈圖中點大小代表 MT%；其餘三圖紅色直條表示閾值範圍外（會被過濾），綠色直條表示閾值範圍內（會保留）。" data-en="In the scatter, dot size encodes MT%; in the three distributions, red bars sit outside the threshold (filtered out), green bars sit inside (retained).">散佈圖中點大小代表 MT%；其餘三圖紅色直條 = 閾值外（被過濾），綠色直條 = 閾值內（保留）。</span></p>
 </div>
 </section>
 
@@ -331,7 +336,40 @@ for(let i=0;i<800;i++){
 const qcChart=new Chart(document.getElementById('qcChart'),{type:'bubble',data:{datasets:[
   {label:'Pass',data:[],backgroundColor:'rgba(26,107,90,0.55)',borderColor:'rgba(26,107,90,0.8)',borderWidth:1},
   {label:'Fail',data:[],backgroundColor:'rgba(192,57,43,0.45)',borderColor:'rgba(192,57,43,0.7)',borderWidth:1}
-]},options:{responsive:true,maintainAspectRatio:false,animation:false,plugins:{legend:{position:'top'}},scales:{x:{title:{display:true,text:'nCount_RNA'},min:0,max:32000},y:{title:{display:true,text:'nFeature_RNA'},min:0,max:7500}}}});
+]},options:{responsive:true,maintainAspectRatio:false,animation:false,plugins:{legend:{position:'top',labels:{boxWidth:10,font:{size:10}}}},scales:{x:{title:{display:true,text:'nCount_RNA',font:{size:10}},min:0,max:32000,ticks:{font:{size:9}}},y:{title:{display:true,text:'nFeature_RNA',font:{size:10}},min:0,max:7500,ticks:{font:{size:9}}}}}});
+
+// Histogram helper — bin values into evenly-spaced ranges
+function makeHist(vals,bins,minV,maxV){
+  const h=new Array(bins).fill(0);const w=(maxV-minV)/bins;
+  vals.forEach(v=>{if(v<minV||v>maxV)return;const idx=Math.min(bins-1,Math.floor((v-minV)/w));h[idx]++;});
+  const labels=h.map((_,i)=>(minV+i*w).toFixed(0));
+  return {labels,counts:h,binW:w,minV};
+}
+function hexColor(c,a){return c.replace(/[\d.]+\)$/,a+')');}
+
+// Build the three distribution charts (nFeature / nCount / MT%)
+function buildDist(canvasId,xLabel){
+  return new Chart(document.getElementById(canvasId),{type:'bar',data:{labels:[],datasets:[
+    {label:'In range',data:[],backgroundColor:'rgba(26,107,90,0.7)'},
+    {label:'Out of range',data:[],backgroundColor:'rgba(192,57,43,0.55)'}
+  ]},options:{responsive:true,maintainAspectRatio:false,animation:false,plugins:{legend:{display:false}},scales:{x:{stacked:true,title:{display:true,text:xLabel,font:{size:10}},ticks:{font:{size:9},maxRotation:0,autoSkipPadding:8}},y:{stacked:true,title:{display:true,text:'count',font:{size:10}},ticks:{font:{size:9}}}}}});
+}
+const featChart=buildDist('distFeat','nFeature_RNA');
+const countChart=buildDist('distCount','nCount_RNA');
+const mtChart=buildDist('distMt','MT% (per cell)');
+
+function fillDist(chart,vals,bins,minV,maxV,inLo,inHi){
+  const h=makeHist(vals,bins,minV,maxV);
+  const inArr=[],outArr=[];
+  for(let i=0;i<h.counts.length;i++){
+    const center=h.minV+(i+0.5)*h.binW;
+    if(center>=inLo && center<=inHi){inArr.push(h.counts[i]);outArr.push(0);}
+    else {inArr.push(0);outArr.push(h.counts[i]);}
+  }
+  chart.data.labels=h.labels;
+  chart.data.datasets[0].data=inArr;chart.data.datasets[1].data=outArr;
+  chart.update('none');
+}
 
 function updateQC(){
   const L=I18n.get();
@@ -341,12 +379,35 @@ function updateQC(){
   document.getElementById('valMT').textContent=maxMT+'%';
   const pass=[],fail=[];
   cells.forEach(c=>{const pt={x:c.nCount,y:c.nFeature,r:Math.max(3,c.mt*0.6)};(c.nFeature>=minF&&c.nFeature<=maxF&&c.mt<=maxMT?pass:fail).push(pt);});
-  const kl=L==='zh'?'保留':'Kept',rl=L==='zh'?'剔除':'Removed';
+  const kl=L==='zh'?'保留':'Retained',rl=L==='zh'?'過濾':'Filtered';
   document.getElementById('statPass').textContent=kl+': '+pass.length;
   document.getElementById('statFail').textContent=rl+': '+fail.length;
+  const rate=pass.length/(pass.length+fail.length)*100;
+  document.getElementById('statRate').textContent=(L==='zh'?'保留率 ':'Retention rate ')+rate.toFixed(1)+'%';
+
+  // Update scatter
   qcChart.data.datasets[0].data=pass;qcChart.data.datasets[1].data=fail;
   qcChart.data.datasets[0].label=kl;qcChart.data.datasets[1].label=rl;
   qcChart.update('none');
+
+  // Update three distribution charts
+  const featVals=cells.map(c=>c.nFeature),countVals=cells.map(c=>c.nCount),mtVals=cells.map(c=>c.mt);
+  fillDist(featChart,featVals,30,0,7500,minF,maxF);
+  // For nCount, color cells by whether the parent cell passes BOTH nFeature & MT filters
+  // (i.e., the integrated QC outcome) — this gives an informative view even without a dedicated nCount slider
+  fillDistByMask(countChart,countVals,cells.map(c=>(c.nFeature>=minF&&c.nFeature<=maxF&&c.mt<=maxMT)),30,0,32000);
+  fillDist(mtChart,mtVals,25,0,30,0,maxMT);
+}
+
+// Variant: bin values, then split each bin's count by an external boolean mask
+function fillDistByMask(chart,vals,passMask,bins,minV,maxV){
+  const w=(maxV-minV)/bins;
+  const inArr=new Array(bins).fill(0),outArr=new Array(bins).fill(0);
+  vals.forEach((v,i)=>{if(v<minV||v>maxV)return;const idx=Math.min(bins-1,Math.floor((v-minV)/w));if(passMask[i])inArr[idx]++;else outArr[idx]++;});
+  const labels=Array.from({length:bins},(_,i)=>(minV+i*w).toFixed(0));
+  chart.data.labels=labels;
+  chart.data.datasets[0].data=inArr;chart.data.datasets[1].data=outArr;
+  chart.update('none');
 }
 ['sliderMinFeat','sliderMaxFeat','sliderMT'].forEach(id=>document.getElementById(id).addEventListener('input',updateQC));
 document.addEventListener('langchange',updateQC);

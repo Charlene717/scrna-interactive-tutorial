@@ -875,7 +875,7 @@ window.QUIZ_DATA = {
             A:"基因至少有 2 倍變化且通過顯著性", A_en:"Genes have at least 2-fold change and pass significance",
             B:"完全沒過濾", B_en:"No filtering at all",
             C:"只看 p 值不看效應", C_en:"Only p-value, ignoring effect size",
-            D:"自動排除所有基因", D_en:"Auto-excludes all genes",
+            D:"自動移除所有基因", D_en:"Auto-removes all genes",
             ans:"A",
             exp:"|log2FC|=1 即倍率變化 ≥ 2 倍；p_adj 控制多重檢定後的 false discovery。",
             exp_en:"|log2FC|=1 means ≥ 2-fold change; p_adj controls false discovery after multiple testing correction." },
